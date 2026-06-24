@@ -1923,3 +1923,73 @@
     gap: 20px;
   }
 }
+
+/* --- GOOGLE DRIVE PICKER EXTRA STYLES --- */
+.btn-del-thumb {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 10;
+  background-color: rgba(239, 103, 55, 0.9);
+  color: #fff;
+  border: none;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background-color 0.2s, transform 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.btn-del-thumb:hover {
+  background-color: #d84a1a;
+  transform: scale(1.1);
+}
+
+.origin-buttons-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-picker-choice {
+  background-color: var(--soft);
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-picker-choice:hover {
+  background-color: var(--orange);
+  color: white;
+}
+
+.btn-picker-choice-primary {
+  background-color: var(--orange);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(239, 103, 55, 0.25);
+}
+
+.btn-picker-choice-primary:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+

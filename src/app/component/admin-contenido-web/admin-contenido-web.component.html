@@ -374,7 +374,7 @@
                 <tr>
                   <td>
                     <div class="prod-thumb-small">
-                      <img [src]="'images/prod-' + (prod.id.includes('verde') ? 'verde' : prod.id.includes('rosa') ? 'rosa-grande' : prod.id.includes('ondulado') ? 'ondulado' : prod.id.includes('iridiscente') ? 'iridiscente' : 'jaspeada') + '.png'" [alt]="prod.nombre" />
+                      <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-' + (prod.nombre.toLowerCase().includes('verde') ? 'verde' : prod.nombre.toLowerCase().includes('rosa') ? 'rosa-grande' : prod.nombre.toLowerCase().includes('ondulado') ? 'ondulado' : prod.nombre.toLowerCase().includes('iridiscente') ? 'iridiscente' : 'jaspeada') + '.png'" [alt]="prod.nombre" />
                     </div>
                   </td>
                   <td><strong>{{ prod.nombre }}</strong></td>
@@ -393,7 +393,7 @@
                   <td>
                     <div class="row-actions">
                       <button class="btn-row-edit" (click)="openEditProduct(prod)" type="button">Editar</button>
-                      <button class="btn-row-delete" (click)="eliminarFila(productosAdmin, idx)" type="button">Eliminar</button>
+                      <button class="btn-row-delete" (click)="eliminarProducto(prod.id)" type="button">Eliminar</button>
                     </div>
                   </td>
                 </tr>
@@ -489,24 +489,71 @@
                 <div class="uploader-tab-layout">
                   <div class="main-image-preview">
                     <p class="section-sub">Imagen Principal</p>
-                    <div class="big-preview-box empty-state">
-                      <div class="placeholder-drag-drop">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <polyline points="16 16 12 12 8 16"></polyline>
-                          <line x1="12" y1="12" x2="12" y2="21"></line>
-                          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
-                        </svg>
-                        <span>Sube la foto principal (Drag and Drop)</span>
-                      </div>
+                    <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none" />
+                    
+                    <div class="big-preview-box" 
+                         [class.empty-state]="!imagenTemporalUrl"
+                         (dragover)="onDragOver($event)"
+                         (drop)="onDrop($event)">
+                         
+                      @if (imagenTemporalUrl) {
+                        <img [src]="imagenTemporalUrl" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;" />
+                        <button class="btn-del-img" (click)="removeImage($event)" type="button">Eliminar</button>
+                      } @else {
+                        <div class="placeholder-drag-drop">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 16 12 12 8 16"></polyline>
+                            <line x1="12" y1="12" x2="12" y2="21"></line>
+                            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+                          </svg>
+                          <span style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">Arrastra una imagen o selecciona el origen</span>
+                          <div class="origin-buttons-row">
+                            <button type="button" class="btn-picker-choice" (click)="fileInput.click()">Desde PC</button>
+                            <button type="button" class="btn-picker-choice-primary" (click)="abrirPicker('principal')">Google Drive</button>
+                          </div>
+                        </div>
+                      }
                     </div>
                   </div>
 
                   <div class="gallery-thumbs-layout">
                     <p class="section-sub">Miniaturas adicionales</p>
                     <div class="thumbs-grid">
-                      <div class="thumb-uploader-box"><span>+ Añadir</span></div>
-                      <div class="thumb-uploader-box"><span>+ Añadir</span></div>
-                      <div class="thumb-uploader-box"><span>+ Añadir</span></div>
+                      <!-- Miniatura 1 -->
+                      @if (miniaturasTemp[0]) {
+                        <div class="thumb-preview-box">
+                          <img [src]="miniaturasTemp[0]" alt="Miniatura 1" />
+                          <button class="btn-del-thumb" (click)="removeMiniatura(0, $event)" type="button">×</button>
+                        </div>
+                      } @else {
+                        <div class="thumb-uploader-box" (click)="abrirPicker('miniatura1')">
+                          <span>+ Añadir</span>
+                        </div>
+                      }
+
+                      <!-- Miniatura 2 -->
+                      @if (miniaturasTemp[1]) {
+                        <div class="thumb-preview-box">
+                          <img [src]="miniaturasTemp[1]" alt="Miniatura 2" />
+                          <button class="btn-del-thumb" (click)="removeMiniatura(1, $event)" type="button">×</button>
+                        </div>
+                      } @else {
+                        <div class="thumb-uploader-box" (click)="abrirPicker('miniatura2')">
+                          <span>+ Añadir</span>
+                        </div>
+                      }
+
+                      <!-- Miniatura 3 -->
+                      @if (miniaturasTemp[2]) {
+                        <div class="thumb-preview-box">
+                          <img [src]="miniaturasTemp[2]" alt="Miniatura 3" />
+                          <button class="btn-del-thumb" (click)="removeMiniatura(2, $event)" type="button">×</button>
+                        </div>
+                      } @else {
+                        <div class="thumb-uploader-box" (click)="abrirPicker('miniatura3')">
+                          <span>+ Añadir</span>
+                        </div>
+                      }
                     </div>
                   </div>
                 </div>
@@ -540,21 +587,17 @@
                   <p class="sub-caption-picker">Selecciona qué productos se mostrarán en la ficha técnica de este nuevo artículo:</p>
 
                   <div class="relacionados-grid">
-                    <div class="rel-product-row">
-                      <span class="chk-indicator"></span>
-                      <img src="images/prod-verde.png" alt="..." />
-                      <span><strong>Taza de vidrio verde</strong> - S/ 45</span>
-                    </div>
-                    <div class="rel-product-row">
-                      <span class="chk-indicator"></span>
-                      <img src="images/prod-rosa-grande.png" alt="..." />
-                      <span><strong>Taza de cerámica rosa</strong> - S/ 45</span>
-                    </div>
-                    <div class="rel-product-row">
-                      <span class="chk-indicator"></span>
-                      <img src="images/prod-ondulado.png" alt="..." />
-                      <span><strong>Vaso ondulado transparente</strong> - S/ 32</span>
-                    </div>
+                    @for (prod of productosAdmin; track prod.id) {
+                      <div class="rel-product-row" [class.selected]="newProduct.sugeridosIds.includes(prod.id)" (click)="toggleSugerido(prod.id)">
+                        <span class="chk-indicator"></span>
+                        <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-' + (prod.nombre.toLowerCase().includes('verde') ? 'verde' : prod.nombre.toLowerCase().includes('rosa') ? 'rosa-grande' : prod.nombre.toLowerCase().includes('ondulado') ? 'ondulado' : prod.nombre.toLowerCase().includes('iridiscente') ? 'iridiscente' : 'jaspeada') + '.png'" [alt]="prod.nombre" />
+                        <span><strong>{{ prod.nombre }}</strong> - S/ {{ prod.precio }}</span>
+                      </div>
+                    } @empty {
+                      <p style="color: var(--muted); font-style: italic; padding: 12px;">
+                        No hay otros productos registrados en el catálogo para vincular.
+                      </p>
+                    }
                   </div>
                 </div>
               }
@@ -562,7 +605,7 @@
 
             <div class="modal-footer">
               <button class="btn-cancel" (click)="showAddProductModal = false" type="button">Cancelar</button>
-              <button class="btn-save" (click)="showAddProductModal = false" type="button">Guardar producto</button>
+              <button class="btn-save" (click)="guardarNuevoProducto()" type="button">Guardar producto</button>
             </div>
           </div>
         </div>
@@ -721,7 +764,7 @@
 
             <div class="modal-footer">
               <button class="btn-cancel" (click)="showEditProductModal = false" type="button">Cancelar</button>
-              <button class="btn-del-img" (click)="showEditProductModal = false" style="position: static;" type="button">Eliminar producto</button>
+              <button class="btn-del-img" (click)="eliminarProducto(editingProduct.id); showEditProductModal = false" style="position: static;" type="button">Eliminar producto</button>
               <button class="btn-save" (click)="showEditProductModal = false" type="button">Guardar cambios</button>
             </div>
           </div>

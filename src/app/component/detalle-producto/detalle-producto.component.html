@@ -13,7 +13,7 @@
 
       <section class="product-main">
         <div class="gallery">
-          <img class="main-image" [src]="imagenPrincipal" [alt]="producto.nombre" />
+          <img class="main-image" [src]="obtenerImagenUrl(imagenPrincipal)" [alt]="producto.nombre" />
           <div class="thumb-row">
             <button class="arrow" type="button" aria-label="Anterior">&lt;</button>
             @for (imagen of producto.galeria; track imagen) {
@@ -23,7 +23,7 @@
                 type="button"
                 (click)="seleccionarImagen(imagen)"
               >
-                <img [src]="imagen" [alt]="producto.nombre" />
+                <img [src]="obtenerImagenUrl(imagen)" [alt]="producto.nombre" />
               </button>
             }
             <button class="arrow" type="button" aria-label="Siguiente">&gt;</button>
@@ -31,7 +31,9 @@
         </div>
 
         <div class="summary">
-          <span class="badge">{{ producto.etiqueta ?? 'NUEVO' }}</span>
+          @if (producto.etiqueta) {
+            <span class="badge">{{ producto.etiqueta }}</span>
+          }
           <h1>{{ producto.nombre }}</h1>
           <p class="subtitle">{{ producto.subtitulo }}</p>
           <div class="rating">
@@ -41,8 +43,12 @@
           </div>
           <div class="price">
             <strong>S/ {{ producto.precio }}</strong>
-            <s>S/{{ producto.precioAnterior }}</s>
-            <span>{{ producto.descuento }}</span>
+            @if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
+              <s>S/ {{ producto.precioAnterior }}</s>
+            }
+            @if (producto.descuento) {
+              <span>{{ producto.descuento }}</span>
+            }
           </div>
           <p class="stock"><span></span>{{ producto.stock }}</p>
 
@@ -56,7 +62,7 @@
                 (click)="seleccionarColor(color)"
                 [attr.aria-label]="color.nombre"
               >
-                <img [src]="color.imagen" [alt]="color.nombre" />
+                <img [src]="obtenerImagenUrl(color.imagen)" [alt]="color.nombre" />
               </button>
             }
           </div>
@@ -70,7 +76,7 @@
             </div>
           </div>
 
-          <a class="buy" href="#">W Comprar por WhatsApp</a>
+          <a class="buy" [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto: ' + producto.nombre + ' (Cantidad: ' + cantidad + ')')" target="_blank">W Comprar por WhatsApp</a>
           <button class="cart" type="button">Agregar al carrito</button>
 
           <div class="benefits">
@@ -100,12 +106,14 @@
             <div class="description">
               <h2>Descripcion</h2>
               <p>{{ producto.descripcion }}</p>
-              <h2>Caracteristicas</h2>
-              <ul>
-                @for (item of producto.caracteristicas; track item) {
-                  <li>{{ item }}</li>
-                }
-              </ul>
+              @if (producto.caracteristicas && producto.caracteristicas.length > 0) {
+                <h2>Caracteristicas</h2>
+                <ul>
+                  @for (item of producto.caracteristicas; track item) {
+                    <li>{{ item }}</li>
+                  }
+                </ul>
+              }
               <h2>Incluye</h2>
               <p>{{ producto.incluye }}</p>
               <h2>Garantia</h2>
@@ -169,10 +177,10 @@
         <div class="related-row">
           <button class="circle" type="button">&lt;</button>
           @for (item of relacionados; track item.id) {
-            <article class="related-card">
-              <img [src]="item.imagen" [alt]="item.nombre" />
+            <article class="related-card" [routerLink]="['/productos', item.id]" style="cursor: pointer;">
+              <img [src]="obtenerImagenUrl(item.imagenPrincipal || item.imageUrl)" [alt]="item.nombre" />
               <div>
-                <button type="button" aria-label="Favorito">♡</button>
+                <button type="button" aria-label="Favorito" (click)="$event.stopPropagation();">♡</button>
                 <h3>{{ item.nombre }}</h3>
                 <p>S/ {{ item.precio }}</p>
               </div>
@@ -184,7 +192,7 @@
     </main>
   } @else {
     <main class="detail-page">
-      <p>No se encontro el producto.</p>
+      <p>Cargando detalle de producto...</p>
     </main>
   }
 </app-cliente-layout>

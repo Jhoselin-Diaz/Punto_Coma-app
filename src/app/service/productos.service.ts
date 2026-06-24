@@ -1,4 +1,7 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Producto {
   id?: string;
@@ -45,7 +48,32 @@ export interface DetalleProducto extends Producto {
   providedIn: 'root'
 })
 export class ProductosService {
+  private apiUrl = environment.apiUrl;
+
+  constructor(private http: HttpClient) {}
+
+  crearProducto(productoData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/productos`, productoData);
+  }
+
+  obtenerTodosBackend(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/productos`);
+  }
+
+  obtenerProductosPublicos(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/productos/publicos`);
+  }
+
+  obtenerProductoPorId(id: any): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/productos/${id}`);
+  }
+
+  eliminarProducto(id: any): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/productos/${id}`);
+  }
+
   private readonly recienVistos: Producto[] = [];
+
 
   private readonly categorias: Producto[] = [];
 

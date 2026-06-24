@@ -7,14 +7,24 @@
     </section>
 
     <section class="products-grid" aria-label="Lista de productos">
-      @for (producto of productos; track producto.nombre + producto.imagen) {
+      @for (producto of productos; track producto.id) {
         <article class="product-card">
           <div class="image-wrap">
-            <img [src]="producto.imagen" [alt]="producto.nombre" />
+            @if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
+              <span class="offer-tag">OFERTA</span>
+            } @else if (producto.nuevo || producto.esNuevo) {
+              <span class="offer-tag" style="background: var(--green);">NUEVO</span>
+            }
+            <img [src]="obtenerImagenUrl(producto.imagenPrincipal || producto.imageUrl)" [alt]="producto.nombre" />
           </div>
           <div class="product-info">
             <h2>{{ producto.nombre }}</h2>
-            <p><strong>S/ {{ producto.precio }}</strong></p>
+            <p>
+              <strong>S/ {{ producto.precio }}</strong>
+              @if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
+                <s>S/ {{ producto.precioAnterior }}</s>
+              }
+            </p>
             <div class="buttons">
               <a class="detail-link" [routerLink]="['/productos', producto.id]">Ver detalles</a>
               <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto: ' + producto.nombre)">W Comprar por WhatsApp</a>
