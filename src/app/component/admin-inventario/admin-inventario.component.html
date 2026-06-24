@@ -1,0 +1,511 @@
+<app-admin-layout>
+  <div page-title class="dynamic-title">
+    <h2>Inventario</h2>
+  </div>
+
+  <!-- SECCIÓN 1: CARDS DE ESTADÍSTICAS SUPERIORES -->
+  <div class="stats-grid-four">
+    <div class="stat-luxury-card">
+      <div class="stat-icon-wrapper normal-beige">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <path d="M9 3v18M15 3v18M3 9h18M3 15h18" />
+        </svg>
+      </div>
+      <div>
+        <span class="stat-lbl">Productos en Stock</span>
+        <h3>{{ statsStock.totalProductos }} u.</h3>
+      </div>
+    </div>
+
+    <div class="stat-luxury-card highlight-low">
+      <div class="stat-icon-wrapper warn-orange">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div>
+        <span class="stat-lbl">Stock Bajo</span>
+        <h3>{{ statsStock.bajoStock }} prod.</h3>
+      </div>
+    </div>
+
+    <div class="stat-luxury-card highlight-empty">
+      <div class="stat-icon-wrapper alert-red">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      </div>
+      <div>
+        <span class="stat-lbl">Productos Agotados</span>
+        <h3>{{ statsStock.agotados }} prod.</h3>
+      </div>
+    </div>
+
+    <div class="stat-luxury-card">
+      <div class="stat-icon-wrapper active-green">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+        </svg>
+      </div>
+      <div>
+        <span class="stat-lbl">Movimientos Hoy</span>
+        <h3>{{ statsStock.movimientosHoy }} mov.</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 2: GRID CENTRAL (TABLA Y PANEL LATERAL) -->
+  <div class="inventario-two-col-layout">
+    <!-- Columna Izquierda: Tabla e interacciones -->
+    <div class="inventario-main-table-card">
+      <div class="table-controls-header">
+        <div class="controls-left-flex">
+          <div class="search-box-luxury">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar producto por nombre, SKU o categoría..." />
+          </div>
+
+          <div class="tabs-visual-filters">
+            <button [class.active]="filtroStockActivo === 'todos'" (click)="setFiltroStock('todos')">Todos</button>
+            <button [class.active]="filtroStockActivo === 'disponibles'"
+              (click)="setFiltroStock('disponibles')">Disponibles</button>
+            <button [class.active]="filtroStockActivo === 'bajo'" (click)="setFiltroStock('bajo')">Stock Bajo</button>
+            <button [class.active]="filtroStockActivo === 'agotados'"
+              (click)="setFiltroStock('agotados')">Agotados</button>
+          </div>
+        </div>
+
+        <div class="controls-right-actions">
+          <button class="btn-export-sec" (click)="exportarInventario()" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Exportar
+          </button>
+          <button class="btn-add-primary" (click)="openAddStock()" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Agregar stock
+          </button>
+        </div>
+      </div>
+
+      <div class="table-scroll-container">
+        <table class="luxury-stock-table">
+          <thead>
+            <tr>
+              <th>Imagen</th>
+              <th>Nombre Producto</th>
+              <th>SKU</th>
+              <th>Categoría</th>
+              <th class="txt-center">Stock Actual</th>
+              <th>Estado</th>
+              <th>Última Actualización</th>
+              <th class="txt-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of getFilteredStockItems(); track item.id; let idx = $index) {
+            <tr [class.row-highlight-warn]="item.stock <= 5 && item.stock > 0"
+              [class.row-highlight-danger]="item.stock === 0">
+              <td>
+                <div class="tbl-prod-img-box">
+                  <img [src]="item.imagen" [alt]="item.nombre" />
+                </div>
+              </td>
+              <td>
+                <div class="tbl-prod-name">
+                  <strong>{{ item.nombre }}</strong>
+                  <span class="sku-sub">{{ item.sku }}</span>
+                </div>
+              </td>
+              <td><code class="sku-code">{{ item.sku }}</code></td>
+              <td><span class="category-pill">{{ item.categoria }}</span></td>
+              <td class="txt-center font-serif font-bold">
+                <span class="stock-digit" [class.txt-warn]="item.stock <= 5 && item.stock > 0"
+                  [class.txt-danger]="item.stock === 0">
+                  {{ item.stock }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [class.disponible]="item.estado === 'disponible'"
+                  [class.bajo]="item.estado === 'bajo'" [class.agotado]="item.estado === 'agotado'">
+                  {{ item.estado === 'disponible' ? 'Disponible' : item.estado === 'bajo' ? 'Stock bajo' : 'Agotado' }}
+                </span>
+              </td>
+              <td class="txt-muted date-size">{{ item.ultimaActualizacion }}</td>
+              <td class="txt-right">
+                <div class="actions-flex-end">
+                  <button class="btn-micro-action" title="Ver detalle de stock" (click)="verDetalleItem(item)"
+                    type="button">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                  <button class="btn-micro-action highlight-orange" title="Editar stock actual"
+                    (click)="openEditStock(item)" type="button">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                  </button>
+                  <button class="btn-micro-action highlight-purple" title="Ver historial de movimientos"
+                    (click)="verHistorialProducto(item)" type="button">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                  </button>
+                  <button class="btn-micro-action" title="Ocultar de la tienda web" (click)="ocultarProducto(item)"
+                    type="button" [class.text-muted-crossed]="!item.visible">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path
+                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="8" class="empty-table-prompt">
+                <div class="empty-state-card">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="9" x2="15" y2="9"></line>
+                    <line x1="9" y1="13" x2="15" y2="13"></line>
+                  </svg>
+                  <h4>No hay registros disponibles en el inventario</h4>
+                  <p>No se encontraron productos registrados en el stock actual.</p>
+                </div>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Columna Derecha: Panel Lateral Resumen SaaS (Sin imágenes, secundario y sumamente limpio) -->
+    <div class="inventario-side-summary-card">
+      <h4>Resumen General</h4>
+      <p class="summary-subtitle">Monitoreo de movimientos y ventas</p>
+
+      <!-- Más vendido -->
+      <div class="summary-widget-box mb-20">
+        <div class="widget-header">
+          <span class="widget-badge purple-gold">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              style="display:inline-block; vertical-align:middle; margin-right:4px;">
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            PRODUCTO ESTRELLA
+          </span>
+        </div>
+        <div class="widget-body-flex">
+          <div>
+            <h5>{{ summaryData.bestSeller.nombre }}</h5>
+            <span class="widget-sku-lbl">SKU: {{ summaryData.bestSeller.sku }} • <strong>{{
+                summaryData.bestSeller.ventas }} u. vendidas</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menos stock -->
+      <div class="summary-widget-box mb-20">
+        <div class="widget-header">
+          <span class="widget-badge orange-alert">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              style="display:inline-block; vertical-align:middle; margin-right:4px;">
+              <path
+                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" />
+            </svg>
+            CRÍTICO EN ALMACÉN
+          </span>
+        </div>
+        <div class="widget-body-flex">
+          <div>
+            <h5>{{ summaryData.lowestStock.nombre }}</h5>
+            <span class="widget-sku-lbl">SKU: {{ summaryData.lowestStock.sku }} • <strong class="red-text">{{
+                summaryData.lowestStock.stock }} u. disponibles</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modificados recientemente -->
+      <div class="summary-recent-list">
+        <h5>Modificados Recientemente</h5>
+        <div class="recent-list-wrapper">
+          @for (rec of summaryData.recentlyModified; track rec.nombre) {
+          <div class="recent-list-row">
+            <span class="circle-bullet"></span>
+            <div class="recent-row-info">
+              <h6>{{ rec.nombre }}</h6>
+              <span>{{ rec.fecha }}</span>
+            </div>
+            <span class="recent-row-stock font-bold font-serif">{{ rec.stock }} u.</span>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 3: ALERTAS DE INVENTARIO E HISTORIAL DE MOVIMIENTOS -->
+  <div class="inventario-bottom-flex-panels">
+    <!-- Panel Izquierdo: Alertas de Inventario Críticas -->
+    <div class="bottom-panel-card">
+      <div class="panel-header">
+        <h4>Alertas Críticas de Inventario</h4>
+        <span class="badge-critical-count">{{ criticalAlerts.length }} activas</span>
+      </div>
+      <div class="panel-scroll-box">
+        @for (alert of criticalAlerts; track alert.id) {
+        <div class="alert-strip-item" [class.critical-danger]="alert.nivel === 'critico'"
+          [class.critical-warn]="alert.nivel === 'bajo'">
+          <div class="alert-icon-side">
+            @if (alert.nivel === 'critico') {
+            ⚠️
+            } @else {
+            🔔
+            }
+          </div>
+          <div class="alert-info-side">
+            <h6>{{ alert.producto }}</h6>
+            <span class="sku-strip">SKU: {{ alert.sku }} • Stock: {{ alert.stock }}</span>
+            <p class="alert-motivo-txt">{{ alert.motivo }}</p>
+          </div>
+        </div>
+        } @empty {
+        <div class="empty-alerts-state">
+          🎉 ¡Excelente! No hay productos con alertas de stock bajo en este momento.
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Panel Derecho: Historial de Movimientos -->
+    <div class="bottom-panel-card">
+      <div class="panel-header" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+          <h4>Historial de Movimientos</h4>
+          <div class="history-tabs-pills">
+            <button [class.active]="filtroHistorialActivo === 'hoy'" (click)="setFiltroHistorial('hoy')">Hoy</button>
+            <button [class.active]="filtroHistorialActivo === 'semana'"
+              (click)="setFiltroHistorial('semana')">Semana</button>
+            <button [class.active]="filtroHistorialActivo === 'mes'" (click)="setFiltroHistorial('mes')">Mes</button>
+          </div>
+        </div>
+        <p class="history-subtitle-desc" style="margin:0; font-size:12px; color:var(--muted);">Monitoreo cronológico de
+          entradas (+), salidas (-) y ajustes de almacén.</p>
+      </div>
+
+      <div class="panel-scroll-box overflow-x-hidden">
+        <table class="history-table-micro">
+          <thead>
+            <tr>
+              <th>Fecha/Hora</th>
+              <th>Producto</th>
+              <th>Tipo</th>
+              <th class="txt-center">Cant.</th>
+              <th>Admin/Usuario</th>
+              <th>Observación</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (mov of getFilteredMovements(); track mov.fecha + mov.producto) {
+            <tr>
+              <td class="date-col txt-muted">{{ mov.fecha }}</td>
+              <td><strong>{{ mov.producto }}</strong></td>
+              <td>
+                <span class="mov-type-badge" [class.in]="mov.tipo === 'entrada'" [class.out]="mov.tipo === 'salida'"
+                  [class.adj]="mov.tipo === 'ajuste'">
+                  {{ mov.tipo === 'entrada' ? 'Entrada' : mov.tipo === 'salida' ? 'Salida' : 'Ajuste' }}
+                </span>
+              </td>
+              <td class="txt-center font-bold" [class.txt-green]="mov.tipo === 'entrada'"
+                [class.txt-warn]="mov.tipo === 'salida'" [class.txt-orange]="mov.tipo === 'ajuste'">
+                {{ mov.tipo === 'entrada' ? '+' : mov.tipo === 'salida' ? '-' : '' }}{{ mov.cantidad }}
+              </td>
+              <td class="user-col">{{ mov.usuario }}</td>
+              <td class="obs-col">{{ mov.observacion }}</td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="6" class="txt-center txt-muted" style="padding: 24px;">
+                No hay movimientos registrados para este período.
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODALES ==================== -->
+
+  <!-- MODAL 1: ACTUALIZAR STOCK (Editar Stock) -->
+  @if (showEditStockModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-large">
+      <div class="modal-header">
+        <h3>Actualizar Stock</h3>
+        <button class="btn-close-modal" (click)="showEditStockModal = false" type="button">×</button>
+      </div>
+
+      <!-- Cuerpo del modal envuelto en modal-body-content para contención visual absoluta -->
+      <div class="modal-body-content">
+        <div class="modal-grid-two-cols">
+          <!-- Formulario Izquierda -->
+          <div class="video-form-fields">
+            <div class="form-group">
+              <label>Nombre del Producto</label>
+              <input type="text" [value]="editingStockItem.nombre" disabled />
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>SKU Identificador</label>
+                <input type="text" [value]="editingStockItem.sku" disabled />
+              </div>
+              <div class="form-group">
+                <label>Stock Actual (unidades)</label>
+                <input type="text" [value]="editingStockItem.stockActual" disabled />
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Tipo de Movimiento</label>
+                <select [(ngModel)]="editingStockItem.tipoMovimiento">
+                  <option value="entrada">Entrada (Sumar)</option>
+                  <option value="salida">Salida (Restar)</option>
+                  <option value="ajuste">Ajuste Manual (Sobrescribir)</option>
+                </select>
+                <span class="select-help-text"
+                  style="font-size: 11px; color: var(--muted); margin-top: 4px; display: block; line-height:1.3;">
+                  ℹ️ <strong>Entrada</strong> aumenta stock, <strong>Salida</strong> lo reduce y <strong>Ajuste</strong>
+                  establece la cantidad final exacta.
+                </span>
+              </div>
+              <div class="form-group">
+                <label>
+                  {{ editingStockItem.tipoMovimiento === 'ajuste' ? 'Nuevo Stock Final' : 'Cantidad a mover' }}
+                </label>
+                <input type="number" [(ngModel)]="editingStockItem.cantidadMovimiento" min="1" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Motivo / Nota de Movimiento</label>
+              <textarea [(ngModel)]="editingStockItem.observacion" rows="3"
+                placeholder="Ej: Ajuste de inventario físico, rotura, lote defectuoso..."></textarea>
+            </div>
+          </div>
+
+          <!-- Vista Previa / Ilustración del Producto a la Derecha -->
+          <div class="preview-panel-container">
+            <h3>Producto Seleccionado</h3>
+            <div class="client-offer-preview-card">
+              <div class="offer-img-box">
+                <img [src]="editingStockItem.imagen" alt="editing" />
+                <span class="discount-badge-bubble" [class.badge-agotado-bubble]="editingStockItem.stockActual === 0">
+                  Stock: {{ editingStockItem.stockActual }} u.
+                </span>
+              </div>
+              <div class="offer-info-box">
+                <h5>{{ editingStockItem.nombre }}</h5>
+                <div class="prices-flex-row">
+                  <span class="original-strike" style="text-decoration:none;">Código: {{ editingStockItem.sku }}</span>
+                </div>
+                <div class="computed-preview-strip mt-10">
+                  <span class="preview-calculation">
+                    Nuevo stock estimado:
+                    <strong>
+                      {{
+                      editingStockItem.tipoMovimiento === 'entrada' ? (editingStockItem.stockActual +
+                      editingStockItem.cantidadMovimiento) :
+                      editingStockItem.tipoMovimiento === 'salida' ? Math.max(0, (editingStockItem.stockActual -
+                      editingStockItem.cantidadMovimiento)) :
+                      editingStockItem.cantidadMovimiento
+                      }}
+                    </strong> u.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showEditStockModal = false" type="button">Cancelar</button>
+        <button class="btn-save" (click)="saveEditStock()" type="button">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- MODAL 2: REGISTRAR INGRESO (Agregar Stock) -->
+  @if (showAddStockModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-large">
+      <div class="modal-header">
+        <h3>Agregar stock a producto</h3>
+        <button class="btn-close-modal" (click)="showAddStockModal = false" type="button">×</button>
+      </div>
+
+      <!-- Cuerpo del modal envuelto en modal-body-content para contención visual absoluta -->
+      <div class="modal-body-content">
+        <div class="modal-form-grid">
+          <div class="form-group">
+            <label>Seleccionar Producto</label>
+            <select [(ngModel)]="newStockIngreso.productoId">
+              @for (item of stockItems; track item.id) {
+              <option [value]="item.id">{{ item.nombre }} (SKU: {{ item.sku }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Cantidad a Ingresar</label>
+              <input type="number" [(ngModel)]="newStockIngreso.cantidad" min="1" />
+            </div>
+            <div class="form-group">
+              <label>Proveedor Opcional</label>
+              <input type="text" [(ngModel)]="newStockIngreso.proveedor" placeholder="Ej: Cerámicas Artisan SAC" />
+            </div>
+            <div class="form-group">
+              <label>Fecha de Ingreso</label>
+              <input type="date" [(ngModel)]="newStockIngreso.fechaIngreso" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Notas de Entrada / Recepción</label>
+            <textarea [(ngModel)]="newStockIngreso.nota" rows="3"
+              placeholder="Ej: Lote recibido en perfectas condiciones, caja con sellos del distribuidor intactos..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showAddStockModal = false" type="button">Cancelar</button>
+        <button class="btn-save" (click)="saveAddStock()" type="button">Registrar ingreso</button>
+      </div>
+    </div>
+  </div>
+  }
+</app-admin-layout>

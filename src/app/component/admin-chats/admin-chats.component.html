@@ -1,0 +1,243 @@
+<app-admin-layout>
+  <div page-title class="dynamic-title">
+    <h2>Chats</h2>
+  </div>
+
+  <main class="chats-dashboard">
+    <!-- COLUMNA 1: LISTA DE CHATS -->
+    <aside class="chat-sidebar">
+      <div class="sidebar-header">
+        <h3 class="panel-title">Conversaciones <span class="icon">≡</span></h3>
+        <div class="search-box">
+          <input type="text" placeholder="Buscar conversación..." />
+          <span class="icon">⌕</span>
+        </div>
+        <div class="chat-filters">
+          <button type="button" [class.active]="filtroActivo === 'Todas'" (click)="filtroActivo = 'Todas'">Todas</button>
+          <button type="button" [class.active]="filtroActivo === 'No leídas'" (click)="filtroActivo = 'No leídas'">No leídas</button>
+          <button type="button" [class.active]="filtroActivo === 'Pendientes'" (click)="filtroActivo = 'Pendientes'">Pendientes</button>
+        </div>
+      </div>
+
+      <div class="chat-list">
+        @for (chat of chatsOrdenados; track chat.id) {
+          <div class="chat-item" [class.active]="chatSeleccionado?.id === chat.id" [class.en-revision]="chat.estado === 'En revision'" (click)="seleccionarChat(chat)">
+            <div class="avatar">{{ chat.avatar }}</div>
+            <div class="chat-info">
+              <div class="chat-top">
+                <span class="chat-name">
+                  {{ chat.nombre }}
+                  @if (chat.estado === 'En revision') {
+                    <span class="priority-badge-red" title="En revisión por queja" style="display:inline-block; width:8px; height:8px; background:red; border-radius:50%; margin-left:6px; vertical-align:middle;"></span>
+                  }
+                </span>
+                <span class="chat-time">{{ chat.ultimaVez }}</span>
+              </div>
+              <div class="chat-bottom">
+                <p class="chat-preview">{{ chat.mensajes[chat.mensajes.length - 1].texto.startsWith('[YAPE_') ? '💸 [Voucher de Pago]' : chat.mensajes[chat.mensajes.length - 1].texto }}</p>
+                @if (chat.noLeidos > 0) {
+                  <span class="unread-badge">{{ chat.noLeidos }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-chats-state" style="padding: 24px; text-align: center; color: var(--muted); font-size: 13.5px; font-style: italic;">
+             No hay chats pendientes por responder
+          </div>
+        }
+        @if (chats.length > 0) {
+          <button type="button" class="btn-more-chats">Ver más conversaciones ⌄</button>
+        }
+      </div>
+    </aside>
+
+    <!-- COLUMNA 2: INTERFAZ DE CHAT -->
+    <section class="chat-main" *ngIf="chatSeleccionado; else noChatSelected">
+      <header class="chat-header">
+        <div class="avatar">{{ chatSeleccionado.avatar }}</div>
+        <div class="chat-contact">
+          <h4>{{ chatSeleccionado.nombre }} <span class="tag-cliente">Cliente</span></h4>
+          <span>{{ chatSeleccionado.telefono }}</span>
+        </div>
+        <button class="btn-options">⋮</button>
+      </header>
+
+      <div class="chat-messages">
+        @for (msg of chatSeleccionado.mensajes; track $index) {
+          <div class="message-row" [class.outgoing]="msg.tipo === 'salida'" [class.incoming]="msg.tipo === 'entrada'">
+            @if (msg.isVoucher) {
+              <!-- Tarjeta de Yape Voucher -->
+              <div class="yape-voucher-card">
+                <div class="yape-header">
+                  <span class="yape-badge">Yape realizado</span>
+                  <span class="yape-logo">⚡ yape</span>
+                </div>
+                <div class="yape-body">
+                  <div class="yape-label">Yape recibido</div>
+                  <div class="yape-amount">{{ msg.voucherData?.monto }}</div>
+                  
+                  <div class="yape-details">
+                    <div class="detail-line">
+                      <span>Destinatario:</span>
+                      <strong>Punto y Coma</strong>
+                    </div>
+                    <div class="detail-line">
+                      <span>Fecha:</span>
+                      <span>{{ msg.voucherData?.fecha }}</span>
+                    </div>
+                    <div class="detail-line">
+                      <span>Estado:</span>
+                      <span class="status-success-badge">✓ Pago exitoso</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <!-- Burbuja normal -->
+              <div class="message-bubble">
+                <p style="white-space: pre-wrap; margin: 0;">{{ msg.texto }}</p>
+                <div class="message-meta">
+                  <span class="time">{{ msg.hora }}</span>
+                  @if (msg.tipo === 'salida') {
+                    <span class="read-receipt" [class.read]="msg.leido">✓✓</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="empty-messages-prompt" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; color: var(--muted); padding: 24px; font-style: italic;">
+            No hay mensajes en esta conversación.
+          </div>
+        }
+      </div>
+
+      <div class="chat-input-area">
+        <div class="input-wrapper">
+          <button class="btn-icon">😊</button>
+          <button class="btn-icon">📎</button>
+          <button class="btn-icon">⚡</button>
+          <input type="text" [value]="chatSeleccionado.borrador || ''" (input)="chatSeleccionado.borrador = $any($event.target).value" (keyup.enter)="enviarMensajeManual()" placeholder="Escribe un mensaje..." />
+          <button class="btn-send" (click)="enviarMensajeManual()">Enviar</button>
+          <button class="btn-send-options">⌄</button>
+        </div>
+        <p class="ai-helper-text">💡 Usa el asistente inteligente para generar respuestas basadas en el contexto del chat.</p>
+      </div>
+    </section>
+
+    <!-- COLUMNA 3: INFORMACIÓN Y ASISTENTE -->
+    <aside class="chat-details" *ngIf="chatSeleccionado">
+      <div class="details-tabs">
+        <button [class.active]="tabInfoActiva === 'Información'" (click)="tabInfoActiva = 'Información'">Información</button>
+        <button [class.active]="tabInfoActiva === 'Historial'" (click)="tabInfoActiva = 'Historial'">Historial</button>
+      </div>
+
+      <div class="details-content">
+        @if (tabInfoActiva === 'Información') {
+          <!-- DATOS DEL CLIENTE -->
+          <div class="details-card">
+            <h4>Datos del cliente</h4>
+            <div class="info-grid">
+              <span>Nombre:</span> <strong>{{ chatSeleccionado.nombre }}</strong>
+              <span>Teléfono:</span> <strong>{{ chatSeleccionado.telefono }}</strong>
+              <span>Primera compra:</span> <strong>{{ chatSeleccionado.primeraCompra }}</strong>
+              <span>Total pedidos:</span> <strong>{{ chatSeleccionado.totalPedidos }}</strong>
+            </div>
+            <button class="btn-outline-full">👤 Ver perfil del cliente</button>
+          </div>
+
+          <!-- ASISTENTE INTELIGENTE -->
+          <div class="details-card assistant-card">
+            <div class="card-header-flex">
+              <h4>Asistente inteligente</h4>
+              <span class="status-tag" [class.activo]="aiStatus.contextoAnalizado">
+                {{ aiStatus.contextoAnalizado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+            <ul class="assistant-checks">
+              <li class="check-item" [class.ok]="aiStatus.pedidoIdentificado">
+                {{ aiStatus.pedidoIdentificado ? '✓' : '✗' }} Pedido identificado
+              </li>
+              <li class="check-item" [class.ok]="aiStatus.direccionDetectada">
+                {{ aiStatus.direccionDetectada ? '✓' : '✗' }} Dirección detectada
+              </li>
+              <li class="check-item" [class.ok]="aiStatus.datosCompletos">
+                {{ aiStatus.datosCompletos ? '✓' : '✗' }} Datos completos
+              </li>
+              <li class="check-item" [class.ok]="aiStatus.contextoAnalizado">
+                {{ aiStatus.contextoAnalizado ? '✓' : '✗' }} Contexto analizado
+              </li>
+            </ul>
+            <button class="btn-ai-generate" (click)="generarRespuestaAI()">✨ Generar respuesta</button>
+          </div>
+
+          <!-- MENSAJE GENERADO -->
+          <div class="details-card generated-message-card">
+            <h4>Mensaje generado</h4>
+            @if (isGenerating) {
+              <!-- Cargador Visual con Skeleton -->
+              <div class="ai-loading-status">
+                <div class="spinner-mini"></div>
+                <span>{{ generatingStatus }}</span>
+              </div>
+              <div class="skeleton-loader">
+                <div class="skeleton-line w-80"></div>
+                <div class="skeleton-line w-60"></div>
+                <div class="skeleton-line w-40"></div>
+              </div>
+            } @else {
+              @if (!editandoMensajeGenerado) {
+                <div class="generated-box" style="white-space: pre-wrap;">{{ chatSeleccionado.mensajeGenerado || 'Presione "Generar respuesta" para iniciar el asistente.' }}</div>
+                <div class="generated-actions">
+                  <button class="btn-outline" (click)="iniciarEdicionMensaje()">✏️ Editar mensaje</button>
+                  <button class="btn-primary" [disabled]="!chatSeleccionado.mensajeGenerado" (click)="enviarMensajeGenerado()">✓ Usar mensaje</button>
+                </div>
+              } @else {
+                <textarea class="generated-textarea" [value]="mensajeGeneradoTemp" (input)="mensajeGeneradoTemp = $any($event.target).value" rows="10"></textarea>
+                <div class="generated-actions mt-10">
+                  <button class="btn-outline" (click)="cancelarEdicionMensaje()">Cancelar</button>
+                  <button class="btn-primary" (click)="guardarEdicionMensaje()">Guardar</button>
+                </div>
+              }
+            }
+          </div>
+        }
+
+        @if (tabInfoActiva === 'Historial') {
+          <div class="details-card">
+            <h4>Historial de pedidos</h4>
+            <p style="font-size: 12px; color: var(--gray); margin-top: 0;">{{ chatSeleccionado.totalPedidos }} pedidos realizados en total.</p>
+            
+            <div class="history-list">
+              @for (orden of chatSeleccionado.historialPedidos; track orden.id) {
+                <div class="history-item">
+                  <div class="history-header">
+                    <strong>{{ orden.id }}</strong>
+                    <span class="status-tag" [class.activo]="obtenerEstadoOrden(orden.id, orden.estado) === 'Validado' || obtenerEstadoOrden(orden.id, orden.estado) === 'Completado'" [class.pendiente]="obtenerEstadoOrden(orden.id, orden.estado) === 'Pendiente' || obtenerEstadoOrden(orden.id, orden.estado) === 'En revision'">{{ obtenerEstadoOrden(orden.id, orden.estado) }}</span>
+                  </div>
+                  <div class="history-body">
+                    <span>{{ orden.fecha }}</span>
+                    <strong>{{ orden.subtotal }}</strong>
+                  </div>
+                </div>
+              } @empty {
+                <div style="font-size: 12px; color: var(--muted); text-align: center; padding: 12px; font-style: italic;">
+                  No hay pedidos registrados en el historial de este cliente.
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </aside>
+
+    <ng-template #noChatSelected>
+      <section class="chat-main empty-chat-main" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--muted); padding: 40px; background: #fff; border-radius: 12px; border: 1px solid var(--line); min-height: 480px;">
+        <div class="empty-chat-icon" style="font-size: 48px; margin-bottom: 16px;">💬</div>
+        <h4 style="margin: 0; font-size: 16px; color: #1f1c1a; font-weight: 800;">Ningún chat seleccionado</h4>
+        <p style="max-width: 320px; font-size: 13.5px; margin: 8px 0 0; color: #5d6b78; line-height: 1.5;">Selecciona una conversación de la lista de la izquierda para comenzar a responder.</p>
+      </section>
+    </ng-template>
+  </main>
+</app-admin-layout>

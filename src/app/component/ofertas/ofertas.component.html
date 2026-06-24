@@ -1,0 +1,82 @@
+<app-cliente-layout>
+  <main class="products-page">
+    <section class="ofertas-hero">
+      <div class="hero-content">
+        <h1>Ofertas Especiales</h1>
+        <p>Aprovecha estas promociones exclusivas y<br>consigue nuestras tazas y vasos más trendy al mejor precio.</p>
+        <a [href]="configService.obtenerWhatsappUrl('Hola, me interesan las ofertas de la tienda.')" class="btn-whatsapp" style="text-decoration: none;">
+          <span class="w-icon">W</span> Pedir por WhatsApp
+        </a>
+      </div>
+      <div class="hero-ribbon">
+        <div class="ribbon-tail"></div>
+        <span>OFERTA</span>
+      </div>
+    </section>
+
+    <section class="products-grid" aria-label="Lista de productos en oferta">
+      @for (oferta of ofertas; track oferta.id) {
+        <article class="product-card">
+          <div class="image-wrap">
+            <img [src]="oferta.imagen" [alt]="oferta.nombre" />
+            <span class="offer-tag">OFERTA</span>
+          </div>
+          <div class="product-info">
+            <h2>{{ oferta.nombre }}</h2>
+            <p><strong>S/ {{ oferta.precio }}</strong> <s>S/{{ oferta.precioAnterior }}</s></p>
+            <div class="buttons">
+              <a class="detail-link" [routerLink]="['/productos', oferta.id]">Ver detalles</a>
+              <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto en oferta: ' + oferta.nombre)" class="btn-buy-wa" style="text-decoration: none; text-align: center; display: inline-block;">W Comprar por WhatsApp</a>
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <div class="empty-client-placeholder large-placeholder">
+          <span class="placeholder-icon">🎁</span>
+          <h3>Próximamente más ofertas</h3>
+          <p>Estamos preparando nuevos descuentos especiales para ti. ¡No te los pierdas!</p>
+        </div>
+      }
+    </section>
+
+    <!-- Copied directly from productos.component.html -->
+    <section class="steps-banner" aria-label="Ordena fácilmente por WhatsApp">
+      <div class="step">
+        <div class="step-icon grid-icon">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div>
+          <strong>Paso 1</strong>
+          <h2>Explora productos</h2>
+          <p>Elige tus tazas y vasos favoritos.</p>
+        </div>
+      </div>
+
+      <span class="dash"></span>
+
+      <div class="step center-step">
+        <div class="whatsapp-icon">W</div>
+        <div>
+          <strong>Paso 2</strong>
+          <h2>Pide por WhatsApp</h2>
+          <p>Haz clic en "Comprar por WhatsApp" y envíanos tu pedido.</p>
+        </div>
+      </div>
+
+      <span class="dash"></span>
+
+      <div class="step">
+        <div class="step-icon clipboard-icon">
+          <span></span>
+        </div>
+        <div>
+          <strong>Paso 3</strong>
+          <h2>Recibe tu pedido</h2>
+          <p>Confirmamos tu pedido y te lo enviamos.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</app-cliente-layout>

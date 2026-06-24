@@ -1,0 +1,650 @@
+<app-admin-layout>
+  <div page-title class="dynamic-title">
+    @if (!pedidoSeleccionado) {
+      <h2>Pedidos</h2>
+    } @else {
+      <h2 class="detail-title">
+        <button class="back-btn" (click)="cerrarDetalle()">←</button>
+        Detalle de conciliación
+      </h2>
+    }
+  </div>
+
+  @if (!pedidoSeleccionado) {
+  <main class="orders-page">
+    <section class="orders-card">
+      <div class="filters">
+        <!-- BUSCADOR DE TEXTO -->
+        <label class="search-filter">
+          <span>⌕</span>
+          <input type="search" [(ngModel)]="filtroTexto" placeholder="Buscar por cliente, pedido o ID..." />
+        </label>
+
+        <!-- FILTRO ESTADO -->
+        <div class="filter-dropdown-wrapper">
+          <button class="select-filter" type="button" (click)="toggleFiltroEstado()"
+                  [class.filter-active]="filtroEstado !== 'todos'">
+            {{ etiquetaFiltroEstado }} <span>⌄</span>
+          </button>
+          @if (mostrarFiltroEstado) {
+            <div class="filter-dropdown-panel" (click)="$event.stopPropagation()">
+              <button type="button" [class.selected]="filtroEstado === 'todos'"     (click)="aplicarFiltroEstado('todos')">Todos</button>
+              <button type="button" [class.selected]="filtroEstado === 'Pendiente'" (click)="aplicarFiltroEstado('Pendiente')">Pendiente</button>
+              <button type="button" [class.selected]="filtroEstado === 'En revision'" (click)="aplicarFiltroEstado('En revision')">En revisión</button>
+              <button type="button" [class.selected]="filtroEstado === 'Validado'"  (click)="aplicarFiltroEstado('Validado')">Validado</button>
+              <button type="button" [class.selected]="filtroEstado === 'Rechazado'" (click)="aplicarFiltroEstado('Rechazado')">Rechazado</button>
+            </div>
+          }
+        </div>
+
+        <!-- FILTRO FECHAS -->
+        <div class="filter-dropdown-wrapper">
+          <button class="date-filter" type="button" (click)="toggleFiltroFecha()"
+                  [class.filter-active]="filtroFechaDesde || filtroFechaHasta">
+            {{ etiquetaFiltroFecha }} <span>▢</span>
+          </button>
+          @if (mostrarFiltroFecha) {
+            <div class="filter-dropdown-panel filter-date-panel" (click)="$event.stopPropagation()">
+              <div class="date-row">
+                <label>Desde</label>
+                <input type="date" [(ngModel)]="filtroFechaDesde" />
+              </div>
+              <div class="date-row">
+                <label>Hasta</label>
+                <input type="date" [(ngModel)]="filtroFechaHasta" />
+              </div>
+              <button type="button" class="date-clear-btn" (click)="limpiarFechas()">Limpiar fechas</button>
+            </div>
+          }
+        </div>
+
+        <button class="new-order" type="button" (click)="abrirModalNuevo()">Nuevo pedido <span>+</span></button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID Pedido</th>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th>Producto / Detalle</th>
+              <th>Estado</th>
+              <th>Validación (OCR)</th>
+              <th>Fecha y Hora</th>
+              <th>Total esperado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (pedido of pedidosFiltrados; track pedido.id) {
+            <tr>
+              <td class="order-id">{{ pedido.id }}</td>
+              <td>{{ pedido.cliente }}</td>
+              <td>{{ pedido.telefono || 'N/A' }}</td>
+              <td>
+                <strong>{{ pedido.producto }}</strong>
+                <small>1 unidad</small>
+              </td>
+              <td>
+                <span class="status" [class]="estadoClase(pedido.estado)">
+                  {{ estadoIcono(pedido.estado) }} {{ pedido.estado }}
+                </span>
+              </td>
+              <td>
+                <span class="validation" [class]="estadoClase(pedido.estado)">
+                  {{ estadoIcono(pedido.estado) }}
+                </span>
+                {{ pedido.validacion }}
+              </td>
+              <td>{{ pedido.fecha }}<small>{{ pedido.hora }}</small></td>
+              <td>{{ pedido.total }}</td>
+              <td class="actions-cell">
+                <button type="button" (click)="verDetalle(pedido)">Ver detalle</button>
+                <span>⋮</span>
+              </td>
+            </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-row" style="text-align: center; padding: 32px; color: #8f827c; font-style: italic;">
+                  No hay registros de pedidos disponibles.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <p>Mostrando {{ pedidosFiltrados.length }} de {{ pedidos.length }} pedidos</p>
+        <div class="pagination">
+          <button type="button">‹</button>
+          <button class="active" type="button">1</button>
+          <button type="button">›</button>
+        </div>
+      </footer>
+    </section>
+  </main>
+  } @else {
+  <div class="detail-wrapper">
+  <main class="detail-page">
+    <!-- HEADER -->
+    <header class="detail-overview">
+      <div class="overview-item">
+        <span>ID Pedido</span>
+        <strong>{{ pedidoSeleccionado.id }}</strong>
+      </div>
+      <div class="overview-item">
+        <span>Cliente</span>
+        <strong>{{ pedidoSeleccionado.cliente }}</strong>
+      </div>
+      <div class="overview-item">
+        <span>Fecha</span>
+        <strong>{{ pedidoSeleccionado.fecha }} - {{ pedidoSeleccionado.hora }}</strong>
+      </div>
+      <div class="overview-item">
+        <span>Dirección de envío</span>
+        <strong>{{ pedidoSeleccionado.direccion || 'No registrada' }}</strong>
+      </div>
+      <div class="overview-item status-item">
+        <span>Estado de conciliación</span>
+        @if (pedidoSeleccionado.estado === 'Validado') {
+        <span class="status validado">✓ Validado </span>
+        } @else if (pedidoSeleccionado.estado === 'Rechazado') {
+        <span class="status rechazado">× Rechazado</span>
+        } @else if (pedidoSeleccionado.estado === 'Pendiente') {
+        <span class="status pendiente">⏱ Pendiente</span>
+        } @else if (pedidoSeleccionado.estado === 'En revision') {
+        <span class="status en-revision">▷ En revisión</span>
+        }
+      </div>
+      <div class="overview-item result-item">
+        <span>Resultado</span>
+        <strong>
+          @if (pedidoSeleccionado.estado === 'Validado') { El monto pagado coincide con el total del pedido. }
+          @else if (pedidoSeleccionado.estado === 'Rechazado') { El monto pagado no coincide con el total del pedido. }
+          @else { Esperando validación del sistema o del administrador. }
+        </strong>
+      </div>
+    </header>
+
+    <!-- PROGRESS -->
+    <div class="progress-stepper">
+      <div class="step active">
+        <span class="step-num">1</span>
+        <span class="step-text">Interpretación del pedido</span>
+      </div>
+      <div class="step-line active"></div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span class="step-text">Validación del pago (OCR)</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span class="step-text">Resultado y comparación</span>
+      </div>
+    </div>
+
+    <!-- 3 COLUMNS -->
+    <div class="detail-columns">
+
+      <!-- COLUMN 1 -->
+      <article class="detail-card">
+        <h3 class="card-title"><span class="icon-box">📦</span> 1. Pedido interpretado</h3>
+
+        <div class="info-row"><span>Cliente</span> <strong>{{ pedidoSeleccionado.cliente }}</strong></div>
+        <div class="info-row"><span>ID Pedido</span> <strong>{{ pedidoSeleccionado.id }}</strong></div>
+
+        <h4 class="section-subtitle">Productos (Taza)</h4>
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th>Producto / Detalle</th>
+              <th>Cantidad</th>
+              <th>Precio unit.</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (prod of pedidoSeleccionado.productosDetalle; track $index) {
+              <tr>
+                <td>{{ prod.nombre }}</td>
+                <td>{{ prod.cantidad }}</td>
+                <td>S/ {{ prod.precio.toFixed(2) }}</td>
+                <td>S/ {{ (prod.cantidad * prod.precio).toFixed(2) }}</td>
+              </tr>
+            } @empty {
+              @if (pedidoSeleccionado.producto) {
+                <tr>
+                  <td>{{ pedidoSeleccionado.producto }}</td>
+                  <td>1</td>
+                  <td>{{ pedidoSeleccionado.total }}</td>
+                  <td>{{ pedidoSeleccionado.total }}</td>
+                </tr>
+              } @else {
+                <tr>
+                  <td colspan="4" class="txt-center txt-muted" style="padding: 16px; font-style: italic;">
+                    No hay productos detallados en este pedido.
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="total-label">Total esperado</td>
+              <td class="total-value">{{ pedidoSeleccionado.total }}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="alert-box light-orange">
+          <span class="icon">✨</span>
+          <p>Pedido interpretado automáticamente con LLM a partir del mensaje del cliente.</p>
+        </div>
+      </article>
+
+      <!-- COLUMN 2 -->
+      <article class="detail-card">
+        <h3 class="card-title"><span class="icon-box">💳</span> 2. Pago detectado (OCR)</h3>
+
+        <div class="info-row"><span>Monto detectado (OCR)</span> <strong [class.red-text]="pedidoSeleccionado.estado === 'Rechazado'">{{ pedidoSeleccionado.montoDetectado || pedidoSeleccionado.total }}</strong></div>
+        <div class="info-row"><span>Fecha de pago</span> <strong>{{ pedidoSeleccionado.fecha }} - {{
+            pedidoSeleccionado.hora }}</strong></div>
+        <div class="info-row"><span>Método de pago</span> <strong>{{ pedidoSeleccionado.metodoPago || 'No registrado' }}</strong></div>
+        <div class="info-row"><span>Referencia</span> <strong>{{ pedidoSeleccionado.referenciaPago || 'No registrada' }}</strong></div>
+
+        <h4 class="section-subtitle">Comprobante (voucher)</h4>
+        <div class="voucher-box">
+          @if (pedidoSeleccionado.metodoPago === 'Transferencia BCP' || pedidoSeleccionado.metodoPago === 'BCP') {
+            <div class="bcp-logo"><span class="blue">&gt;BC</span><span class="orange">P&gt;</span></div>
+          } @else {
+            <div class="generic-logo" style="font-weight: 800; font-size: 16px; color: var(--orange); margin-bottom: 15px;">
+              <span>{{ pedidoSeleccionado.metodoPago || 'Pago Detectado' }}</span>
+            </div>
+          }
+          <p class="voucher-status">Transferencia exitosa<br><small>Operación realizada con éxito</small></p>
+          <div class="voucher-detail">
+            <span>Monto</span>
+            <strong [class.red-text]="pedidoSeleccionado.estado === 'Rechazado'">{{ pedidoSeleccionado.montoDetectado || pedidoSeleccionado.total }}</strong>
+          </div>
+          <div class="voucher-detail">
+            <span>Fecha</span>
+            <strong>{{ pedidoSeleccionado.fecha }} - {{ pedidoSeleccionado.hora }}</strong>
+          </div>
+          <div class="voucher-detail">
+            <span>Referencia</span>
+            <strong>{{ pedidoSeleccionado.referenciaPago || 'No registrada' }}</strong>
+          </div>
+          <button type="button" class="btn-outline full-width mt-15"><span class="icon">👁</span> Ver comprobante completo</button>
+        </div>
+      </article>
+
+      <!-- COLUMN 3 -->
+      <article class="detail-card">
+        <h3 class="card-title"><span class="icon-box check" [class.error]="pedidoSeleccionado.estado === 'Rechazado'">{{ pedidoSeleccionado.estado === 'Rechazado' ? '⚠' : '✓' }}</span> 3. Resultado de validación</h3>
+
+        @if (pedidoSeleccionado.estado === 'Validado') {
+          <div class="alert-box light-green result-alert">
+            <span class="icon check-icon">✓</span>
+            <div>
+              <p><strong>El monto pagado coincide con el total del pedido.</strong></p>
+              <p>Validado automáticamente por el sistema.</p>
+            </div>
+          </div>
+        } @else if (pedidoSeleccionado.estado === 'Rechazado') {
+          <div class="alert-box light-red result-alert">
+            <span class="icon check-icon error-icon">×</span>
+            <div>
+              <p><strong>El monto pagado no coincide con el total del pedido.</strong></p>
+              <p>Diferencia: <strong class="red-text">{{ pedidoSeleccionado.diferencia }}</strong></p>
+            </div>
+          </div>
+        } @else if (pedidoSeleccionado.estado === 'Pendiente') {
+          <div class="alert-box light-gray result-alert">
+            <span class="icon check-icon">⏱</span>
+            <div>
+              <p><strong>Esperando comprobante de pago.</strong></p>
+              <p>Aún no se ha recibido el pago.</p>
+            </div>
+          </div>
+        } @else if (pedidoSeleccionado.estado === 'En revision') {
+          <div class="alert-box light-orange result-alert">
+            <span class="icon check-icon">◷</span>
+            <div>
+              <p><strong>El comprobante requiere revisión.</strong></p>
+              <p>Revisión manual pendiente.</p>
+            </div>
+          </div>
+        }
+
+        @if (pedidoSeleccionado.estado !== 'Validado') {
+          <div class="quick-validate-container">
+            <button type="button" class="btn-validate-payment" (click)="validarPagoPedido(pedidoSeleccionado)">
+              ⚡ Validar pago
+            </button>
+          </div>
+        }
+
+        <h4 class="section-subtitle">Comparación de montos</h4>
+        <div class="comparison-row"><span>Total esperado (pedido)</span> <strong>{{ pedidoSeleccionado.total }}</strong>
+        </div>
+        <div class="comparison-row"><span>Monto detectado (OCR)</span> <strong>{{ pedidoSeleccionado.montoDetectado || pedidoSeleccionado.total }}</strong>
+        </div>
+        <div class="comparison-row diff-row"><span>Diferencia</span> <strong [class.red-text]="pedidoSeleccionado.estado === 'Rechazado'" [class.green-text]="pedidoSeleccionado.estado === 'Validado'">{{ pedidoSeleccionado.diferencia || 'S/ 0.00' }}</strong></div>
+
+        <h4 class="section-subtitle">Sugerencia del sistema</h4>
+        <div class="alert-box light-yellow result-alert">
+          <span class="icon info-icon">ℹ</span>
+          <p>Se recomienda solicitar el monto faltante al cliente antes de confirmar el pedido.</p>
+        </div>
+
+        <h4 class="section-subtitle">Acciones recomendadas</h4>
+        <div class="recommended-actions">
+          <div class="action-row">
+            <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'Validado'" (click)="seleccionarAccion('Validado')"><span class="icon">✓</span> Validado</button>
+            <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'Rechazado'" (click)="seleccionarAccion('Rechazado')"><span class="icon">×</span> Rechazado</button>
+            <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'Pendiente'" (click)="seleccionarAccion('Pendiente')"><span class="icon">⏱</span> Pendiente</button>
+            <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'En revision' && accionSeleccionada !== 'Solicitar monto faltante'" (click)="seleccionarAccion('En revisión')"><span class="icon">◷</span> En revisión</button>
+          </div>
+          <div class="action-row">
+            <button type="button" class="action-tile secondary-action" (click)="seleccionarAccion('Editar pedido')"><span class="icon">✏️</span> Editar pedido</button>
+            <button type="button" class="action-tile secondary-action" [class.selected]="accionSeleccionada === 'Solicitar monto faltante'" (click)="seleccionarAccion('Solicitar monto faltante')"><span class="icon">💬</span> Solicitar monto faltante</button>
+          </div>
+        </div>
+
+        <p class="helper-text">✨ El sistema generará un mensaje sugerido para el cliente.</p>
+
+        <div class="actions-footer">
+          <button type="button" class="btn-outline">↓ Descargar comprobante</button>
+          <button type="button" class="btn-primary" (click)="guardarDecision()">Guardar decisión</button>
+        </div>
+      </article>
+    </div>
+  </main>
+  </div>
+  }
+
+  @if (mostrarModalEditar) {
+    <div class="np-overlay" (click)="cerrarModalEditar()">
+      <div class="np-modal" (click)="$event.stopPropagation()">
+
+        <!-- HEADER -->
+        <div class="np-header">
+          <div>
+            <h3>Editar pedido</h3>
+            <p>Modifica los datos del cliente, productos y observaciones del pedido.</p>
+          </div>
+          <button class="np-close" type="button" (click)="cerrarModalEditar()">&#x2715;</button>
+        </div>
+
+        <!-- BODY CON SCROLL -->
+        <div class="np-body">
+
+          <!-- SECCIÓN 1: CLIENTE -->
+          <div class="np-section">
+            <div class="np-section-title">
+              <span class="np-section-icon">👤</span>
+              <h4>Información del cliente</h4>
+            </div>
+            <div class="np-grid-3">
+              <div class="np-field">
+                <label>Nombre del cliente</label>
+                <input type="text" [(ngModel)]="pedidoEditando.cliente" placeholder="Nombre completo" />
+              </div>
+              <div class="np-field">
+                <label>Teléfono</label>
+                <input type="tel" [(ngModel)]="pedidoEditando.telefono" placeholder="+51 999 000 000" />
+              </div>
+              <div class="np-field">
+                <label>Dirección de envío</label>
+                <input type="text" [(ngModel)]="pedidoEditando.direccion" placeholder="Av. Ejemplo 123, Distrito" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 2: PRODUCTOS -->
+          <div class="np-section">
+            <div class="np-section-title">
+              <span class="np-section-icon">📦</span>
+              <h4>Productos del pedido</h4>
+            </div>
+            <p class="np-hint" style="margin-bottom: 12px;">
+              ⚠️ Al modificar cualquier producto, el pedido volverá automáticamente a estado <strong>Pendiente</strong> para nueva validación.
+            </p>
+
+            <div class="np-products-header">
+              <span>Producto / Detalle</span>
+              <span>Precio unit.</span>
+              <span>Cantidad</span>
+              <span>Subtotal</span>
+              <span></span>
+            </div>
+
+            @for (prod of pedidoEditando.productosDetalle; track $index) {
+              <div class="np-product-row">
+                <input type="text" [(ngModel)]="prod.nombre"
+                       (input)="onEditarProductoCambio()"
+                       placeholder="Nombre de producto" />
+                <input type="number" [(ngModel)]="prod.precio" min="0"
+                       (input)="onEditarProductoCambio()"
+                       placeholder="0.00" />
+                <input type="number" [(ngModel)]="prod.cantidad" min="1"
+                       (input)="onEditarProductoCambio()"
+                       class="np-qty" />
+                <div class="np-subtotal">S/ {{ (prod.cantidad * prod.precio).toFixed(2) }}</div>
+                <button type="button" class="np-del-btn" (click)="eliminarProducto($index); onEditarProductoCambio()"
+                        [disabled]="pedidoEditando.productosDetalle.length === 1">✕</button>
+              </div>
+            }
+
+            <button type="button" class="np-add-line" (click)="agregarProducto(); onEditarProductoCambio()">
+              + Agregar producto
+            </button>
+
+            <div class="np-total-row">
+              <span>Total recalculado</span>
+              <strong>S/ {{ calcularTotalEdicion().toFixed(2) }}</strong>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 3: OBSERVACIONES -->
+          <div class="np-section">
+            <div class="np-section-title">
+              <span class="np-section-icon">📝</span>
+              <h4>Observaciones internas</h4>
+            </div>
+            <div class="np-field">
+              <label>Notas administrativas <span class="np-opt">(solo visibles para el equipo)</span></label>
+              <textarea [(ngModel)]="pedidoEditando.observaciones"
+                        rows="3"
+                        placeholder="Agrega notas o contexto sobre este pedido..."
+                        style="resize:vertical;"></textarea>
+            </div>
+          </div>
+
+        </div><!-- /np-body -->
+
+        <!-- FOOTER -->
+        <div class="np-footer">
+          <button type="button" class="np-btn-cancel" (click)="cerrarModalEditar()">Cancelar</button>
+          <button type="button" class="np-btn-create" (click)="guardarEdicion()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Guardar cambios
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+  <!-- ══════════════════ MODAL NUEVO PEDIDO ══════════════════ -->
+  @if (mostrarModalNuevo) {
+    <div class="np-overlay" (click)="cerrarModalNuevo()">
+      <div class="np-modal" (click)="$event.stopPropagation()">
+
+        <!-- HEADER -->
+        <div class="np-header">
+          <div>
+            <h3>Nuevo pedido</h3>
+            <p>Crea un pedido manual desde el panel de administración.</p>
+          </div>
+          <button class="np-close" type="button" (click)="cerrarModalNuevo()">✕</button>
+        </div>
+
+        <!-- BODY CON SCROLL -->
+        <div class="np-body">
+
+          <!-- SECCIÓN 1: CLIENTE -->
+          <div class="np-section">
+            <div class="np-section-title">
+              <span class="np-section-icon">👤</span>
+              <h4>Información del cliente</h4>
+            </div>
+            <div class="np-grid-2">
+              <div class="np-field">
+                <label>Teléfono <span class="np-req">*</span></label>
+                <input type="tel" [(ngModel)]="nuevoPedido.clienteTelefono"
+                       (blur)="buscarClientePorTelefono()"
+                       placeholder="+51 999 000 000" />
+                <span class="np-hint">Si el cliente ya existe, sus datos se completarán automáticamente.</span>
+              </div>
+              <div class="np-field">
+                <label>Nombre del cliente</label>
+                <input type="text" [(ngModel)]="nuevoPedido.clienteNombre" placeholder="Nombre completo" />
+              </div>
+              <div class="np-field">
+                <label>Correo electrónico <span class="np-opt">(opcional)</span></label>
+                <input type="email" [(ngModel)]="nuevoPedido.clienteCorreo" placeholder="correo@ejemplo.com" />
+              </div>
+              <div class="np-field">
+                <label>Dirección de envío</label>
+                <input type="text" [(ngModel)]="nuevoPedido.clienteDireccion" placeholder="Av. Ejemplo 123, Distrito" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 2: PRODUCTOS -->
+          <div class="np-section">
+            <div class="np-section-title">
+              <span class="np-section-icon">📦</span>
+              <h4>Productos del pedido</h4>
+            </div>
+
+            <div class="np-products-header">
+              <span>Producto</span>
+              <span>Precio unit.</span>
+              <span>Cantidad</span>
+              <span>Subtotal</span>
+              <span></span>
+            </div>
+
+            @for (linea of lineasProducto; track $index) {
+              <div class="np-product-row">
+                <select [(ngModel)]="linea.productoId" (change)="onProductoSeleccionado(linea)">
+                  <option value="">— Seleccionar producto —</option>
+                  @for (p of productosDisponibles; track p.id) {
+                    <option [value]="p.id">{{ p.nombre }}</option>
+                  }
+                </select>
+                <div class="np-price-display">S/ {{ linea.precio.toFixed(2) }}</div>
+                <input type="number" [(ngModel)]="linea.cantidad" min="1"
+                       (input)="recalcularLinea(linea)" class="np-qty" />
+                <div class="np-subtotal">S/ {{ linea.subtotal.toFixed(2) }}</div>
+                <button type="button" class="np-del-btn" (click)="eliminarLinea($index)"
+                        [disabled]="lineasProducto.length === 1">✕</button>
+              </div>
+            }
+
+            <button type="button" class="np-add-line" (click)="agregarLinea()">
+              + Agregar producto
+            </button>
+
+            <div class="np-total-row">
+              <span>Total general</span>
+              <strong>S/ {{ calcularTotal().toFixed(2) }}</strong>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 3: PAGO -->
+          <div class="np-section">
+            <div class="np-section-title">
+              <span class="np-section-icon">💳</span>
+              <h4>Información del pago</h4>
+            </div>
+            <div class="np-grid-3">
+              <div class="np-field">
+                <label>Método de pago</label>
+                <select [(ngModel)]="nuevoPedido.metodoPago">
+                  <option>Yape</option>
+                  <option>Plin</option>
+                  <option>Transferencia</option>
+                  <option>Efectivo</option>
+                  <option>Otro</option>
+                </select>
+              </div>
+              <div class="np-field">
+                <label>Estado del pago</label>
+                <select [(ngModel)]="nuevoPedido.estadoPago">
+                  <option>Pendiente</option>
+                  <option>Validado</option>
+                  <option>En revisión</option>
+                </select>
+              </div>
+              <div class="np-field">
+                <label>Referencia / voucher <span class="np-opt">(opcional)</span></label>
+                <input type="text" [(ngModel)]="nuevoPedido.referenciaPago" placeholder="Link o código del comprobante" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 4: OPERATIVO -->
+          <div class="np-section">
+            <div class="np-section-title">
+              <span class="np-section-icon">📋</span>
+              <h4>Información operativa</h4>
+            </div>
+            <div class="np-grid-3">
+              <div class="np-field">
+                <label>Estado del pedido</label>
+                <select [(ngModel)]="nuevoPedido.estadoPedido">
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="En revision">En revisión</option>
+                  <option value="Validado">Validado</option>
+                </select>
+              </div>
+              <div class="np-field">
+                <label>Notas internas</label>
+                <input type="text" [(ngModel)]="nuevoPedido.notas" placeholder="Notas para el equipo" />
+              </div>
+              <div class="np-field">
+                <label>Observaciones</label>
+                <input type="text" [(ngModel)]="nuevoPedido.observaciones" placeholder="Observaciones adicionales" />
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /np-body -->
+
+        <!-- FOOTER ACCIONES -->
+        <div class="np-footer">
+          <button type="button" class="np-btn-cancel" (click)="cerrarModalNuevo()">Cancelar</button>
+          <button type="button" class="np-btn-create" (click)="crearPedido()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Crear pedido
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- TOAST DE ÉXITO -->
+  @if (toastVisible) {
+    <div class="np-toast">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      {{ toastMensaje }}
+    </div>
+  }
+
+</app-admin-layout>

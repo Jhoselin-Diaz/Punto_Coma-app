@@ -1,0 +1,85 @@
+<app-cliente-layout>
+  <main class="content">
+    <section class="hero" aria-label="Elegantes tazas y vasos de moda"></section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>Recien vistos</h2>
+        <a routerLink="/productos">Ver todo <span>&gt;</span></a>
+      </div>
+      <div class="grid recent-grid">
+        @for (producto of recienVistos; track producto.nombre) {
+          <article class="product-card">
+            <img [src]="producto.imagen" [alt]="producto.nombre" />
+            <div class="card-info">
+              <h3>{{ producto.nombre }}</h3>
+              <p><strong>S/ {{ producto.precio }}</strong></p>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-client-placeholder large-placeholder">
+            <span class="placeholder-icon">☕</span>
+            <p>Aún no has visto ningún producto. ¡Explora nuestro catálogo!</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="section category-band">
+      <div class="section-title">
+        <h2>Categorias populares</h2>
+        <a routerLink="/productos">Ver todo <span>&gt;</span></a>
+      </div>
+      <div class="grid category-grid">
+        @for (categoria of categorias; track categoria.nombre) {
+          <article class="category-card">
+            <img [src]="categoria.imagen" [alt]="categoria.nombre" />
+            <div class="category-info">
+              <h3>{{ categoria.nombre }}</h3>
+              <p><strong>S/ {{ categoria.precio }}</strong></p>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-client-placeholder large-placeholder">
+            <span class="placeholder-icon">✨</span>
+            <p>Estamos preparando nuestras nuevas colecciones de tazas y vasos aesthetic...</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="section offers">
+      <div class="section-title">
+        <h2>Destacados del dia</h2>
+        <a class="pill-link" routerLink="/productos">Ver todos los destacados <span>&gt;</span></a>
+      </div>
+      <div class="offer-grid">
+        @for (oferta of ofertas; track oferta.nombre + oferta.imagen) {
+          <article class="product-card offer-card">
+            <div class="image-wrap">
+              <img [src]="oferta.imagen" [alt]="oferta.nombre" />
+            </div>
+            <div class="card-info">
+              <h3>{{ oferta.nombre }}</h3>
+              <p><strong>S/ {{ oferta.precio }}</strong></p>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-client-placeholder large-placeholder">
+            <span class="placeholder-icon">🏷️</span>
+            <p>Muy pronto descubrirás nuestras ofertas del día...</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="whatsapp-banner">
+      <div class="whatsapp-badge">W</div>
+      <div class="whatsapp-text">
+        <h2>Ordena facilmente por WhatsApp</h2>
+        <p>Elige tus productos favoritos y haz tu pedido por WhatsApp.</p>
+      </div>
+      <a [href]="configService.obtenerWhatsappUrl('Hola, me gustaría comprar productos de la tienda.')">W Comprar por WhatsApp</a>
+    </section>
+  </main>
+</app-cliente-layout>

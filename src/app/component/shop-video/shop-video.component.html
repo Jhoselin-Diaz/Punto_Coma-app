@@ -1,0 +1,118 @@
+<app-cliente-layout>
+  <main class="shop-video-page">
+    <section class="shop-video-hero">
+      <h1>Shop Video</h1>
+      <p>Descubre y compra las tazas y vasos que<br>salen en nuestros últimos videos</p>
+    </section>
+
+    <div class="video-rows">
+      @for (video of videos; track video.id) {
+        <div class="video-row">
+          <!-- PARTE IZQUIERDA: REPRODUCTOR DE VIDEO SIMULADO -->
+          <div class="video-player">
+            <span class="badge-nuevo">NUEVO</span>
+            
+            <div class="video-screen" [style.background-image]="'url(' + video.videoMiniatura + ')'">
+              <div class="play-overlay">
+                <button type="button" class="play-trigger" aria-label="Reproducir video">
+                  <span class="play-icon">▶</span>
+                </button>
+              </div>
+
+              <!-- Burbujas de estadísticas superiores derechas -->
+              <div class="video-stats-bubbles">
+                <div class="stat-bubble">
+                  <span class="bubble-icon">❤️</span>
+                  <span class="bubble-count">{{ video.likes }}</span>
+                </div>
+                <div class="stat-bubble">
+                  <span class="bubble-icon">💬</span>
+                  <span class="bubble-count">{{ video.comentarios }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controles inferiores estéticos -->
+            <div class="video-controls-bar">
+              <button type="button" class="ctrl-play-pause">▶</button>
+              <span class="ctrl-time">0:00 / {{ video.duracion }}</span>
+              <div class="ctrl-timeline-wrap">
+                <div class="ctrl-timeline-track">
+                  <div class="ctrl-timeline-progress"></div>
+                  <div class="ctrl-timeline-handle"></div>
+                </div>
+              </div>
+              <button type="button" class="ctrl-volume">🔊</button>
+              <button type="button" class="ctrl-fullscreen">⛶</button>
+            </div>
+          </div>
+
+          <!-- PARTE DERECHA: PRODUCTOS DEL VIDEO -->
+          <div class="featured-products-card">
+            <h3>Productos del video</h3>
+            
+            <div class="featured-products-grid">
+              @for (prod of video.productos; track prod.id) {
+                <div class="mini-product-card">
+                  <div class="mini-image-wrap">
+                    <img [src]="prod.imagen" [alt]="prod.nombre" />
+                  </div>
+                  <div class="mini-info">
+                    <h4>{{ prod.nombre }}</h4>
+                    <p class="mini-price">
+                      <strong>S/ {{ prod.precio }}</strong> <s>S/ {{ prod.precioAnterior }}</s>
+                    </p>
+                    <div class="mini-actions">
+                      <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto del video: ' + prod.nombre)" class="btn-wa-compact" style="text-decoration: none; text-align: center; display: inline-flex; align-items: center;">
+                        <span class="wa-compact-icon">W</span> Comprar por WhatsApp
+                      </a>
+                      <a [routerLink]="['/productos', prod.id]" class="btn-details-compact">Ver detalles</a>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-client-placeholder large-placeholder">
+          <span class="placeholder-icon">🎬</span>
+          <h3>Espacio Multimedia</h3>
+          <p>Pronto compartiremos videos cortos con ideas de servicio, unboxing y combinaciones de nuestro catálogo. ¡Mantente atento!</p>
+        </div>
+      }
+    </div>
+
+    <!-- BANNER INFERIOR "¿VES ALGO QUE TE ENCANTA?" -->
+    <section class="banner-quick-buy">
+      <div class="banner-left">
+        <div class="play-orange-badge">
+          <span class="badge-icon">▶</span>
+        </div>
+        <div class="banner-text">
+          <h2>¿Ves algo que te encanta?</h2>
+          <p>Compra por WhatsApp de forma rápida y segura.</p>
+        </div>
+      </div>
+      
+      <a [href]="configService.obtenerWhatsappUrl('Hola! Vi algo en los videos que me encanta y me gustaría cotizar.')" class="btn-whatsapp-large" style="text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center;">
+        <span class="wa-icon-large">W</span> Comprar por WhatsApp
+      </a>
+
+      <div class="banner-features">
+        <div class="feature-item">
+          <span class="f-icon">🎧</span>
+          <span class="f-text">Atención personalizada</span>
+        </div>
+        <div class="feature-item">
+          <span class="f-icon">🚚</span>
+          <span class="f-text">Envíos rápidos</span>
+        </div>
+        <div class="feature-item">
+          <span class="f-icon">🛡️</span>
+          <span class="f-text">Pagos seguros</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</app-cliente-layout>

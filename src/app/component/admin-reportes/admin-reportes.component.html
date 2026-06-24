@@ -1,0 +1,247 @@
+<app-admin-layout>
+  <!-- HEADER CON ESPACIADO CORRECTO -->
+  <div page-title class="dynamic-title">
+    <h2>Reportes</h2>
+  </div>
+
+  <!-- FILTROS VISUALES ELEGANTES E INTEGRADOS -->
+  <div class="filters-luxury-card mb-28">
+    <div class="filters-flex-row">
+      <div class="filter-group">
+        <label>Periodo de Tiempo</label>
+        <select [(ngModel)]="filtroRango">
+          <option value="hoy">Hoy (Últimas 24h)</option>
+          <option value="semana">Esta Semana</option>
+          <option value="mes">Este Mes (Mayo 2026)</option>
+          <option value="anio">Este Año</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Estado del Pedido</label>
+        <select [(ngModel)]="filtroEstado">
+          <option value="todos">Todos los Estados</option>
+          <option value="validado">Validado</option>
+          <option value="rechazado">Rechazado</option>
+          <option value="revision">En revisión</option>
+          <option value="pendiente">Pendiente</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Categoría del Producto</label>
+        <select [(ngModel)]="filtroCategoria">
+          <option value="todas">Todas las Categorías</option>
+          <option value="tazas">Tazas y Tazones</option>
+          <option value="vasos">Vasos y Cristalería</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Buscar Producto Específico</label>
+        <input type="text" [(ngModel)]="filtroProducto" placeholder="Escribe SKU o nombre..." />
+      </div>
+
+      <div class="filter-action-box">
+        <button class="btn-generate-report" (click)="ejecutarGeneracionReporte()" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Generar reporte
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- METRICAS CLAVES EN 4 CARDS -->
+  <div class="stats-grid-four mb-28">
+    <div class="stat-report-card">
+      <span class="report-card-lbl">Total Pedidos</span>
+      <h3 class="font-serif">{{ metricas.totalPedidos }}</h3>
+      <span class="report-trend-sub txt-green">{{ comparativas.pedidos }}</span>
+    </div>
+
+    <div class="stat-report-card">
+      <span class="report-card-lbl">Ingresos Totales</span>
+      <h3 class="font-serif">S/ {{ metricas.ingresosTotales | number:'1.2-2' }}</h3>
+      <span class="report-trend-sub txt-green">{{ comparativas.ingresos }}</span>
+    </div>
+
+    <div class="stat-report-card">
+      <span class="report-card-lbl">Ticket Promedio</span>
+      <h3 class="font-serif">S/ {{ metricas.ticketPromedio | number:'1.2-2' }}</h3>
+      <span class="report-trend-sub txt-orange">{{ comparativas.ticket }}</span>
+    </div>
+
+    <div class="stat-report-card">
+      <span class="report-card-lbl">Pedidos Confirmados</span>
+      <h3 class="font-serif">{{ metricas.pedidosConfirmados }}</h3>
+      <span class="report-trend-sub txt-green">{{ comparativas.confirmados }}</span>
+    </div>
+  </div>
+
+  <!-- GRID DE CONTENIDO PRINCIPAL EN GRAN FORMATO -->
+  <div class="reportes-two-col-grid">
+    <!-- COLUMNA IZQUIERDA: GRÁFICO DIARIO DE VENTA ANCHO Y RANKINGS -->
+    <div class="reportes-left-area">
+
+      <!-- GRÁFICO PRINCIPAL DE VENTAS EN GRAN FORMATO -->
+      <div class="dash-chart-card mb-28">
+        <div class="chart-card-header">
+          <div>
+            <h4>Tendencia de Ventas Diarias</h4>
+            <p class="chart-sub">Progreso de ingresos acumulados de Punto y Coma.</p>
+          </div>
+          <span class="badge-trend-up">
+            ↑ 12% más ventas que el periodo anterior
+          </span>
+        </div>
+
+        <div class="svg-chart-container">
+          <svg viewBox="0 0 700 180" class="luxury-dash-svg">
+            <line x1="20" y1="20" x2="680" y2="20" class="chart-grid-line" />
+            <line x1="20" y1="70" x2="680" y2="70" class="chart-grid-line" />
+            <line x1="20" y1="120" x2="680" y2="120" class="chart-grid-line" />
+
+            <defs>
+              <linearGradient id="salesGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="var(--orange)" stop-opacity="0.15" />
+                <stop offset="100%" stop-color="var(--orange)" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+
+            @if (puntosGrafico.length > 0) {
+              <path [attr.d]="svgPathVentas + ' L 640 180 L 40 180 Z'" fill="url(#salesGrad)" />
+              <path [attr.d]="svgPathVentas" fill="none" stroke="var(--orange)" stroke-width="3" stroke-linecap="round" />
+
+              @for (p of puntosGrafico; track p.dia) {
+              <circle [attr.cx]="p.x" [attr.cy]="p.y" r="5.5" fill="#fff" stroke="var(--orange)" stroke-width="3"
+                class="chart-dot-point" />
+              <text [attr.x]="p.x - 16" y="174" class="chart-lbl-txt">{{ p.dia }}</text>
+              <text [attr.x]="p.x - 20" [attr.y]="p.y - 12" class="chart-val-txt">S/{{ p.ventas }}</text>
+              }
+            } @else {
+              <text x="350" y="90" text-anchor="middle" class="chart-lbl-txt" style="font-size: 14px; fill: var(--muted); font-style: italic;">
+                Sin datos de ventas para graficar
+              </text>
+            }
+          </svg>
+        </div>
+      </div>
+
+      <!-- RANKING DE VENTAS DE CATÁLOGO (MÁS VENDIDOS) -->
+      <div class="dash-chart-card">
+        <div class="card-title-border" style="margin-bottom: 16px;">
+          <h4>Ranking de Ventas</h4>
+          <p class="timeline-desc">Ranking general de volumen y recaudación de ventas.</p>
+        </div>
+
+        <div class="table-scroll-container">
+          <table class="report-ranking-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;" class="txt-center">Puesto</th>
+                <th>Nombre Producto</th>
+                <th>Categoría</th>
+                <th class="txt-center">U. Vendidas</th>
+                <th class="txt-right">Recaudado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of bestsellers; track item.nombre; let i = $index) {
+              <tr>
+                <td class="txt-center font-bold font-serif">#{{ i + 1 }}</td>
+                <td><strong>{{ item.nombre }}</strong></td>
+                <td><span class="category-report-badge">{{ item.categoria }}</span></td>
+                <td class="txt-center font-bold font-serif">{{ item.unidades }} u.</td>
+                <td class="txt-right font-serif font-bold">S/ {{ item.ingresos | number:'1.2-2' }}</td>
+              </tr>
+              } @empty {
+              <tr>
+                <td colspan="5" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+                  Sin datos para el período seleccionado.
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: DISTRIBUCIÓN ESTADÍSTICA DE ESTADOS Y OBSERVACIONES -->
+    <div class="reportes-right-area">
+      <!-- ESTADO DE PEDIDOS -->
+      <div class="dash-pedidos-status-card mb-28">
+        <h4>Distribución de Pedidos</h4>
+        <p class="card-sub-muted">Monitoreo de estados para control logístico.</p>
+
+        <div class="status-indicators-flex">
+          @for (est of estadosPedidos; track est.nombre) {
+          <div class="status-bar-box">
+            <div class="status-bar-text-row">
+              <span class="status-name-lbl">{{ est.nombre }}</span>
+              <span class="status-qty-digit font-serif font-bold">{{ est.cantidad }} pedidos ({{ est.porcentaje
+                }}%)</span>
+            </div>
+            <div class="status-bar-track">
+              <div class="status-bar-fill" [ngClass]="est.clase" [style.width.%]="est.porcentaje"></div>
+            </div>
+          </div>
+          } @empty {
+            <div style="font-size: 13px; color: var(--gray); text-align: center; padding: 24px; font-style: italic;">
+              No hay pedidos registrados en el período seleccionado.
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- OBSERVACIONES / INSIGHTS ESTRATÉGICOS -->
+      <div class="dash-important-products-card">
+        <h4>Observaciones de Mercado</h4>
+        <p class="card-sub-muted">Insights del negocio útiles para planificación de compras.</p>
+
+        <div class="insights-vertical-stack">
+          @for (ins of insights; track ins.titulo) {
+          <div class="insight-strip-item">
+            <div class="insight-label-col">
+              <span class="insight-lbl-badge">ANALÍTICA</span>
+              <h6>{{ ins.titulo }}</h6>
+            </div>
+            <div class="insight-value-col">
+              <h5>{{ ins.valor }}</h5>
+              <p>{{ ins.desc }}</p>
+            </div>
+          </div>
+          } @empty {
+            <div style="font-size: 13px; color: var(--gray); text-align: center; padding: 24px; font-style: italic;">
+              No hay observaciones registradas en el período seleccionado.
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTONES DE EXPORTACIÓN AL FINAL DE TODO -->
+  <div class="bottom-export-bar">
+    <button class="btn-export secondary-beige" (click)="exportarExcel()" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+      Exportar Excel
+    </button>
+    <button class="btn-export secondary-orange" (click)="exportarPDF()" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Exportar PDF
+    </button>
+  </div>
+</app-admin-layout>

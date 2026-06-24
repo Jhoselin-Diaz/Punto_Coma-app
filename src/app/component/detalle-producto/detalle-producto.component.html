@@ -1,0 +1,190 @@
+<app-cliente-layout>
+  @if (producto) {
+    <main class="detail-page">
+      <nav class="breadcrumb" aria-label="Ruta de producto">
+        <a routerLink="/inicio">Inicio</a>
+        <span>/</span>
+        <a routerLink="/productos">Productos</a>
+        <span>/</span>
+        <span>{{ producto.categoria }}</span>
+        <span>/</span>
+        <strong>{{ producto.nombre }}</strong>
+      </nav>
+
+      <section class="product-main">
+        <div class="gallery">
+          <img class="main-image" [src]="imagenPrincipal" [alt]="producto.nombre" />
+          <div class="thumb-row">
+            <button class="arrow" type="button" aria-label="Anterior">&lt;</button>
+            @for (imagen of producto.galeria; track imagen) {
+              <button
+                class="thumb"
+                [class.active]="imagenPrincipal === imagen"
+                type="button"
+                (click)="seleccionarImagen(imagen)"
+              >
+                <img [src]="imagen" [alt]="producto.nombre" />
+              </button>
+            }
+            <button class="arrow" type="button" aria-label="Siguiente">&gt;</button>
+          </div>
+        </div>
+
+        <div class="summary">
+          <span class="badge">{{ producto.etiqueta ?? 'NUEVO' }}</span>
+          <h1>{{ producto.nombre }}</h1>
+          <p class="subtitle">{{ producto.subtitulo }}</p>
+          <div class="rating">
+            <span class="stars">★★★★★</span>
+            <span>{{ producto.rating }} ({{ producto.resenas }} resenas)</span>
+            <button type="button">♡ Favorito</button>
+          </div>
+          <div class="price">
+            <strong>S/ {{ producto.precio }}</strong>
+            <s>S/{{ producto.precioAnterior }}</s>
+            <span>{{ producto.descuento }}</span>
+          </div>
+          <p class="stock"><span></span>{{ producto.stock }}</p>
+
+          <div class="colors">
+            <span>Color:</span>
+            @for (color of producto.colores; track color.nombre) {
+              <button
+                type="button"
+                [class.active]="colorSeleccionado === color.nombre"
+                [style.--swatch]="color.codigo"
+                (click)="seleccionarColor(color)"
+                [attr.aria-label]="color.nombre"
+              >
+                <img [src]="color.imagen" [alt]="color.nombre" />
+              </button>
+            }
+          </div>
+
+          <div class="quantity">
+            <span>Cantidad:</span>
+            <div>
+              <button type="button" (click)="cambiarCantidad(-1)">−</button>
+              <strong>{{ cantidad }}</strong>
+              <button type="button" (click)="cambiarCantidad(1)">+</button>
+            </div>
+          </div>
+
+          <a class="buy" href="#">W Comprar por WhatsApp</a>
+          <button class="cart" type="button">Agregar al carrito</button>
+
+          <div class="benefits">
+            <span>Envio a todo el Peru</span>
+            <span>Pago seguro</span>
+            <span>Devolucion 7 dias</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabs">
+        <div class="tab-buttons" role="tablist">
+          <button [class.active]="tabActivo === 'detalles'" type="button" (click)="cambiarTab('detalles')">Detalles del producto</button>
+          <button [class.active]="tabActivo === 'material'" type="button" (click)="cambiarTab('material')">Material y Cuidados</button>
+          <button [class.active]="tabActivo === 'envios'" type="button" (click)="cambiarTab('envios')">Envios y Devoluciones</button>
+        </div>
+
+        @if (tabActivo === 'detalles') {
+          <div class="tab-card details-grid">
+            <div class="specs">
+              <p><strong>Capacidad:</strong> <span>{{ producto.capacidad }}</span></p>
+              <p><strong>Material:</strong> {{ producto.material }}</p>
+              <p><strong>Apto para:</strong> {{ producto.aptoPara }}</p>
+              <p><strong>Acabado:</strong> {{ producto.acabado }}</p>
+              <p><strong>Diseno:</strong> {{ producto.diseno }}</p>
+            </div>
+            <div class="description">
+              <h2>Descripcion</h2>
+              <p>{{ producto.descripcion }}</p>
+              <h2>Caracteristicas</h2>
+              <ul>
+                @for (item of producto.caracteristicas; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+              <h2>Incluye</h2>
+              <p>{{ producto.incluye }}</p>
+              <h2>Garantia</h2>
+              <p>{{ producto.garantia }}</p>
+            </div>
+          </div>
+        }
+
+        @if (tabActivo === 'material') {
+          <div class="tab-card two-columns">
+            <div>
+              <h2>Material</h2>
+              <p>{{ producto.materialDescripcion }}</p>
+              <h2>Caracteristicas del material</h2>
+              <ul>
+                @for (item of producto.materialCaracteristicas; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+            <div>
+              <h2>Cuidados y uso</h2>
+              <ul class="lined">
+                @for (item of producto.cuidados; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+
+        @if (tabActivo === 'envios') {
+          <div class="tab-card two-columns">
+            <div>
+              <h2>Envios</h2>
+              <ul class="lined">
+                @for (item of producto.envios; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+            <div>
+              <h2>Devoluciones y Cambios</h2>
+              <ul class="lined">
+                @for (item of producto.devoluciones; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+      </section>
+
+      <section class="related">
+        <div class="related-title">
+          <span></span>
+          <h2>Productos que combinan</h2>
+          <span></span>
+          <a routerLink="/productos">Ver mas -></a>
+        </div>
+        <div class="related-row">
+          <button class="circle" type="button">&lt;</button>
+          @for (item of relacionados; track item.id) {
+            <article class="related-card">
+              <img [src]="item.imagen" [alt]="item.nombre" />
+              <div>
+                <button type="button" aria-label="Favorito">♡</button>
+                <h3>{{ item.nombre }}</h3>
+                <p>S/ {{ item.precio }}</p>
+              </div>
+            </article>
+          }
+          <button class="circle" type="button">&gt;</button>
+        </div>
+      </section>
+    </main>
+  } @else {
+    <main class="detail-page">
+      <p>No se encontro el producto.</p>
+    </main>
+  }
+</app-cliente-layout>

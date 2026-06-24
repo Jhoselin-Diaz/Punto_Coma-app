@@ -1,0 +1,141 @@
+<app-cliente-layout>
+  <main class="cart-page">
+    <header class="cart-header">
+      <h1>Tu carrito</h1>
+      <span class="product-count">{{ items.length }} {{ items.length === 1 ? 'producto' : 'productos' }}</span>
+    </header>
+
+    <div class="cart-content" *ngIf="items.length > 0; else emptyCart">
+      <!-- Left Column: Items List -->
+      <div class="cart-items-section">
+        <div class="cart-item-card" *ngFor="let item of items">
+          <div class="item-img-container">
+            <img [src]="item.imagen" [alt]="item.nombre" />
+          </div>
+          <div class="item-details">
+            <div class="item-header">
+              <h3>{{ item.nombre }}</h3>
+              <button class="remove-btn" (click)="eliminar(item)" aria-label="Eliminar producto">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
+            
+            <div class="item-actions">
+              <div class="qty-select-wrapper">
+                <label>Qty:</label>
+                <select [value]="item.cantidad" (change)="cambiarCantidadSelect(item, $event)" class="qty-dropdown">
+                  <option *ngFor="let n of [1,2,3,4,5,6,7,8,9,10]" [value]="n">{{ n }}</option>
+                </select>
+              </div>
+              
+              <div class="item-price">
+                S/ {{ item.precio * item.cantidad }}
+              </div>
+              
+              <div class="qty-incrementer">
+                <button type="button" class="qty-btn" (click)="decrementar(item)">−</button>
+                <span class="qty-val">{{ item.cantidad }}</span>
+                <button type="button" class="qty-btn" (click)="incrementar(item)">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <a routerLink="/productos" class="back-link">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+          Seguir comprando
+        </a>
+      </div>
+
+      <!-- Right Column: Summary Box -->
+      <div class="cart-summary-section">
+        <div class="summary-card">
+          <h2>Resumen</h2>
+          
+          <div class="summary-row">
+            <span>Subtotal:</span>
+            <strong>S/ {{ cartService.subtotal }}</strong>
+          </div>
+          
+          <div class="summary-row discount" *ngIf="cartService.discount > 0">
+            <span>Descuento:</span>
+            <strong class="discount-val">- S/ {{ cartService.discount }}</strong>
+          </div>
+          
+          <div class="summary-row total">
+            <span>Impuesto:</span>
+            <strong>S/ {{ cartService.total }}</strong>
+          </div>
+
+          <div class="coupon-box">
+            <input type="text" placeholder="Cupón:" [(ngModel)]="couponCode" name="coupon" class="coupon-input" (keyup.enter)="aplicarCupon()" />
+            <button type="button" (click)="aplicarCupon()" class="coupon-btn">Aplicar</button>
+          </div>
+          <div class="coupon-message" *ngIf="couponSuccess || couponError">
+            <p class="success-msg" *ngIf="couponSuccess">✓ Cupón aplicado correctamente</p>
+            <p class="error-msg" *ngIf="couponError">{{ couponError }}</p>
+          </div>
+
+          <button class="checkout-btn" (click)="finalizarPedido()">
+            Finalizar pedido por WhatsApp
+          </button>
+          
+          <ul class="features-list">
+            <li>
+              <span class="feature-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="1" y="3" width="15" height="13" />
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                  <circle cx="5.5" cy="18.5" r="2.5" />
+                  <circle cx="18.5" cy="18.5" r="2.5" />
+                </svg>
+              </span>
+              Envíos a todo el Perú
+            </li>
+            <li>
+              <span class="feature-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </span>
+              Pago seguro coordinado por WhatsApp
+            </li>
+            <li>
+              <span class="feature-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="21 8 21 21 3 21 3 8" />
+                  <rect x="1" y="3" width="22" height="5" />
+                  <line x1="10" y1="12" x2="14" y2="12" />
+                </svg>
+              </span>
+              Empaque cuidadoso para productos frágiles
+            </li>
+            <li>
+              <span class="feature-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10" />
+                  <polyline points="1 20 1 14 7 14" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+              </span>
+              Cambios y devoluciones dentro de 48 horas
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #emptyCart>
+      <div class="empty-cart-state">
+        <div class="empty-icon">🛒</div>
+        <h2>Tu carrito está vacío</h2>
+        <p>Parece que aún no has agregado productos a tu carrito.</p>
+        <a routerLink="/productos" class="empty-btn">Ver productos</a>
+      </div>
+    </ng-template>
+  </main>
+</app-cliente-layout>

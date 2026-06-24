@@ -1,0 +1,58 @@
+<div class="store-page">
+  <header class="topbar">
+    <a class="brand" routerLink="/inicio" aria-label="Punto y Coma">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 20.5c-.4 0-.79-.13-1.11-.39C7.31 17.28 5 15.06 5 11.75 5 9.56 6.68 8 8.78 8c1.25 0 2.45.58 3.22 1.5A4.18 4.18 0 0 1 15.22 8C17.32 8 19 9.56 19 11.75c0 3.31-2.31 5.53-5.89 8.36-.32.26-.71.39-1.11.39Z" />
+        </svg>
+      </span>
+      <span>Punto y Coma</span>
+    </a>
+
+    <form class="search" aria-label="Buscar productos">
+      <input type="search" placeholder="Buscar productos..." />
+      <button type="submit" aria-label="Buscar">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m20.53 19.47-4.1-4.1a7.4 7.4 0 1 0-1.06 1.06l4.1 4.1a.75.75 0 0 0 1.06-1.06ZM5.5 10.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Z" />
+        </svg>
+      </button>
+    </form>
+
+    <div class="actions" aria-label="Acciones de usuario">
+      <button type="button" aria-label="Favoritos">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 20.7a.75.75 0 0 1-.47-.16C6.93 16.89 4 14.1 4 10.35 4 7.88 5.9 6 8.34 6c1.45 0 2.79.67 3.66 1.73A4.72 4.72 0 0 1 15.66 6C18.1 6 20 7.88 20 10.35c0 3.75-2.93 6.54-7.53 10.19a.75.75 0 0 1-.47.16Zm-3.66-13.2c-1.61 0-2.84 1.21-2.84 2.85 0 2.86 2.25 5.16 6.5 8.64 4.25-3.48 6.5-5.78 6.5-8.64 0-1.64-1.23-2.85-2.84-2.85-1.28 0-2.43.76-2.93 1.94a.78.78 0 0 1-1.46 0C10.77 8.26 9.62 7.5 8.34 7.5Z" />
+        </svg>
+      </button>
+      <button type="button" aria-label="Perfil">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 12.5A4.25 4.25 0 1 1 12 4a4.25 4.25 0 0 1 0 8.5Zm0-7A2.75 2.75 0 1 0 12 11a2.75 2.75 0 0 0 0-5.5ZM19 21a.75.75 0 0 1-.75-.75 6.25 6.25 0 0 0-12.5 0 .75.75 0 0 1-1.5 0 7.75 7.75 0 0 1 15.5 0A.75.75 0 0 1 19 21Z" />
+        </svg>
+      </button>
+      <button type="button" aria-label="Carrito" routerLink="/carrito">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7.5 8.25V8a4.5 4.5 0 0 1 9 0v.25h1.13a1.75 1.75 0 0 1 1.74 1.58l.83 8.5A2.5 2.5 0 0 1 17.71 21H6.29a2.5 2.5 0 0 1-2.49-2.67l.83-8.5a1.75 1.75 0 0 1 1.74-1.58H7.5Zm1.5 0h6V8a3 3 0 0 0-6 0v.25Zm-2.63 1.5a.25.25 0 0 0-.25.23l-.83 8.5a1 1 0 0 0 1 1.02h11.42a1 1 0 0 0 1-1.02l-.83-8.5a.25.25 0 0 0-.25-.23H16.5V12a.75.75 0 0 1-1.5 0V9.75H9V12a.75.75 0 0 1-1.5 0V9.75H6.37Z" />
+        </svg>
+      </button>
+      <a class="whatsapp-mini" [href]="configService.obtenerWhatsappUrl('Hola, me gustaría realizar un pedido.')" aria-label="Comprar por WhatsApp">
+        <span class="wa-circle">W</span>
+        <strong>Comprar<br />por WhatsApp</strong>
+      </a>
+    </div>
+  </header>
+
+  <nav class="menu" aria-label="Menu principal">
+    <a routerLink="/inicio" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.25 10.75a.74.74 0 0 1-.5-.19L12 3.64l-7.75 6.92a.75.75 0 1 1-1-1.12l8.25-7.36a.75.75 0 0 1 1 0l8.25 7.36a.75.75 0 0 1-.5 1.31Zm-2 9.25h-4.5a.75.75 0 0 1-.75-.75V15h-2v4.25a.75.75 0 0 1-.75.75h-4.5A1.75 1.75 0 0 1 4 18.25v-7a.75.75 0 0 1 1.5 0v7c0 .14.11.25.25.25H9.5v-4.25c0-.41.34-.75.75-.75h3.5c.41 0 .75.34.75.75v4.25h3.75c.14 0 .25-.11.25-.25v-7a.75.75 0 0 1 1.5 0v7A1.75 1.75 0 0 1 18.25 20Z" />
+      </svg>
+      Inicio
+    </a>
+    <a routerLink="/productos" routerLinkActive="active">Productos</a>
+    <a routerLink="/ofertas" routerLinkActive="active">Ofertas</a>
+    <a routerLink="/shop-video" routerLinkActive="active">Shop Video</a>
+    <a routerLink="/contacto" routerLinkActive="active">Contacto</a>
+  </nav>
+
+  <ng-content></ng-content>
+</div>

@@ -1,0 +1,1407 @@
+<app-admin-layout>
+  <h1 page-title>Contenido Web</h1>
+
+  <div class="contenido-web-wrapper">
+    <!-- SUB-BARRA SUPERIOR DE LA SECCIÓN ACTIVA -->
+    <div class="section-header-bar">
+      <div>
+        @if (seccionActiva !== 'main') {
+          <button class="btn-back-main" (click)="navegarA('main')" type="button">
+            ← Volver a Módulos
+          </button>
+        }
+        <h2 class="active-sec-title">
+          @if (seccionActiva === 'main') { Gestión General }
+          @else if (seccionActiva === 'inicio') { Módulo: Inicio }
+          @else if (seccionActiva === 'productos') { Módulo: Productos }
+          @else if (seccionActiva === 'ofertas') { Módulo: Ofertas }
+          @else if (seccionActiva === 'shop-video') { Módulo: Shop Video }
+          @else if (seccionActiva === 'contacto') { Módulo: Contacto }
+        </h2>
+        <p class="active-sec-desc">
+          @if (seccionActiva === 'main') { Selecciona uno de los módulos para administrar el contenido visual de la tienda online. }
+          @else if (seccionActiva === 'inicio') { Administra banners, productos y categorías destacadas del home. }
+          @else if (seccionActiva === 'productos') { Agrega, edita y organiza los productos de la tienda. }
+          @else if (seccionActiva === 'ofertas') { Crea y supervisa descuentos vigentes en la web. }
+          @else if (seccionActiva === 'shop-video') { Gestione contenido multimedia de TikTok/Instagram e indexa productos. }
+          @else if (seccionActiva === 'contacto') { Configura las tarjetas sociales, horarios e información de atención al cliente. }
+        </p>
+      </div>
+
+      <button class="btn-orange-preview" (click)="alertPreview()" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        Vista previa web
+      </button>
+    </div>
+
+    <!-- VISTA PRINCIPAL CON CARDS DE MÓDULOS -->
+    @if (seccionActiva === 'main') {
+      <div class="modules-grid">
+        <!-- 1. INICIO -->
+        <div class="module-card">
+          <div class="card-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </div>
+          <h3>Página de Inicio</h3>
+          <p>Edita el banner hero principal, las categorías y productos de la portada.</p>
+          <button class="btn-admin-module" (click)="navegarA('inicio')" type="button">Administrar</button>
+        </div>
+
+        <!-- 2. PRODUCTOS -->
+        <div class="module-card">
+          <div class="card-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="3" y1="15" x2="21" y2="15"></line>
+            </svg>
+          </div>
+          <h3>Productos</h3>
+          <p>Administra el catálogo completo, sube imágenes y asocia productos relacionados.</p>
+          <button class="btn-admin-module" (click)="navegarA('productos')" type="button">Administrar</button>
+        </div>
+
+        <!-- 3. OFERTAS -->
+        <div class="module-card">
+          <div class="card-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="5" x2="5" y2="19"></line>
+              <circle cx="6.5" cy="6.5" r="2.5"></circle>
+              <circle cx="17.5" cy="17.5" r="2.5"></circle>
+            </svg>
+          </div>
+          <h3>Ofertas</h3>
+          <p>Define descuentos, campañas promocionales y asigna etiquetas de rebaja.</p>
+          <button class="btn-admin-module" (click)="navegarA('ofertas')" type="button">Administrar</button>
+        </div>
+
+        <!-- 4. SHOP VIDEO -->
+        <div class="module-card highlight-glow">
+          <div class="card-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+          </div>
+          <div class="badge-hot">AESTHETIC</div>
+          <h3>Shop Video</h3>
+          <p>Indexa videos cortos de TikTok o Instagram Reels y vincula compras directas.</p>
+          <button class="btn-admin-module" (click)="navegarA('shop-video')" type="button">Administrar</button>
+        </div>
+
+        <!-- 5. CONTACTO -->
+        <div class="module-card">
+          <div class="card-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+          </div>
+          <h3>Página de Contacto</h3>
+          <p>Configura las cuentas sociales, números de soporte técnico y horarios de atención.</p>
+          <button class="btn-admin-module" (click)="navegarA('contacto')" type="button">Administrar</button>
+        </div>
+      </div>
+    }
+
+    <!-- SECCIÓN 1: INICIO -->
+    @if (seccionActiva === 'inicio') {
+      <div class="cms-layout">
+        <!-- Pestañas internas de Inicio -->
+        <div class="cms-tabs">
+          <button [class.active]="inicioTabActiva === 'banner'" (click)="setInicioTab('banner')" type="button">Banner principal</button>
+          <button [class.active]="inicioTabActiva === 'categorias'" (click)="setInicioTab('categorias')" type="button">Categorías destacadas</button>
+          <button [class.active]="inicioTabActiva === 'productos'" (click)="setInicioTab('productos')" type="button">Productos destacados</button>
+          <button [class.active]="inicioTabActiva === 'config'" (click)="setInicioTab('config')" type="button">Configuración visual</button>
+        </div>
+
+        <div class="cms-content-box">
+          <!-- SUB-TAB 1: BANNER PRINCIPAL -->
+          @if (inicioTabActiva === 'banner') {
+            <div class="grid-two-cols">
+              <!-- Formulario de Banner -->
+              <div class="form-card-visual">
+                <h3>Editar Banner de Bienvenida</h3>
+                <span class="bar-divider"></span>
+
+                <div class="form-group">
+                  <label for="bannerTitle">Título Principal</label>
+                  <input id="bannerTitle" [(ngModel)]="bannerTitle" type="text" />
+                </div>
+
+                <div class="form-group">
+                  <label for="bannerSubtitle">Subtítulo</label>
+                  <textarea id="bannerSubtitle" [(ngModel)]="bannerSubtitle" rows="3"></textarea>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="bannerBtnText">Texto Botón</label>
+                    <input id="bannerBtnText" [(ngModel)]="bannerBtnText" type="text" />
+                  </div>
+                  <div class="form-group">
+                    <label for="bannerBtnLink">Link de Botón</label>
+                    <input id="bannerBtnLink" [(ngModel)]="bannerBtnLink" type="text" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Imagen del Banner</label>
+                  <div class="uploader-mock">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    <span>Subir nueva imagen (Recomendado 1920x800)</span>
+                  </div>
+                </div>
+
+                <div class="switch-row">
+                  <label>Visibilidad del Banner</label>
+                  <button type="button" class="switch-btn" [class.on]="bannerVisible" (click)="bannerVisible = !bannerVisible">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div class="flex-end-row mt-15">
+                  <button class="btn-cancel" type="button">Cancelar</button>
+                  <button class="btn-save" type="button">Guardar cambios</button>
+                </div>
+              </div>
+
+              <!-- Vista previa en tiempo real -->
+              <div class="preview-panel-container">
+                <h3>Previsualización en tiempo real (Cliente)</h3>
+                <div class="client-banner-preview" [style.background-image]="'url(' + bannerImage + ')'" [class.invisible-state]="!bannerVisible">
+                  <div class="client-banner-overlay">
+                    <h4>{{ bannerTitle || 'Título de ejemplo' }}</h4>
+                    <p>{{ bannerSubtitle || 'Subtítulo descriptivo.' }}</p>
+                    <button type="button" class="btn-client-preview">{{ bannerBtnText || 'Comprar' }}</button>
+                  </div>
+                  @if (!bannerVisible) {
+                    <div class="invisible-watermark">OCULTO PARA CLIENTES</div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- SUB-TAB 2: CATEGORÍAS DESTACADAS (CARDS AESTHETIC) -->
+          @if (inicioTabActiva === 'categorias') {
+            <div class="categorias-cms">
+              <div class="sub-header-cms">
+                <h4>Categorías visuales mostradas en el home del cliente</h4>
+                <button type="button" class="btn-add-item">+ Agregar categoría</button>
+              </div>
+
+              <div class="categorias-cards-grid">
+                @for (cat of categorias; track cat.id; let idx = $index) {
+                  <div class="cat-aesthetic-card" [class.invisible-state]="!cat.visible">
+                    <div class="cat-card-img-wrap">
+                      <img [src]="cat.imagen" [alt]="cat.nombre" />
+                      <div class="cat-card-order-badge">#{{ cat.orden }}</div>
+                    </div>
+                    
+                    <div class="cat-card-info">
+                      <h5>{{ cat.nombre }}</h5>
+                      <span class="cat-card-count">{{ cat.productosCount }} productos vinculados</span>
+                      
+                      <div class="cat-card-switch-row">
+                        <span>Visible en Web:</span>
+                        <button type="button" class="switch-btn small-switch" [class.on]="cat.visible" (click)="toggleVisible(cat)">
+                          <span></span>
+                        </button>
+                      </div>
+
+                      <div class="cat-card-actions">
+                        <button class="btn-row-edit" type="button">Editar</button>
+                        <button class="btn-row-delete" (click)="eliminarFila(categorias, idx)" type="button">Eliminar</button>
+                      </div>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="empty-cms-placeholder" style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--gray); font-style: italic; border: 1px dashed var(--border); border-radius: 8px; width: 100%;">
+                    No hay categorías configuradas.
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- SUB-TAB 3: PRODUCTOS DESTACADOS -->
+          @if (inicioTabActiva === 'productos') {
+            <div class="productos-destacados-cms">
+              <div class="sub-header-cms mb-15">
+                <h4>Elige qué productos salen en la sección "Destacados del día" en Inicio</h4>
+                <button class="btn-save" type="button">Guardar selección</button>
+              </div>
+
+              <div class="prod-dest-grid">
+                @for (prod of productosDestacados; track prod.id) {
+                  <div class="selectable-prod-card" [class.selected]="prod.seleccionado">
+                    <div class="card-selection-indicator" (click)="toggleSeleccionado(prod)">
+                      <span class="chk-box"></span>
+                    </div>
+
+                    <div class="prod-img-wrap">
+                      <img [src]="prod.imagen" [alt]="prod.nombre" />
+                    </div>
+
+                    <div class="prod-meta">
+                      <h5>{{ prod.nombre }}</h5>
+                      <span class="price-val">S/ {{ prod.precio }}</span>
+                      <div class="tag-chips">
+                        @for (tag of prod.tags; track tag) {
+                          <span class="tag-chip" [class]="tag">{{ tag | uppercase }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="empty-cms-placeholder" style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--gray); font-style: italic; border: 1px dashed var(--border); border-radius: 8px; width: 100%;">
+                    No hay productos destacados seleccionados.
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- SUB-TAB 4: CONFIGURACIÓN VISUAL -->
+          @if (inicioTabActiva === 'config') {
+            <div class="visual-config-cms">
+              <div class="sub-header-cms">
+                <h3>Configuración de Elementos Dinámicos</h3>
+                <button class="btn-save" type="button">Guardar cambios</button>
+              </div>
+              <span class="bar-divider"></span>
+
+              <div class="config-switches-panel">
+                <div class="config-row-switch">
+                  <div class="config-label-area">
+                    <h5>Activar micro-animaciones en tarjetas</h5>
+                    <p>Agrega un efecto de hover premium y escala en imágenes.</p>
+                  </div>
+                  <button type="button" class="switch-btn" [class.on]="configAnimaciones" (click)="configAnimaciones = !configAnimaciones">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div class="config-row-switch">
+                  <div class="config-label-area">
+                    <h5>Habilitar carrusel automático</h5>
+                    <p>Las categorías e inicio rotarán de forma autónoma.</p>
+                  </div>
+                  <button type="button" class="switch-btn" [class.on]="configCarrusel" (click)="configCarrusel = !configCarrusel">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div class="config-row-switch">
+                  <div class="config-label-area">
+                    <h5>Mostrar sección destacada de Ofertas</h5>
+                    <p>Habilita el banner y contador en la página home.</p>
+                  </div>
+                  <button type="button" class="switch-btn" [class.on]="configMostrarOfertas" (click)="configMostrarOfertas = !configMostrarOfertas">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div class="config-row-switch">
+                  <div class="config-label-area">
+                    <h5>Mostrar bloque "Categorías populares"</h5>
+                    <p>Visualiza accesos directos redondos de categorías.</p>
+                  </div>
+                  <button type="button" class="switch-btn" [class.on]="configCategoriasPopulares" (click)="configCategoriasPopulares = !configCategoriasPopulares">
+                    <span></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- SECCIÓN 2: PRODUCTOS -->
+    @if (seccionActiva === 'productos') {
+      <div class="productos-cms">
+        <div class="prod-header-controls">
+          <!-- Buscador -->
+          <div class="search-bar-cms">
+            <input type="text" placeholder="Buscar producto por nombre..." [(ngModel)]="searchTerm" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+
+          <!-- Filtros de categoría -->
+          <div class="filter-chips">
+            <button [class.active]="filtroActivo === 'todos'" (click)="filtroActivo = 'todos'" type="button">Todos</button>
+            <button [class.active]="filtroActivo === 'visibles'" (click)="filtroActivo = 'visibles'" type="button">Visibles</button>
+            <button [class.active]="filtroActivo === 'ocultos'" (click)="filtroActivo = 'ocultos'" type="button">Ocultos</button>
+            <button [class.active]="filtroActivo === 'oferta'" (click)="filtroActivo = 'oferta'" type="button">En Oferta</button>
+            <button [class.active]="filtroActivo === 'nuevos'" (click)="filtroActivo = 'nuevos'" type="button">Nuevos</button>
+          </div>
+
+          <!-- Agregar producto button -->
+          <button class="btn-add-product" (click)="openAddProduct()" type="button">+ Agregar producto</button>
+        </div>
+
+        <div class="table-card mt-20">
+          <table class="premium-table">
+            <thead>
+              <tr>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Visible en Web</th>
+                <th>Destacado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (prod of productosAdmin; track prod.id; let idx = $index) {
+                <tr>
+                  <td>
+                    <div class="prod-thumb-small">
+                      <img [src]="'images/prod-' + (prod.id.includes('verde') ? 'verde' : prod.id.includes('rosa') ? 'rosa-grande' : prod.id.includes('ondulado') ? 'ondulado' : prod.id.includes('iridiscente') ? 'iridiscente' : 'jaspeada') + '.png'" [alt]="prod.nombre" />
+                    </div>
+                  </td>
+                  <td><strong>{{ prod.nombre }}</strong></td>
+                  <td>S/ {{ prod.precio }}</td>
+                  <td><span class="stock-badge" [class.low]="prod.stock < 15">{{ prod.stock }} unidades</span></td>
+                  <td>
+                    <button type="button" class="switch-btn small-switch" [class.on]="prod.visible" (click)="toggleVisible(prod)">
+                      <span></span>
+                    </button>
+                  </td>
+                  <td>
+                    <button type="button" class="switch-btn small-switch" [class.on]="prod.destacado" (click)="toggleDestacado(prod)">
+                      <span></span>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="row-actions">
+                      <button class="btn-row-edit" (click)="openEditProduct(prod)" type="button">Editar</button>
+                      <button class="btn-row-delete" (click)="eliminarFila(productosAdmin, idx)" type="button">Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+                    No hay productos registrados en el catálogo.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MODAL 1: AGREGAR PRODUCTO (Vacio) -->
+      @if (showAddProductModal) {
+        <div class="modal-backdrop">
+          <div class="modal-card-large">
+            <div class="modal-header">
+              <h3>Agregar nuevo producto</h3>
+              <button class="btn-close-modal" (click)="showAddProductModal = false" type="button">×</button>
+            </div>
+
+            <!-- Tabs del Modal -->
+            <div class="modal-tabs">
+              <button [class.active]="addProductModalTab === 'general'" (click)="setAddProductModalTab('general')" type="button">General</button>
+              <button [class.active]="addProductModalTab === 'imagenes'" (click)="setAddProductModalTab('imagenes')" type="button">Imágenes</button>
+              <button [class.active]="addProductModalTab === 'descripcion'" (click)="setAddProductModalTab('descripcion')" type="button">Descripción</button>
+              <button [class.active]="addProductModalTab === 'relacionados'" (click)="setAddProductModalTab('relacionados')" type="button">Relacionados</button>
+            </div>
+
+            <div class="modal-body-content">
+              <!-- TAB 1: GENERAL -->
+              @if (addProductModalTab === 'general') {
+                <div class="modal-form-grid">
+                  <div class="form-group">
+                    <label>Nombre del Producto</label>
+                    <input type="text" placeholder="Ej: Taza artesana de arcilla" [(ngModel)]="newProduct.nombre" />
+                  </div>
+
+                  <div class="form-grid-3">
+                    <div class="form-group">
+                      <label>Precio Original</label>
+                      <input type="number" placeholder="0.00" [(ngModel)]="newProduct.precio" />
+                    </div>
+                    <div class="form-group">
+                      <label>Precio Oferta</label>
+                      <input type="number" placeholder="Opcional" [(ngModel)]="newProduct.precioOferta" />
+                    </div>
+                    <div class="form-group">
+                      <label>Stock Inicial</label>
+                      <input type="number" placeholder="Cantidad" [(ngModel)]="newProduct.stock" />
+                    </div>
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="form-group">
+                      <label>Categoría</label>
+                      <select [(ngModel)]="newProduct.categoria">
+                        <option>Tazas</option>
+                        <option>Vasos</option>
+                        <option>Sets de Cerámica</option>
+                        <option>Accesorios</option>
+                      </select>
+                    </div>
+                    <div class="switches-grid-inside">
+                      <div class="switch-row-micro">
+                        <label>Visible</label>
+                        <button type="button" class="switch-btn small-switch" [class.on]="newProduct.visible" (click)="newProduct.visible = !newProduct.visible">
+                          <span></span>
+                        </button>
+                      </div>
+                      <div class="switch-row-micro">
+                        <label>Destacado</label>
+                        <button type="button" class="switch-btn small-switch" [class.on]="newProduct.destacado" (click)="newProduct.destacado = !newProduct.destacado">
+                          <span></span>
+                        </button>
+                      </div>
+                      <div class="switch-row-micro">
+                        <label>Nuevo</label>
+                        <button type="button" class="switch-btn small-switch" [class.on]="newProduct.nuevo" (click)="newProduct.nuevo = !newProduct.nuevo">
+                          <span></span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- TAB 2: IMÁGENES -->
+              @if (addProductModalTab === 'imagenes') {
+                <div class="uploader-tab-layout">
+                  <div class="main-image-preview">
+                    <p class="section-sub">Imagen Principal</p>
+                    <div class="big-preview-box empty-state">
+                      <div class="placeholder-drag-drop">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="16 16 12 12 8 16"></polyline>
+                          <line x1="12" y1="12" x2="12" y2="21"></line>
+                          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+                        </svg>
+                        <span>Sube la foto principal (Drag and Drop)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="gallery-thumbs-layout">
+                    <p class="section-sub">Miniaturas adicionales</p>
+                    <div class="thumbs-grid">
+                      <div class="thumb-uploader-box"><span>+ Añadir</span></div>
+                      <div class="thumb-uploader-box"><span>+ Añadir</span></div>
+                      <div class="thumb-uploader-box"><span>+ Añadir</span></div>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- TAB 3: DESCRIPCIÓN -->
+              @if (addProductModalTab === 'descripcion') {
+                <div class="description-tab-layout">
+                  <div class="form-group">
+                    <label>Descripción Corta (Lista de productos)</label>
+                    <input type="text" placeholder="Ej: Vaso elegante con relieves ondulados y textura suave..." [(ngModel)]="newProduct.descripcionCorta" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Descripción Detallada (Ficha del producto)</label>
+                    <textarea rows="4" placeholder="Escribe aquí las propiedades y fabricación artesana..." [(ngModel)]="newProduct.descripcionLarga"></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Características destacadas (Separadas por puntos)</label>
+                    <textarea rows="3" placeholder="Ej: Resistente a lavavajillas. Capacidad de 350ml. Cocido a 1200 grados." [(ngModel)]="newProduct.caracteristicas"></textarea>
+                  </div>
+                </div>
+              }
+
+              <!-- TAB 4: RELACIONADOS -->
+              @if (addProductModalTab === 'relacionados') {
+                <div class="relacionados-tab-layout">
+                  <h4>Vincular productos sugeridos</h4>
+                  <span class="bar-divider"></span>
+                  <p class="sub-caption-picker">Selecciona qué productos se mostrarán en la ficha técnica de este nuevo artículo:</p>
+
+                  <div class="relacionados-grid">
+                    <div class="rel-product-row">
+                      <span class="chk-indicator"></span>
+                      <img src="images/prod-verde.png" alt="..." />
+                      <span><strong>Taza de vidrio verde</strong> - S/ 45</span>
+                    </div>
+                    <div class="rel-product-row">
+                      <span class="chk-indicator"></span>
+                      <img src="images/prod-rosa-grande.png" alt="..." />
+                      <span><strong>Taza de cerámica rosa</strong> - S/ 45</span>
+                    </div>
+                    <div class="rel-product-row">
+                      <span class="chk-indicator"></span>
+                      <img src="images/prod-ondulado.png" alt="..." />
+                      <span><strong>Vaso ondulado transparente</strong> - S/ 32</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="showAddProductModal = false" type="button">Cancelar</button>
+              <button class="btn-save" (click)="showAddProductModal = false" type="button">Guardar producto</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL 2: EDITAR PRODUCTO (Precargado con datos) -->
+      @if (showEditProductModal) {
+        <div class="modal-backdrop">
+          <div class="modal-card-large">
+            <div class="modal-header">
+              <h3>Editar producto</h3>
+              <button class="btn-close-modal" (click)="showEditProductModal = false" type="button">×</button>
+            </div>
+
+            <!-- Tabs del Modal -->
+            <div class="modal-tabs">
+              <button [class.active]="editProductModalTab === 'general'" (click)="setEditProductModalTab('general')" type="button">General</button>
+              <button [class.active]="editProductModalTab === 'imagenes'" (click)="setEditProductModalTab('imagenes')" type="button">Imágenes</button>
+              <button [class.active]="editProductModalTab === 'descripcion'" (click)="setEditProductModalTab('descripcion')" type="button">Descripción</button>
+              <button [class.active]="editProductModalTab === 'relacionados'" (click)="setEditProductModalTab('relacionados')" type="button">Relacionados</button>
+            </div>
+
+            <div class="modal-body-content">
+              <!-- TAB 1: GENERAL -->
+              @if (editProductModalTab === 'general') {
+                <div class="modal-form-grid">
+                  <div class="form-group">
+                    <label>Nombre del Producto</label>
+                    <input type="text" [(ngModel)]="editingProduct.nombre" />
+                  </div>
+
+                  <div class="form-grid-3">
+                    <div class="form-group">
+                      <label>Precio Original</label>
+                      <input type="number" [(ngModel)]="editingProduct.precio" />
+                    </div>
+                    <div class="form-group">
+                      <label>Precio Oferta</label>
+                      <input type="number" [(ngModel)]="editingProduct.precioOferta" />
+                    </div>
+                    <div class="form-group">
+                      <label>Stock actual</label>
+                      <input type="number" [(ngModel)]="editingProduct.stock" />
+                    </div>
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="form-group">
+                      <label>Categoría</label>
+                      <select [(ngModel)]="editingProduct.categoria">
+                        <option>Tazas</option>
+                        <option>Vasos</option>
+                        <option>Sets de Cerámica</option>
+                        <option>Accesorios</option>
+                      </select>
+                    </div>
+                    <div class="switches-grid-inside">
+                      <div class="switch-row-micro">
+                        <label>Visible</label>
+                        <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.visible" (click)="editingProduct.visible = !editingProduct.visible">
+                          <span></span>
+                        </button>
+                      </div>
+                      <div class="switch-row-micro">
+                        <label>Destacado</label>
+                        <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.destacado" (click)="editingProduct.destacado = !editingProduct.destacado">
+                          <span></span>
+                        </button>
+                      </div>
+                      <div class="switch-row-micro">
+                        <label>Nuevo</label>
+                        <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.nuevo" (click)="editingProduct.nuevo = !editingProduct.nuevo">
+                          <span></span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- TAB 2: IMÁGENES -->
+              @if (editProductModalTab === 'imagenes') {
+                <div class="uploader-tab-layout">
+                  <div class="main-image-preview">
+                    <p class="section-sub">Imagen Principal</p>
+                    <div class="big-preview-box">
+                      <img [src]="editingProduct.imagenPrincipal" alt="Vista previa principal" />
+                      <button class="btn-del-img" type="button">Eliminar</button>
+                    </div>
+                  </div>
+
+                  <div class="gallery-thumbs-layout">
+                    <p class="section-sub">Galería del Producto</p>
+                    <div class="thumbs-grid">
+                      <div class="thumb-preview-box selected">
+                        <img [src]="editingProduct.imagenPrincipal" alt="Miniatura" />
+                        <span class="main-tag">PRINCIPAL</span>
+                      </div>
+                      <div class="thumb-preview-box">
+                        <img src="images/prod-verde.png" alt="Miniatura 2" />
+                      </div>
+                      <div class="thumb-uploader-box">
+                        <span>+ Sube</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- TAB 3: DESCRIPCIÓN -->
+              @if (editProductModalTab === 'descripcion') {
+                <div class="description-tab-layout">
+                  <div class="form-group">
+                    <label>Descripción Corta (Lista de productos)</label>
+                    <input type="text" [(ngModel)]="editingProduct.descripcionCorta" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Descripción Detallada (Ficha del producto)</label>
+                    <textarea rows="4" [(ngModel)]="editingProduct.descripcionLarga"></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Características destacadas (Separadas por puntos)</label>
+                    <textarea rows="3" [(ngModel)]="editingProduct.caracteristicas"></textarea>
+                  </div>
+                </div>
+              }
+
+              <!-- TAB 4: RELACIONADOS -->
+              @if (editProductModalTab === 'relacionados') {
+                <div class="relacionados-tab-layout">
+                  <h4>Sugerir ventas cruzadas</h4>
+                  <span class="bar-divider"></span>
+
+                  <div class="relacionados-grid">
+                    <div class="rel-product-row selected">
+                      <span class="chk-indicator">✓</span>
+                      <img src="images/prod-verde.png" alt="..." />
+                      <span><strong>Taza de vidrio verde</strong> - S/ 45</span>
+                    </div>
+                    <div class="rel-product-row">
+                      <span class="chk-indicator"></span>
+                      <img src="images/prod-rosa-grande.png" alt="..." />
+                      <span><strong>Taza de cerámica rosa</strong> - S/ 45</span>
+                    </div>
+                    <div class="rel-product-row selected">
+                      <span class="chk-indicator">✓</span>
+                      <img src="images/prod-ondulado.png" alt="..." />
+                      <span><strong>Vaso ondulado transparente</strong> - S/ 32</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="showEditProductModal = false" type="button">Cancelar</button>
+              <button class="btn-del-img" (click)="showEditProductModal = false" style="position: static;" type="button">Eliminar producto</button>
+              <button class="btn-save" (click)="showEditProductModal = false" type="button">Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- SECCIÓN 3: OFERTAS -->
+    @if (seccionActiva === 'ofertas') {
+      <div class="ofertas-cms">
+        <div class="ofertas-stats-grid">
+          <div class="stat-card-white">
+            <span class="stat-num">{{ statsOfertas.activas }}</span>
+            <span class="stat-label">Ofertas Activas</span>
+          </div>
+          <div class="stat-card-white">
+            <span class="stat-num">{{ statsOfertas.productosDescuento }}</span>
+            <span class="stat-label">Productos con Descuento</span>
+          </div>
+          <div class="stat-card-white highlight-orange-border">
+            <span class="stat-num">{{ statsOfertas.proximas }}</span>
+            <span class="stat-label">Campañas Próximas</span>
+          </div>
+        </div>
+
+        <div class="table-card mt-25">
+          <div class="table-header-flex">
+            <h3>Listado de Descuentos Vigentes</h3>
+            <button class="btn-add-product" (click)="openAddOffer()" type="button">+ Crear oferta</button>
+          </div>
+          <table class="premium-table mt-15">
+            <thead>
+              <tr>
+                <th>Producto Relacionado</th>
+                <th>Descuento Asignado</th>
+                <th>Fecha de Inicio</th>
+                <th>Fecha de Finalización</th>
+                <th>Estado Visible</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (of of ofertasList; track of.id; let idx = $index) {
+                <tr>
+                  <td><strong>{{ of.producto }}</strong></td>
+                  <td><span class="discount-badge-table">{{ of.descuento }}% OFF</span></td>
+                  <td>{{ of.fechaInicio }}</td>
+                  <td>{{ of.fechaFin }}</td>
+                  <td>
+                    <button type="button" class="switch-btn small-switch" [class.on]="of.visible" (click)="toggleVisible(of)">
+                      <span></span>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="row-actions">
+                      <button class="btn-row-edit" (click)="openEditOffer(of)" type="button">Editar</button>
+                      <button class="btn-row-delete" (click)="eliminarFila(ofertasList, idx)" type="button">Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+                    No hay ofertas promocionales configuradas.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MODAL 3: CREAR OFERTA (Vacio) -->
+      @if (showAddOfferModal) {
+        <div class="modal-backdrop">
+          <div class="modal-card-ultra-large">
+            <div class="modal-header">
+              <h3>Crear oferta</h3>
+              <button class="btn-close-modal" (click)="showAddOfferModal = false" type="button">×</button>
+            </div>
+
+            <div class="modal-body-content">
+              <div class="modal-grid-two-cols">
+                <!-- Formulario Izquierda -->
+                <div class="video-form-fields">
+                  <div class="form-group">
+                    <label>Seleccionar Producto</label>
+                    <select [(ngModel)]="newOffer.producto">
+                      <option>Taza de cerámica jaspeada</option>
+                      <option>Taza de vidrio verde</option>
+                      <option>Taza de cerámica rosa</option>
+                      <option>Vaso ondulado transparente</option>
+                    </select>
+                  </div>
+
+                  <div class="form-grid-3">
+                    <div class="form-group">
+                      <label>Precio Original (S/)</label>
+                      <input type="number" [(ngModel)]="newOffer.precioOriginal" />
+                    </div>
+                    <div class="form-group">
+                      <label>Precio de Oferta (S/)</label>
+                      <input type="number" [(ngModel)]="newOffer.precioOferta" />
+                    </div>
+                    <div class="form-group">
+                      <label>Descuento Calculado</label>
+                      <div class="static-computed-val">
+                        {{ getDescuentoPorcentaje(newOffer.precioOriginal, newOffer.precioOferta) }}% OFF
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="form-group">
+                      <label>Fecha de Inicio</label>
+                      <input type="date" [(ngModel)]="newOffer.fechaInicio" />
+                    </div>
+                    <div class="form-group">
+                      <label>Fecha de Fin</label>
+                      <input type="date" [(ngModel)]="newOffer.fechaFin" />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Banner Promocional Opcional (URL)</label>
+                    <input type="text" [(ngModel)]="newOffer.banner" placeholder="URL de la imagen del banner de campaña" />
+                  </div>
+
+                  <div class="switch-row">
+                    <label>Visibilidad del descuento en la web</label>
+                    <button type="button" class="switch-btn small-switch" [class.on]="newOffer.visible" (click)="newOffer.visible = !newOffer.visible">
+                      <span></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Previsualización Derecha -->
+                <div class="preview-panel-container">
+                  <h3>Previsualización Tarjeta de Oferta (Cliente)</h3>
+                  <div class="client-offer-preview-card">
+                    <div class="offer-img-box">
+                      <img src="images/prod-jaspeada.png" alt="preview" />
+                      <span class="discount-badge-bubble">
+                        {{ getDescuentoPorcentaje(newOffer.precioOriginal, newOffer.precioOferta) }}% OFF
+                      </span>
+                    </div>
+                    <div class="offer-info-box">
+                      <h5>{{ newOffer.producto }}</h5>
+                      <div class="prices-flex-row">
+                        <span class="original-strike">S/ {{ newOffer.precioOriginal }}</span>
+                        <span class="final-offer-val">S/ {{ newOffer.precioOferta }}</span>
+                      </div>
+                      <button type="button" class="btn-pedir-wa-preview">Pedir por WhatsApp</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="showAddOfferModal = false" type="button">Cancelar</button>
+              <button class="btn-save" (click)="showAddOfferModal = false" type="button">Crear oferta</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL 4: EDITAR OFERTA (Precargado) -->
+      @if (showEditOfferModal) {
+        <div class="modal-backdrop">
+          <div class="modal-card-ultra-large">
+            <div class="modal-header">
+              <h3>Editar oferta</h3>
+              <button class="btn-close-modal" (click)="showEditOfferModal = false" type="button">×</button>
+            </div>
+
+            <div class="modal-body-content">
+              <div class="modal-grid-two-cols">
+                <!-- Formulario Izquierda -->
+                <div class="video-form-fields">
+                  <div class="form-group">
+                    <label>Producto Vinculado</label>
+                    <input type="text" [(ngModel)]="editingOffer.producto" disabled />
+                  </div>
+
+                  <div class="form-grid-3">
+                    <div class="form-group">
+                      <label>Precio Original (S/)</label>
+                      <input type="number" [(ngModel)]="editingOffer.precioOriginal" />
+                    </div>
+                    <div class="form-group">
+                      <label>Precio de Oferta (S/)</label>
+                      <input type="number" [(ngModel)]="editingOffer.precioOferta" />
+                    </div>
+                    <div class="form-group">
+                      <label>Descuento Calculado</label>
+                      <div class="static-computed-val">
+                        {{ getDescuentoPorcentaje(editingOffer.precioOriginal, editingOffer.precioOferta) }}% OFF
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="form-group">
+                      <label>Fecha de Inicio</label>
+                      <input type="date" [(ngModel)]="editingOffer.fechaInicio" />
+                    </div>
+                    <div class="form-group">
+                      <label>Fecha de Fin</label>
+                      <input type="date" [(ngModel)]="editingOffer.fechaFin" />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Banner Promocional Opcional (URL)</label>
+                    <input type="text" [(ngModel)]="editingOffer.banner" />
+                  </div>
+
+                  <div class="switch-row">
+                    <label>Estado Activo / Visible</label>
+                    <button type="button" class="switch-btn small-switch" [class.on]="editingOffer.visible" (click)="editingOffer.visible = !editingOffer.visible">
+                      <span></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Previsualización Derecha -->
+                <div class="preview-panel-container">
+                  <h3>Previsualización Tarjeta de Oferta (Cliente)</h3>
+                  <div class="client-offer-preview-card">
+                    <div class="offer-img-box">
+                      <img src="images/prod-jaspeada.png" alt="preview" />
+                      <span class="discount-badge-bubble">
+                        {{ getDescuentoPorcentaje(editingOffer.precioOriginal, editingOffer.precioOferta) }}% OFF
+                      </span>
+                    </div>
+                    <div class="offer-info-box">
+                      <h5>{{ editingOffer.producto }}</h5>
+                      <div class="prices-flex-row">
+                        <span class="original-strike">S/ {{ editingOffer.precioOriginal }}</span>
+                        <span class="final-offer-val">S/ {{ editingOffer.precioOferta }}</span>
+                      </div>
+                      <button type="button" class="btn-pedir-wa-preview">Pedir por WhatsApp</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="showEditOfferModal = false" type="button">Cancelar</button>
+              <button class="btn-del-img" (click)="showEditOfferModal = false" style="position: static;" type="button">Desactivar oferta</button>
+              <button class="btn-save" (click)="showEditOfferModal = false" type="button">Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- SECCIÓN 4: SHOP VIDEO -->
+    @if (seccionActiva === 'shop-video') {
+      <div class="shop-video-cms">
+        <div class="sub-header-cms mb-20">
+          <h4>Configura videos dinámicos de TikTok / Reels e indexa ventas cruzadas</h4>
+          <button type="button" class="btn-add-product" (click)="openAddVideo()">+ Agregar video</button>
+        </div>
+
+        <div class="videos-grid-admin">
+          @for (vid of videosAdmin; track vid.id; let idx = $index) {
+            <div class="video-card-admin">
+              <div class="vid-thumb-large" [style.background-image]="'url(' + vid.thumbnail + ')'">
+                <div class="platform-badge" [class]="vid.platform.toLowerCase().replace(' ', '-')">{{ vid.platform }}</div>
+                <div class="play-btn-circle">▶</div>
+              </div>
+              <div class="vid-info-admin">
+                <h4>{{ vid.title }}</h4>
+                <p>📍 {{ vid.productsCount }} productos vinculados</p>
+                <div class="vid-actions-bar">
+                  <div class="visible-switch-wrap">
+                    <span>Visible:</span>
+                    <button type="button" class="switch-btn small-switch" [class.on]="vid.visible" (click)="toggleVisible(vid)">
+                      <span></span>
+                    </button>
+                  </div>
+                  <div class="row-actions">
+                    <button class="btn-row-edit" (click)="openEditVideo(vid)" type="button">Editar</button>
+                    <button class="btn-row-delete" (click)="eliminarFila(videosAdmin, idx)" type="button">Eliminar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-cms-placeholder" style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--gray); font-style: italic; border: 1px dashed var(--border); border-radius: 8px; width: 100%;">
+              No hay videos de tienda registrados.
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- MODAL 5: AGREGAR SHOP VIDEO (Vacio) -->
+      @if (showAddVideoModal) {
+        <div class="modal-backdrop">
+          <div class="modal-card-ultra-large">
+            <div class="modal-header">
+              <h3>Agregar Shop Video</h3>
+              <button class="btn-close-modal" (click)="showAddVideoModal = false" type="button">×</button>
+            </div>
+
+            <div class="modal-body-content">
+              <div class="modal-grid-two-cols">
+                <div class="video-form-fields">
+                  <div class="form-group">
+                    <label>Título del Video</label>
+                    <input type="text" placeholder="Ej: Nueva colección de vasos satinados" [(ngModel)]="newVideo.title" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Descripción corta</label>
+                    <input type="text" placeholder="Ej: Mostramos cómo refractan la luz del sol..." [(ngModel)]="newVideo.description" />
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="form-group">
+                      <label>URL del Video (Reel/TikTok Link)</label>
+                      <input type="text" placeholder="https://tiktok.com/@..." [(ngModel)]="newVideo.url" />
+                    </div>
+                    <div class="form-group">
+                      <label>Plataforma</label>
+                      <select [(ngModel)]="newVideo.platform">
+                        <option>TikTok</option>
+                        <option>Instagram</option>
+                        <option>YouTube Shorts</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Picker de Productos -->
+                  <div class="product-picker-container mt-15">
+                    <p class="section-sub">Productos vinculados al video</p>
+                    <div class="picker-scroll-box">
+                      <div class="picker-prod-item">
+                        <span class="chk-box-picked"></span>
+                        <img src="images/prod-jaspeada.png" alt="..." />
+                        <div>
+                          <h6>Taza de cerámica jaspeada</h6>
+                          <span>S/ 39</span>
+                        </div>
+                      </div>
+                      <div class="picker-prod-item">
+                        <span class="chk-box-picked"></span>
+                        <img src="images/prod-verde.png" alt="..." />
+                        <div>
+                          <h6>Taza de vidrio verde</h6>
+                          <span>S/ 45</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="switch-row">
+                    <label>Visible desde el primer momento</label>
+                    <button type="button" class="switch-btn small-switch" [class.on]="newVideo.visible" (click)="newVideo.visible = !newVideo.visible">
+                      <span></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Fake video embed preview a la derecha -->
+                <div class="video-preview-sidebar">
+                  <p class="section-sub">Vista Previa Reproductor (Cliente)</p>
+                  <div class="fake-player-wrapper" [style.background-image]="'url(' + newVideo.thumbnail + ')'">
+                    <div class="fake-overlay-glow">
+                      <span class="live-tag">NUEVO VIDEO</span>
+                      <div class="fake-play-btn-big">▶</div>
+                      
+                      <div class="fake-caption-box">
+                        <h5>{{ newVideo.title || 'Título del video...' }}</h5>
+                        <p>🔗 0 productos enlazados</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="showAddVideoModal = false" type="button">Cancelar</button>
+              <button class="btn-save" (click)="showAddVideoModal = false" type="button">Publicar video</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL 6: EDITAR SHOP VIDEO (Precargado con estadísticas) -->
+      @if (showEditVideoModal) {
+        <div class="modal-backdrop">
+          <div class="modal-card-ultra-large">
+            <div class="modal-header">
+              <h3>Editar Shop Video</h3>
+              <button class="btn-close-modal" (click)="showEditVideoModal = false" type="button">×</button>
+            </div>
+
+            <div class="modal-body-content">
+              <div class="modal-grid-two-cols">
+                <div class="video-form-fields">
+                  <!-- Panel de estadísticas falsas avanzadas tipo TikTok Shop -->
+                  <div class="stats-metric-strip">
+                    <div class="sub-stat-badge">
+                      <span class="val-metric">{{ editingVideo.views }}</span>
+                      <span class="lbl-metric">Visualizaciones</span>
+                    </div>
+                    <div class="sub-stat-badge">
+                      <span class="val-metric">{{ editingVideo.likes }}</span>
+                      <span class="lbl-metric">Me Gusta</span>
+                    </div>
+                    <div class="sub-stat-badge highlight-glow-badge">
+                      <span class="val-metric">{{ editingVideo.clicks }}</span>
+                      <span class="lbl-metric">Clicks Producto</span>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Título del Video</label>
+                    <input type="text" [(ngModel)]="editingVideo.title" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Descripción corta</label>
+                    <input type="text" [(ngModel)]="editingVideo.description" />
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="form-group">
+                      <label>URL del Video</label>
+                      <input type="text" [(ngModel)]="editingVideo.url" />
+                    </div>
+                    <div class="form-group">
+                      <label>Plataforma</label>
+                      <select [(ngModel)]="editingVideo.platform">
+                        <option>TikTok</option>
+                        <option>Instagram</option>
+                        <option>YouTube Shorts</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Picker de Productos -->
+                  <div class="product-picker-container mt-15">
+                    <p class="section-sub">Productos vinculados</p>
+                    <div class="picker-scroll-box">
+                      <div class="picker-prod-item selected">
+                        <span class="chk-box-picked">✓</span>
+                        <img src="images/prod-jaspeada.png" alt="..." />
+                        <div>
+                          <h6>Taza de cerámica jaspeada</h6>
+                          <span>S/ 39</span>
+                        </div>
+                      </div>
+                      <div class="picker-prod-item">
+                        <span class="chk-box-picked"></span>
+                        <img src="images/prod-verde.png" alt="..." />
+                        <div>
+                          <h6>Taza de vidrio verde</h6>
+                          <span>S/ 45</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="switch-row">
+                    <label>Habilitado / Visible</label>
+                    <button type="button" class="switch-btn small-switch" [class.on]="editingVideo.visible" (click)="editingVideo.visible = !editingVideo.visible">
+                      <span></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Fake video embed preview a la derecha -->
+                <div class="video-preview-sidebar">
+                  <p class="section-sub">Vista Previa Reproductor (Cliente)</p>
+                  <div class="fake-player-wrapper" [style.background-image]="'url(' + editingVideo.thumbnail + ')'">
+                    <div class="fake-overlay-glow">
+                      <span class="live-tag">LIVE PREVIEW</span>
+                      <div class="fake-play-btn-big">▶</div>
+                      
+                      <div class="fake-caption-box">
+                        <h5>{{ editingVideo.title }}</h5>
+                        <p>🔗 Contiene: Taza jaspeada</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="showEditVideoModal = false" type="button">Cancelar</button>
+              <button class="btn-del-img" (click)="showEditVideoModal = false" style="position: static;" type="button">Ocultar video</button>
+              <button class="btn-save" (click)="showEditVideoModal = false" type="button">Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- SECCIÓN 5: CONTACTO -->
+    @if (seccionActiva === 'contacto') {
+      <div class="contacto-cms-layout">
+        <!-- Bloques del cliente (Cards a editar) -->
+        <div class="contacto-cards-editor-grid">
+          @for (block of contactoBlocks; track block.id) {
+            <div class="contacto-block-editor-card" [class.invisible-state]="!block.visible">
+              <div class="block-card-header">
+                <div class="block-card-icon" [class]="block.icon">
+                  @if (block.icon === 'whatsapp') { 📞 }
+                  @else if (block.icon === 'instagram') { 📸 }
+                  @else if (block.icon === 'support') { 🎧 }
+                  @else if (block.icon === 'email') { ✉ }
+                  @else if (block.icon === 'info') { ℹ }
+                </div>
+                <div>
+                  <h5>{{ block.title }}</h5>
+                  <span class="block-status-txt">@if(block.visible){Activo/Visible} @else {Oculto}</span>
+                </div>
+              </div>
+              <p class="block-card-desc">{{ block.description }}</p>
+              
+              <div class="block-btn-preview">
+                <span>Botón:</span>
+                <span class="btn-preview-tag">{{ block.btnText }}</span>
+              </div>
+
+              <div class="block-card-actions">
+                <button type="button" class="btn-row-edit" (click)="openEditBlock(block)">Editar bloque</button>
+                <button type="button" class="switch-btn small-switch" [class.on]="block.visible" (click)="toggleVisible(block)">
+                  <span></span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Botón Final de WhatsApp Config -->
+        <div class="bottom-wa-config-box">
+          <div class="wa-config-fields">
+            <h4>Botón de Cierre de WhatsApp</h4>
+            <p class="sub-caption">Modifica el gran banner verde que aparece al final de la página de contacto.</p>
+            <span class="bar-divider"></span>
+
+            <div class="form-group">
+              <label>Texto Principal del Banner</label>
+              <input type="text" [(ngModel)]="contactoWaBottom.btnText" />
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Número WhatsApp destino</label>
+                <input type="text" [(ngModel)]="contactoWaBottom.number" />
+              </div>
+              <div class="form-group">
+                <label>Mensaje automático pre-grabado</label>
+                <input type="text" [(ngModel)]="contactoWaBottom.message" />
+              </div>
+            </div>
+
+            <div class="switch-row">
+              <label>Visibilidad del banner inferior</label>
+              <button type="button" class="switch-btn small-switch" [class.on]="contactoWaBottom.visible" (click)="contactoWaBottom.visible = !contactoWaBottom.visible">
+                <span></span>
+              </button>
+            </div>
+
+            <div class="flex-end-row mt-15">
+              <button class="btn-save" (click)="openEditWaBottom()" type="button">Editar valores</button>
+            </div>
+          </div>
+
+          <!-- Previsualización Bottom Banner -->
+          <div class="preview-panel-container">
+            <h3>Previsualización de Banner Cierre (Cliente)</h3>
+            <div class="client-wa-bottom-banner-preview" [class.invisible-state]="!contactoWaBottom.visible">
+              <div class="wa-preview-left">
+                <div class="wa-preview-decor">✿</div>
+                <div>
+                  <h5>{{ contactoWaBottom.btnText }}</h5>
+                  <p>Resolvamos tus dudas al instante</p>
+                </div>
+              </div>
+              <button type="button" class="btn-wa-green-preview">
+                <span>💬</span> Chatea ahora
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL BLOQUE CONTACTO -->
+      @if (showBlockModal) {
+        <div class="modal-backdrop">
+          <div class="modal-card-large">
+            <div class="modal-header">
+              <h3>Editar Bloque Informativo</h3>
+              <button class="btn-close-modal" (click)="showBlockModal = false" type="button">×</button>
+            </div>
+
+            <div class="modal-body-content">
+              <div class="modal-form-grid">
+                <div class="form-group">
+                  <label>Título del Bloque</label>
+                  <input type="text" [(ngModel)]="editingBlock.title" />
+                </div>
+
+                <div class="form-group">
+                  <label>Descripción corta</label>
+                  <input type="text" [(ngModel)]="editingBlock.description" />
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label>Texto del Botón / Valor</label>
+                    <input type="text" [(ngModel)]="editingBlock.btnText" />
+                  </div>
+                  <div class="form-group">
+                    <label>Enlace de redirección (Link)</label>
+                    <input type="text" [(ngModel)]="editingBlock.btnLink" />
+                  </div>
+                </div>
+
+                <div class="switch-row">
+                  <label>Habilitar visualización de este bloque</label>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingBlock.visible" (click)="editingBlock.visible = !editingBlock.visible">
+                    <span></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="showBlockModal = false" type="button">Cancelar</button>
+              <button class="btn-save" (click)="saveBlock()" type="button">Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL BOTÓN WA FINAL -->
+      @if (showWaBottomModal) {
+        <div class="modal-backdrop">
+          <div class="modal-card-large">
+            <div class="modal-header">
+              <h3>Configurar Botón WhatsApp Final</h3>
+              <button class="btn-close-modal" (click)="showWaBottomModal = false" type="button">×</button>
+            </div>
+
+            <div class="modal-body-content">
+              <div class="modal-form-grid">
+                <div class="form-group">
+                  <label>Texto Principal</label>
+                  <input type="text" [(ngModel)]="editingWaBottom.btnText" />
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label>Número WhatsApp</label>
+                    <input type="text" [(ngModel)]="editingWaBottom.number" />
+                  </div>
+                  <div class="form-group">
+                    <label>Mensaje Preestablecido</label>
+                    <input type="text" [(ngModel)]="editingWaBottom.message" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-cancel" (click)="showWaBottomModal = false" type="button">Cancelar</button>
+              <button class="btn-save" (click)="saveWaBottom()" type="button">Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</app-admin-layout>

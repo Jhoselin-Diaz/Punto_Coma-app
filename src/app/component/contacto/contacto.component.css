@@ -1,0 +1,435 @@
+:host {
+  --orange: #df6c1b;
+  --green: #4b8d37;
+  --ink: #2b1b16;
+  --muted: #766c67;
+  --line: #eee4dd;
+  --wash: #fbf5f1;
+  display: block;
+}
+
+.contacto-page {
+  width: min(1328px, calc(100% - 112px));
+  margin: 0 auto 50px;
+  padding-top: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* --- BANNER HERO --- */
+.contacto-hero {
+  position: relative;
+  min-height: 260px;
+  border-radius: 20px;
+  background-color: #f3e9dc; /* Beige cálido suave */
+  background-image: url('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=2874&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(136, 107, 85, 0.05);
+}
+
+.contacto-hero::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(243, 233, 220, 0.85); /* Capa de color beige traslúcida */
+  z-index: 1;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.hero-inner h1 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.divider-stars {
+  font-size: 16px;
+  color: #cbb29e;
+  margin: 5px 0 12px;
+  letter-spacing: 4px;
+}
+
+.divider-stars span {
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.hero-inner p {
+  margin: 0;
+  color: #7d6b60;
+  font-size: 22px;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+/* --- REDES SOCIALES (DOS COLUMNAS) --- */
+.social-channels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+.social-card {
+  position: relative;
+  background-color: #faf6f0; /* Fondo crema muy suave */
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(136, 107, 85, 0.02);
+}
+
+/* Decoraciones de fondo con flores en las esquinas */
+.social-card::before {
+  content: "✿";
+  position: absolute;
+  bottom: -15px;
+  right: -5px;
+  font-size: 80px;
+  color: #f3ebe1;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.social-card::after {
+  content: "❀";
+  position: absolute;
+  top: -15px;
+  left: -5px;
+  font-size: 60px;
+  color: #f3ebe1;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.social-icon-wrapper {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(136, 107, 85, 0.06);
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.icon-wa {
+  width: 44px;
+  height: 44px;
+  color: #25d366; /* Verde original WhatsApp */
+}
+
+.icon-ig {
+  width: 42px;
+  height: 42px;
+  color: #e1306c; /* Color rosa Instagram */
+}
+
+.social-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2;
+}
+
+.social-info h2 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--ink);
+  font-weight: 700;
+  font-family: Georgia, serif;
+}
+
+.social-info p {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.btn-wa-action,
+.btn-ig-action {
+  align-self: flex-start;
+  min-height: 38px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border: none;
+}
+
+.btn-wa-action:hover,
+.btn-ig-action:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.btn-wa-action {
+  background-color: var(--green);
+  color: #fff;
+  gap: 6px;
+}
+
+.btn-wa-icon {
+  font-weight: 800;
+}
+
+.btn-ig-action {
+  background-color: transparent;
+  border: 1.5px solid #d3a286;
+  color: #8c5d41;
+}
+
+/* --- TARJETA DE INFORMACIÓN (TRES COLUMNAS) --- */
+.info-blocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.info-card {
+  position: relative;
+  background-color: #fbf8f5;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(136, 107, 85, 0.01);
+  overflow: hidden;
+}
+
+/* Decoraciones florales en las tarjetas inferiores */
+.info-card::before {
+  content: "✿";
+  position: absolute;
+  bottom: -10px;
+  left: -5px;
+  font-size: 50px;
+  color: #f3ebe1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.info-card::after {
+  content: "❀";
+  position: absolute;
+  bottom: -10px;
+  right: -5px;
+  font-size: 50px;
+  color: #f3ebe1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.info-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: #ecdcd0; /* Color arena medio */
+  color: #a3816a; /* Tono marrón cálido */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.info-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.info-card h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: var(--ink);
+  font-weight: 700;
+  font-family: Georgia, serif;
+}
+
+.card-divider {
+  width: 50px;
+  height: 1px;
+  background-color: #e5d3c5;
+  margin-bottom: 16px;
+}
+
+.highlight-info {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.mail-link {
+  color: #8c5d41;
+  text-decoration: underline;
+}
+
+.desc-info {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.4;
+  max-width: 200px;
+}
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+/* --- BANNER INFERIOR DE DUDAS --- */
+.banner-quick-dudas {
+  padding: 24px 48px;
+  background-color: #fdf9f5;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 15px rgba(136, 107, 85, 0.02);
+  overflow: hidden;
+  position: relative;
+}
+
+.banner-quick-dudas::before {
+  content: "✿";
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 60px;
+  color: #f3ebe1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.banner-quick-dudas::after {
+  content: "✿";
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 60px;
+  color: #f3ebe1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.dudas-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 2;
+}
+
+.cup-decor-wrapper {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  background-color: #ecdcd0;
+  color: #a3816a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cup-decor-wrapper svg {
+  width: 32px;
+  height: 32px;
+}
+
+.dudas-text h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: var(--ink);
+  font-weight: 700;
+  font-family: Georgia, serif;
+}
+
+.dudas-text p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.btn-whatsapp-dudas {
+  padding: 12px 28px;
+  border-radius: 8px;
+  background-color: var(--green);
+  color: #fff;
+  border: none;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+
+.btn-whatsapp-dudas:hover {
+  opacity: 0.95;
+}
+
+.wa-icon-large {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+/* --- RESPONSIVIDAD --- */
+@media (max-width: 1120px) {
+  .contacto-page {
+    width: min(100% - 32px, 1328px);
+  }
+
+  .social-channels {
+    grid-template-columns: 1fr;
+  }
+
+  .info-blocks {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .banner-quick-dudas {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px;
+    gap: 20px;
+  }
+
+  .dudas-left {
+    flex-direction: column;
+  }
+}
