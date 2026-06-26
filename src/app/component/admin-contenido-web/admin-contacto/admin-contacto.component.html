@@ -1,0 +1,180 @@
+<div class="contacto-cms-layout">
+  <!-- Bloques del cliente (Cards a editar) -->
+  <div class="contacto-cards-editor-grid">
+    @for (block of contactoBlocks; track block.id) {
+      <div class="contacto-block-editor-card" [class.invisible-state]="!block.visible">
+        <div class="block-card-header">
+          <div class="block-card-icon" [class]="block.icon">
+            @if (block.icon === 'whatsapp') { 📞 }
+            @else if (block.icon === 'instagram') { 📸 }
+            @else if (block.icon === 'support') { 🎧 }
+            @else if (block.icon === 'email') { ✉ }
+            @else if (block.icon === 'info') { ℹ }
+          </div>
+          <div>
+            <h5>{{ block.title }}</h5>
+            <span class="block-status-txt">@if(block.visible){Activo/Visible} @else {Oculto}</span>
+          </div>
+        </div>
+        <p class="block-card-desc">{{ block.description }}</p>
+
+        <div class="block-btn-preview">
+          <span>Botón / Valor:</span>
+          <span class="btn-preview-tag">{{ block.btnText || '(Sin botón/texto)' }}</span>
+        </div>
+
+        <div class="block-card-actions">
+          <button type="button" class="btn-row-edit" (click)="openEditBlock(block)">Editar bloque</button>
+          <button type="button" class="switch-btn small-switch" [class.on]="block.visible" (click)="toggleVisible(block)">
+            <span></span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Botón Final de WhatsApp Config -->
+  <div class="bottom-wa-config-box">
+    <div class="wa-config-fields">
+      <h4>Botón de Cierre de WhatsApp</h4>
+      <p class="sub-caption">Modifica el gran banner verde que aparece al final de la página de contacto.</p>
+      <span class="bar-divider"></span>
+
+      <div class="form-group">
+        <label>Texto Principal del Banner</label>
+        <input type="text" [(ngModel)]="contactoWaBottom.btnText" disabled />
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>Número WhatsApp destino</label>
+          <input type="text" [(ngModel)]="contactoWaBottom.number" disabled />
+        </div>
+        <div class="form-group">
+          <label>Mensaje automático pre-grabado</label>
+          <input type="text" [(ngModel)]="contactoWaBottom.message" disabled />
+        </div>
+      </div>
+
+      <div class="switch-row">
+        <label>Visibilidad del banner inferior</label>
+        <button type="button" class="switch-btn small-switch" [class.on]="contactoWaBottom.visible" disabled>
+          <span></span>
+        </button>
+      </div>
+
+      <div class="flex-end-row mt-15">
+        <button class="btn-save" (click)="openEditWaBottom()" type="button">Editar valores</button>
+      </div>
+    </div>
+
+    <!-- Previsualización Bottom Banner -->
+    <div class="preview-panel-container">
+      <h3>Previsualización de Banner Cierre (Cliente)</h3>
+      <div class="client-wa-bottom-banner-preview" [class.invisible-state]="!contactoWaBottom.visible">
+        <div class="wa-preview-left">
+          <div class="wa-preview-decor">✿</div>
+          <div>
+            <h5>{{ contactoWaBottom.btnText }}</h5>
+            <p>Resolvamos tus dudas al instante</p>
+          </div>
+        </div>
+        <button type="button" class="btn-wa-green-preview">
+          <span>💬</span> Chatea ahora
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BLOQUE CONTACTO -->
+@if (showBlockModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-large">
+      <div class="modal-header">
+        <h3>Editar Bloque Informativo</h3>
+        <button class="btn-close-modal" (click)="showBlockModal = false" type="button">×</button>
+      </div>
+
+      <div class="modal-body-content">
+        <div class="modal-form-grid">
+          <div class="form-group">
+            <label>Título del Bloque</label>
+            <input type="text" [(ngModel)]="editingBlock.title" />
+          </div>
+
+          <div class="form-group">
+            <label>Descripción corta</label>
+            <input type="text" [(ngModel)]="editingBlock.description" />
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Texto del Botón / Valor</label>
+              <input type="text" [(ngModel)]="editingBlock.btnText" />
+            </div>
+            <div class="form-group">
+              <label>Enlace de redirección (Link)</label>
+              <input type="text" [(ngModel)]="editingBlock.btnLink" />
+            </div>
+          </div>
+
+          <div class="switch-row">
+            <label>Habilitar visualización de este bloque</label>
+            <button type="button" class="switch-btn small-switch" [class.on]="editingBlock.visible" (click)="editingBlock.visible = !editingBlock.visible">
+              <span></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showBlockModal = false" type="button">Cancelar</button>
+        <button class="btn-save" (click)="saveBlock()" type="button">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL BOTÓN WA FINAL -->
+@if (showWaBottomModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-large">
+      <div class="modal-header">
+        <h3>Configurar Botón WhatsApp Final</h3>
+        <button class="btn-close-modal" (click)="showWaBottomModal = false" type="button">×</button>
+      </div>
+
+      <div class="modal-body-content">
+        <div class="modal-form-grid">
+          <div class="form-group">
+            <label>Texto Principal</label>
+            <input type="text" [(ngModel)]="editingWaBottom.btnText" />
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Número WhatsApp</label>
+              <input type="text" [(ngModel)]="editingWaBottom.number" />
+            </div>
+            <div class="form-group">
+              <label>Mensaje Preestablecido</label>
+              <input type="text" [(ngModel)]="editingWaBottom.message" />
+            </div>
+          </div>
+
+          <div class="switch-row">
+            <label>Habilitar visibilidad del banner</label>
+            <button type="button" class="switch-btn small-switch" [class.on]="editingWaBottom.visible" (click)="editingWaBottom.visible = !editingWaBottom.visible">
+              <span></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showWaBottomModal = false" type="button">Cancelar</button>
+        <button class="btn-save" (click)="saveWaBottom()" type="button">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+}

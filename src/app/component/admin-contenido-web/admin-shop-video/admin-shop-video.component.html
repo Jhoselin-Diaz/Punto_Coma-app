@@ -1,0 +1,238 @@
+<div class="shop-video-cms">
+  <div class="sub-header-cms mb-20">
+    <h4>Configura videos dinámicos de TikTok / Reels e indexa ventas cruzadas</h4>
+    <button type="button" class="btn-add-product" (click)="openAddVideo()">+ Agregar video</button>
+  </div>
+
+  <div class="videos-grid-admin">
+    @for (vid of videosAdmin; track vid.id; let idx = $index) {
+      <div class="video-card-admin">
+        <div class="vid-thumb-large" [style.background-image]="'url(' + vid.thumbnail + ')'">
+          <div class="platform-badge" [class]="vid.platform.toLowerCase().replace(' ', '-')">{{ vid.platform }}</div>
+          <div class="play-btn-circle">▶</div>
+        </div>
+        <div class="vid-info-admin">
+          <h4>{{ vid.title }}</h4>
+          <p>📍 {{ vid.productsCount }} productos vinculados</p>
+          <div class="vid-actions-bar">
+            <div class="visible-switch-wrap">
+              <span>Visible:</span>
+              <button type="button" class="switch-btn small-switch" [class.on]="vid.visible" (click)="toggleVisible(vid)">
+                <span></span>
+              </button>
+            </div>
+            <div class="row-actions">
+              <button class="btn-row-edit" (click)="openEditVideo(vid)" type="button">Editar</button>
+              <button class="btn-row-delete" (click)="eliminarFila(videosAdmin, idx)" type="button">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- MODAL 5: AGREGAR SHOP VIDEO (Vacio) -->
+@if (showAddVideoModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-ultra-large">
+      <div class="modal-header">
+        <h3>Agregar Shop Video</h3>
+        <button class="btn-close-modal" (click)="showAddVideoModal = false" type="button">×</button>
+      </div>
+
+      <div class="modal-body-content">
+        <div class="modal-grid-two-cols">
+          <div class="video-form-fields">
+            <div class="form-group">
+              <label>Título del Video</label>
+              <input type="text" placeholder="Ej: Nueva colección de vasos satinados" [(ngModel)]="newVideo.title" />
+            </div>
+
+            <div class="form-group">
+              <label>Descripción corta</label>
+              <input type="text" placeholder="Ej: Mostramos cómo refractan la luz del sol..." [(ngModel)]="newVideo.description" />
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>URL del Video (Reel/TikTok Link)</label>
+                <input type="text" placeholder="https://tiktok.com/@..." [(ngModel)]="newVideo.url" />
+              </div>
+              <div class="form-group">
+                <label>Plataforma</label>
+                <select [(ngModel)]="newVideo.platform">
+                  <option>TikTok</option>
+                  <option>Instagram</option>
+                  <option>YouTube Shorts</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Picker de Productos -->
+            <div class="product-picker-container mt-15">
+              <p class="section-sub">Productos vinculados al video</p>
+              <div class="picker-scroll-box">
+                <div class="picker-prod-item">
+                  <span class="chk-box-picked"></span>
+                  <img src="images/prod-jaspeada.png" alt="..." />
+                  <div>
+                    <h6>Taza de cerámica jaspeada</h6>
+                    <span>S/ 39</span>
+                  </div>
+                </div>
+                <div class="picker-prod-item">
+                  <span class="chk-box-picked"></span>
+                  <img src="images/prod-verde.png" alt="..." />
+                  <div>
+                    <h6>Taza de vidrio verde</h6>
+                    <span>S/ 45</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="switch-row">
+              <label>Visible desde el primer momento</label>
+              <button type="button" class="switch-btn small-switch" [class.on]="newVideo.visible" (click)="newVideo.visible = !newVideo.visible">
+                <span></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fake video embed preview a la derecha -->
+          <div class="video-preview-sidebar">
+            <p class="section-sub">Vista Previa Reproductor (Cliente)</p>
+            <div class="fake-player-wrapper" [style.background-image]="'url(' + newVideo.thumbnail + ')'">
+              <div class="fake-overlay-glow">
+                <span class="live-tag">NUEVO VIDEO</span>
+                <div class="fake-play-btn-big">▶</div>
+
+                <div class="fake-caption-box">
+                  <h5>{{ newVideo.title || 'Título del video...' }}</h5>
+                  <p>🔗 0 productos enlazados</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showAddVideoModal = false" type="button">Cancelar</button>
+        <button class="btn-save" (click)="showAddVideoModal = false" type="button">Publicar video</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL 6: EDITAR SHOP VIDEO (Precargado con estadísticas) -->
+@if (showEditVideoModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-ultra-large">
+      <div class="modal-header">
+        <h3>Editar Shop Video</h3>
+        <button class="btn-close-modal" (click)="showEditVideoModal = false" type="button">×</button>
+      </div>
+
+      <div class="modal-body-content">
+        <div class="modal-grid-two-cols">
+          <div class="video-form-fields">
+            <!-- Panel de estadísticas falsas avanzadas tipo TikTok Shop -->
+            <div class="stats-metric-strip">
+              <div class="sub-stat-badge">
+                <span class="val-metric">{{ editingVideo.views }}</span>
+                <span class="lbl-metric">Visualizaciones</span>
+              </div>
+              <div class="sub-stat-badge">
+                <span class="val-metric">{{ editingVideo.likes }}</span>
+                <span class="lbl-metric">Me Gusta</span>
+              </div>
+              <div class="sub-stat-badge highlight-glow-badge">
+                <span class="val-metric">{{ editingVideo.clicks }}</span>
+                <span class="lbl-metric">Clicks Producto</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Título del Video</label>
+              <input type="text" [(ngModel)]="editingVideo.title" />
+            </div>
+
+            <div class="form-group">
+              <label>Descripción corta</label>
+              <input type="text" [(ngModel)]="editingVideo.description" />
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>URL del Video</label>
+                <input type="text" [(ngModel)]="editingVideo.url" />
+              </div>
+              <div class="form-group">
+                <label>Plataforma</label>
+                <select [(ngModel)]="editingVideo.platform">
+                  <option>TikTok</option>
+                  <option>Instagram</option>
+                  <option>YouTube Shorts</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Picker de Productos -->
+            <div class="product-picker-container mt-15">
+              <p class="section-sub">Productos vinculados</p>
+              <div class="picker-scroll-box">
+                <div class="picker-prod-item selected">
+                  <span class="chk-box-picked">✓</span>
+                  <img src="images/prod-jaspeada.png" alt="..." />
+                  <div>
+                    <h6>Taza de cerámica jaspeada</h6>
+                    <span>S/ 39</span>
+                  </div>
+                </div>
+                <div class="picker-prod-item">
+                  <span class="chk-box-picked"></span>
+                  <img src="images/prod-verde.png" alt="..." />
+                  <div>
+                    <h6>Taza de vidrio verde</h6>
+                    <span>S/ 45</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="switch-row">
+              <label>Habilitado / Visible</label>
+              <button type="button" class="switch-btn small-switch" [class.on]="editingVideo.visible" (click)="editingVideo.visible = !editingVideo.visible">
+                <span></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fake video embed preview a la derecha -->
+          <div class="video-preview-sidebar">
+            <p class="section-sub">Vista Previa Reproductor (Cliente)</p>
+            <div class="fake-player-wrapper" [style.background-image]="'url(' + editingVideo.thumbnail + ')'">
+              <div class="fake-overlay-glow">
+                <span class="live-tag">LIVE PREVIEW</span>
+                <div class="fake-play-btn-big">▶</div>
+
+                <div class="fake-caption-box">
+                  <h5>{{ editingVideo.title }}</h5>
+                  <p>🔗 Contiene: Taza jaspeada</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showEditVideoModal = false" type="button">Cancelar</button>
+        <button class="btn-del-img" (click)="showEditVideoModal = false" style="position: static;" type="button">Ocultar video</button>
+        <button class="btn-save" (click)="showEditVideoModal = false" type="button">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+}
