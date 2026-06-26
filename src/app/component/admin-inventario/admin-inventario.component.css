@@ -369,6 +369,10 @@
   color: var(--green);
 }
 
+.txt-purple {
+  color: var(--purple);
+}
+
 .status-badge {
   font-size: 11.5px;
   font-weight: 700;

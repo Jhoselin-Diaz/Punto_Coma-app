@@ -43,7 +43,21 @@ export class AdminConfiguracionComponent implements OnInit {
     telefono: '',
     whatsapp: '',
     instagram: '',
-    direccion: ''
+    direccion: '',
+    envios_info_global: '',
+    devoluciones_info_global: '',
+    envio_cobertura: '',
+    envio_tiempo_lima: '',
+    envio_tiempo_provincia: '',
+    envio_costo: '',
+    envio_proceso: '',
+    envio_seguimiento: '',
+    devolucion_plazo: '',
+    devolucion_condiciones: '',
+    devolucion_casos: '',
+    devolucion_proceso: '',
+    devolucion_reembolso: '',
+    devolucion_importante: ''
   };
 
   // ─── PERSONALIZACIÓN VISUAL ───────────────────────────────────────

@@ -1,7 +1,16 @@
-import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ContactoService, ContactoBlock, ContactoCierre } from '../../../service/contacto.service';
+
+interface ContactoBlock {
+  id: string;
+  title: string;
+  description: string;
+  icon: 'whatsapp' | 'instagram' | 'support' | 'email' | 'info';
+  btnText: string;
+  btnLink: string;
+  visible: boolean;
+}
 
 @Component({
   selector: 'app-admin-contacto',
@@ -11,17 +20,61 @@ import { ContactoService, ContactoBlock, ContactoCierre } from '../../../service
   styleUrl: './admin-contacto.component.css'
 })
 export class AdminContactoComponent implements OnInit {
-  contactoBlocks: ContactoBlock[] = [];
-  contactoWaBottom: ContactoCierre = {
-    btnText: '',
-    number: '',
-    message: '',
+  contactoBlocks: ContactoBlock[] = [
+    {
+      id: 'block-wa',
+      title: 'WhatsApp Ventas',
+      description: 'Escríbenos directamente para consultas rápidas, pedidos mayoristas o dudas de stock.',
+      icon: 'whatsapp',
+      btnText: 'Iniciar Chat',
+      btnLink: 'https://wa.me/51987654321',
+      visible: true
+    },
+    {
+      id: 'block-ig',
+      title: 'Instagram Oficial',
+      description: 'Síguenos en @puntoycoma_art para ver novedades diarias, procesos de producción y sorteos.',
+      icon: 'instagram',
+      btnText: 'Ir a Perfil',
+      btnLink: 'https://instagram.com/puntoycoma_art',
+      visible: true
+    },
+    {
+      id: 'block-support',
+      title: 'Soporte y Reclamos',
+      description: '¿Tuviste algún problema con tu envío? Escríbenos y te daremos respuesta prioritaria.',
+      icon: 'support',
+      btnText: 'Soporte Técnico',
+      btnLink: 'https://wa.me/51987654322',
+      visible: true
+    },
+    {
+      id: 'block-email',
+      title: 'Correo Electrónico',
+      description: 'Para propuestas comerciales, colaboraciones o facturación, envíanos un email.',
+      icon: 'email',
+      btnText: 'Enviar Email',
+      btnLink: 'mailto:contacto@puntoycoma.pe',
+      visible: true
+    },
+    {
+      id: 'block-info',
+      title: 'Horario de Atención',
+      description: 'Lunes a Viernes de 9:00 am a 6:00 pm. Sábados de 9:00 am a 1:00 pm.',
+      icon: 'info',
+      btnText: 'Ver Preguntas Frecuentes',
+      btnLink: '/faq',
+      visible: true
+    }
+  ];
+
+  contactoWaBottom = {
+    btnText: '¿Necesitas ayuda? Escríbenos',
+    number: '+51 987 654 321',
+    message: 'Hola! Deseo recibir información sobre los productos.',
     visible: true
   };
 
-  isContactLoading = false;
-
-  // Modals state
   showBlockModal = false;
   showWaBottomModal = false;
 
@@ -35,73 +88,17 @@ export class AdminContactoComponent implements OnInit {
     visible: true
   };
 
-  editingWaBottom: ContactoCierre = {
+  editingWaBottom = {
     btnText: '',
     number: '',
     message: '',
     visible: true
   };
 
-  constructor(
-    private contactoService: ContactoService,
-    private cdr: ChangeDetectorRef,
-    private ngZone: NgZone
-  ) {}
+  ngOnInit() {}
 
-  ngOnInit() {
-    this.cargarDatos();
-  }
-
-  cargarDatos() {
-    this.isContactLoading = true;
-    this.contactoService.getBloques().subscribe({
-      next: (blocks) => {
-        const orderMap = {
-          'block-wa': 1,
-          'block-ig': 2,
-          'block-support': 3,
-          'block-email': 4,
-          'block-info': 5
-        };
-        this.contactoBlocks = blocks.sort((a, b) => {
-          return (orderMap[a.id as keyof typeof orderMap] || 99) - (orderMap[b.id as keyof typeof orderMap] || 99);
-        });
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al cargar bloques de contacto', err);
-      }
-    });
-
-    this.contactoService.getCierre().subscribe({
-      next: (cierre) => {
-        this.contactoWaBottom = cierre;
-        this.isContactLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al cargar cierre de contacto', err);
-        this.isContactLoading = false;
-      }
-    });
-  }
-
-  toggleVisible(block: ContactoBlock) {
-    block.visible = !block.visible;
-    this.contactoService.updateBloque(block.id, block).subscribe({
-      next: (res) => {
-        const idx = this.contactoBlocks.findIndex(b => b.id === block.id);
-        if (idx !== -1) {
-          this.contactoBlocks[idx] = res;
-        }
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al actualizar visibilidad del bloque', err);
-        block.visible = !block.visible; // revert on error
-        this.cdr.detectChanges();
-      }
-    });
+  toggleVisible(item: { visible: boolean }) {
+    item.visible = !item.visible;
   }
 
   openEditBlock(block: ContactoBlock) {
@@ -110,20 +107,12 @@ export class AdminContactoComponent implements OnInit {
   }
 
   saveBlock() {
-    this.contactoService.updateBloque(this.editingBlock.id, this.editingBlock).subscribe({
-      next: (res) => {
-        const idx = this.contactoBlocks.findIndex(b => b.id === this.editingBlock.id);
-        if (idx !== -1) {
-          this.contactoBlocks[idx] = res;
-        }
-        this.showBlockModal = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al guardar bloque de contacto', err);
-        alert('Ocurrió un error al intentar guardar los cambios.');
-      }
-    });
+    const idx = this.contactoBlocks.findIndex(b => b.id === this.editingBlock.id);
+    if (idx !== -1) {
+      this.contactoBlocks[idx] = { ...this.editingBlock };
+    }
+    this.showBlockModal = false;
+    alert('Información de contacto guardada exitosamente (Local).');
   }
 
   openEditWaBottom() {
@@ -132,18 +121,8 @@ export class AdminContactoComponent implements OnInit {
   }
 
   saveWaBottom() {
-    this.contactoService.updateCierre(this.editingWaBottom).subscribe({
-      next: (res) => {
-        this.ngZone.run(() => {
-          this.contactoWaBottom = res;
-        });
-        this.showWaBottomModal = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al guardar cierre de contacto', err);
-        alert('Ocurrió un error al intentar guardar los cambios.');
-      }
-    });
+    this.contactoWaBottom = { ...this.editingWaBottom };
+    this.showWaBottomModal = false;
+    alert('Botón flotante de WhatsApp guardado exitosamente (Local).');
   }
 }

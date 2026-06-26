@@ -17,10 +17,10 @@
           </div>
         </div>
         <p class="block-card-desc">{{ block.description }}</p>
-
+        
         <div class="block-btn-preview">
-          <span>Botón / Valor:</span>
-          <span class="btn-preview-tag">{{ block.btnText || '(Sin botón/texto)' }}</span>
+          <span>Botón:</span>
+          <span class="btn-preview-tag">{{ block.btnText }}</span>
         </div>
 
         <div class="block-card-actions">
@@ -42,23 +42,23 @@
 
       <div class="form-group">
         <label>Texto Principal del Banner</label>
-        <input type="text" [(ngModel)]="contactoWaBottom.btnText" disabled />
+        <input type="text" [(ngModel)]="contactoWaBottom.btnText" />
       </div>
 
       <div class="form-grid-2">
         <div class="form-group">
           <label>Número WhatsApp destino</label>
-          <input type="text" [(ngModel)]="contactoWaBottom.number" disabled />
+          <input type="text" [(ngModel)]="contactoWaBottom.number" />
         </div>
         <div class="form-group">
           <label>Mensaje automático pre-grabado</label>
-          <input type="text" [(ngModel)]="contactoWaBottom.message" disabled />
+          <input type="text" [(ngModel)]="contactoWaBottom.message" />
         </div>
       </div>
 
       <div class="switch-row">
         <label>Visibilidad del banner inferior</label>
-        <button type="button" class="switch-btn small-switch" [class.on]="contactoWaBottom.visible" disabled>
+        <button type="button" class="switch-btn small-switch" [class.on]="contactoWaBottom.visible" (click)="contactoWaBottom.visible = !contactoWaBottom.visible">
           <span></span>
         </button>
       </div>
@@ -160,13 +160,6 @@
               <label>Mensaje Preestablecido</label>
               <input type="text" [(ngModel)]="editingWaBottom.message" />
             </div>
-          </div>
-
-          <div class="switch-row">
-            <label>Habilitar visibilidad del banner</label>
-            <button type="button" class="switch-btn small-switch" [class.on]="editingWaBottom.visible" (click)="editingWaBottom.visible = !editingWaBottom.visible">
-              <span></span>
-            </button>
           </div>
         </div>
       </div>

@@ -6,39 +6,46 @@
       <p>Selecciona tu favorito y pidelo en segundos por WhatsApp.</p>
     </section>
 
-    <section class="products-grid" aria-label="Lista de productos">
-      @for (producto of productos; track producto.id) {
-        <article class="product-card">
-          <div class="image-wrap">
-            @if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
-              <span class="offer-tag">OFERTA</span>
-            } @else if (producto.nuevo || producto.esNuevo) {
-              <span class="offer-tag" style="background: var(--green);">NUEVO</span>
-            }
-            <img [src]="obtenerImagenUrl(producto.imagenPrincipal || producto.imageUrl)" [alt]="producto.nombre" />
-          </div>
-          <div class="product-info">
-            <h2>{{ producto.nombre }}</h2>
-            <p>
-              <strong>S/ {{ producto.precio }}</strong>
+    @if (cargando) {
+      <div class="loading-spinner-container">
+        <div class="spinner"></div>
+        <p>Cargando nuestro catálogo...</p>
+      </div>
+    } @else {
+      <section class="products-grid" aria-label="Lista de productos">
+        @for (producto of productos; track producto.id) {
+          <article class="product-card">
+            <div class="image-wrap">
               @if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
-                <s>S/ {{ producto.precioAnterior }}</s>
+                <span class="offer-tag">OFERTA</span>
+              } @else if (producto.nuevo || producto.esNuevo) {
+                <span class="offer-tag" style="background: var(--green);">NUEVO</span>
               }
-            </p>
-            <div class="buttons">
-              <a class="detail-link" [routerLink]="['/productos', producto.id]">Ver detalles</a>
-              <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto: ' + producto.nombre)">W Comprar por WhatsApp</a>
+              <img [src]="obtenerImagenUrl(producto.imagenPrincipal || producto.imageUrl)" [alt]="producto.nombre" />
             </div>
+            <div class="product-info">
+              <h2>{{ producto.nombre }}</h2>
+              <p>
+                <strong>S/ {{ producto.precio }}</strong>
+                @if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
+                  <s>S/ {{ producto.precioAnterior }}</s>
+                }
+              </p>
+              <div class="buttons">
+                <a class="detail-link" [routerLink]="['/productos', producto.id]">Ver detalles</a>
+                <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto: ' + producto.nombre)">W Comprar por WhatsApp</a>
+              </div>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-client-placeholder large-placeholder">
+            <span class="placeholder-icon">🏺</span>
+            <h3>Catálogo en actualización</h3>
+            <p>Nuestras piezas de cerámica artesanal y cristalería están en proceso de horneado y selección. ¡Vuelve pronto!</p>
           </div>
-        </article>
-      } @empty {
-        <div class="empty-client-placeholder large-placeholder">
-          <span class="placeholder-icon">🏺</span>
-          <h3>Catálogo en actualización</h3>
-          <p>Nuestras piezas de cerámica artesanal y cristalería están en proceso de horneado y selección. ¡Vuelve pronto!</p>
-        </div>
-      }
-    </section>
+        }
+      </section>
+    }
 
     <section class="steps-banner" aria-label="Ordena facilmente por WhatsApp">
       <div class="step">

@@ -42,6 +42,27 @@ export interface DetalleProducto extends Producto {
   cuidados: string[];
   envios: string[];
   devoluciones: string[];
+  materialIntro?: string;
+  materialCuidados?: string;
+  enviosInfo?: string;
+  devolucionesInfo?: string;
+  envios_info?: string;
+  devoluciones_info?: string;
+  material_intro?: string;
+  material_cuidados?: string;
+  material_caracteristicas?: string;
+  apto_microondas?: boolean;
+  apto_lavavajillas?: boolean;
+  resiste_choque_termico?: boolean;
+  limpieza_suave?: boolean;
+  prohibido_fuego_directo?: boolean;
+  apto_temperaturas?: boolean;
+  grado_alimentario?: boolean;
+  evitar_abrasivos?: boolean;
+  control_humedad?: boolean;
+  lavado_mano?: boolean;
+  precio_original?: number;
+  precio_oferta?: number;
 }
 
 @Injectable({
@@ -70,6 +91,22 @@ export class ProductosService {
 
   eliminarProducto(id: any): Observable<any> {
     return this.http.delete(`${this.apiUrl}/productos/${id}`);
+  }
+
+  actualizarProducto(id: any, payload: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/productos/${id}`, payload);
+  }
+
+  actualizarVisibilidadProducto(id: any, visible: boolean): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/productos/${id}/visibilidad?visible=${visible}`, {});
+  }
+
+  agregarStock(id: any, stockRequest: { cantidad: number; proveedor: string; notas: string; tipoMovimiento?: string }): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/productos/${id}/agregar-stock`, stockRequest);
+  }
+
+  obtenerMovimientos(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/productos/movimientos`);
   }
 
   private readonly recienVistos: Producto[] = [];

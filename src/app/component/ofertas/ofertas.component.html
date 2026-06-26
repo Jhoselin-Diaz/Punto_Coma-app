@@ -15,15 +15,23 @@
     </section>
 
     <section class="products-grid" aria-label="Lista de productos en oferta">
-      @for (oferta of ofertas; track oferta.id) {
+      @if (cargando) {
+        <div style="display:flex; justify-content:center; padding: 48px 0;">
+          <div class="loading-spinner"></div>
+        </div>
+      }
+      @for (oferta of productosEnOferta; track oferta.id) {
         <article class="product-card">
           <div class="image-wrap">
-            <img [src]="oferta.imagen" [alt]="oferta.nombre" />
-            <span class="offer-tag">OFERTA</span>
+            <img [src]="obtenerImagenUrl(oferta.imagenPrincipal || oferta.imageUrl || oferta.imagenUrl || '')" [alt]="oferta.nombre" />
+            <span class="offer-tag">{{ obtenerPorcentajeDescuento(oferta.precioAnterior || oferta.precioOriginal || oferta.precio, oferta.precioOferta) }}% OFF</span>
           </div>
           <div class="product-info">
             <h2>{{ oferta.nombre }}</h2>
-            <p><strong>S/ {{ oferta.precio }}</strong> <s>S/{{ oferta.precioAnterior }}</s></p>
+            <p>
+              <strong>S/ {{ oferta.precioOferta }}</strong>
+              <s>S/ {{ oferta.precioAnterior || oferta.precioOriginal || oferta.precio }}</s>
+            </p>
             <div class="buttons">
               <a class="detail-link" [routerLink]="['/productos', oferta.id]">Ver detalles</a>
               <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto en oferta: ' + oferta.nombre)" class="btn-buy-wa" style="text-decoration: none; text-align: center; display: inline-block;">W Comprar por WhatsApp</a>
@@ -31,13 +39,16 @@
           </div>
         </article>
       } @empty {
-        <div class="empty-client-placeholder large-placeholder">
-          <span class="placeholder-icon">🎁</span>
-          <h3>Próximamente más ofertas</h3>
-          <p>Estamos preparando nuevos descuentos especiales para ti. ¡No te los pierdas!</p>
-        </div>
+        @if (!cargando) {
+          <div class="empty-client-placeholder large-placeholder">
+            <span class="placeholder-icon">🎁</span>
+            <h3>Próximamente más ofertas</h3>
+            <p>Estamos preparando nuevos descuentos especiales para ti. ¡No te los pierdas!</p>
+          </div>
+        }
       }
     </section>
+
 
     <!-- Copied directly from productos.component.html -->
     <section class="steps-banner" aria-label="Ordena fácilmente por WhatsApp">

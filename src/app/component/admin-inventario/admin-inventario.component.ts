@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminLayoutComponent } from '../admin-layout/admin-layout.component';
+import { ProductosService } from '../../service/productos.service';
 
 export interface InventarioItem {
   id: string;
@@ -17,8 +18,10 @@ export interface InventarioItem {
 
 export interface MovimientoInventario {
   fecha: string;
+  fechaObj?: Date;
   producto: string;
   tipo: 'entrada' | 'salida' | 'ajuste';
+  tipoMovimiento?: string;
   cantidad: number;
   usuario: string;
   observacion: string;
@@ -84,7 +87,8 @@ export class AdminInventarioComponent implements OnInit {
     cantidad: 10,
     proveedor: '',
     fechaIngreso: '',
-    nota: ''
+    nota: '',
+    tipoMovimiento: 'ENTRADA'
   };
 
   // Variables calculadas
@@ -95,8 +99,10 @@ export class AdminInventarioComponent implements OnInit {
     movimientosHoy: 0
   };
 
+  constructor(private productosService: ProductosService) {}
+
   ngOnInit() {
-    this.recalcularEstadisticas();
+    this.cargarDatos();
     // Poner fecha de hoy por defecto en el selector
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -105,13 +111,99 @@ export class AdminInventarioComponent implements OnInit {
     this.newStockIngreso.fechaIngreso = `${yyyy}-${mm}-${dd}`;
   }
 
+  cargarDatos() {
+    // 1. Cargar productos desde el backend
+    this.productosService.obtenerTodosBackend().subscribe({
+      next: (data) => {
+        this.stockItems = data.map(p => {
+          let estado: 'disponible' | 'bajo' | 'agotado' = 'disponible';
+          const stock = p.stock || 0;
+          if (stock === 0) {
+            estado = 'agotado';
+          } else if (stock <= 5) {
+            estado = 'bajo';
+          }
+          return {
+            id: p.id ? p.id.toString() : '',
+            nombre: p.nombre || '',
+            sku: p.sku || (p.id ? `PC-${p.id}` : '-'),
+            categoria: p.categoria || 'Tazas',
+            stock: stock,
+            estado: estado,
+            ultimaActualizacion: 'Hoy',
+            imagen: p.imagenPrincipal || p.imageUrl || 'images/prod-jaspeada.png',
+            visible: p.visible !== false
+          };
+        });
+        this.recalcularEstadisticas();
+      },
+      error: (err) => {
+        console.error('Error al cargar productos para inventario:', err);
+      }
+    });
+
+    // 2. Cargar movimientos desde el backend
+    this.productosService.obtenerMovimientos().subscribe({
+      next: (data) => {
+        this.movements = data.map(m => {
+          let tipo: 'entrada' | 'salida' | 'ajuste' = 'entrada';
+          if (m.tipoMovimiento === 'SALIDA') {
+            tipo = 'salida';
+          } else if (m.tipoMovimiento === 'AJUSTE') {
+            tipo = 'ajuste';
+          } else if (m.tipoMovimiento === 'ENTRADA') {
+            tipo = 'entrada';
+          }
+
+          let dateStr = 'Reciente';
+          let fechaObj = new Date();
+          if (m.fecha) {
+            try {
+              fechaObj = new Date(m.fecha);
+              const day = String(fechaObj.getDate()).padStart(2, '0');
+              const month = String(fechaObj.getMonth() + 1).padStart(2, '0');
+              const year = fechaObj.getFullYear();
+              const hours = String(fechaObj.getHours()).padStart(2, '0');
+              const minutes = String(fechaObj.getMinutes()).padStart(2, '0');
+              dateStr = `${day}/${month}/${year} ${hours}:${minutes}`;
+            } catch (e) {
+              dateStr = m.fecha.toString();
+            }
+          }
+
+          return {
+            fecha: dateStr,
+            fechaObj: fechaObj,
+            producto: m.productoNombre || 'Producto',
+            tipo: tipo,
+            tipoMovimiento: m.tipoMovimiento,
+            cantidad: m.cantidad || 0,
+            usuario: 'Admin Principal',
+            observacion: m.notas || ''
+          };
+        });
+        this.recalcularEstadisticas();
+      },
+      error: (err) => {
+        console.error('Error al cargar movimientos de inventario:', err);
+      }
+    });
+  }
+
   recalcularEstadisticas() {
     const total = this.stockItems.reduce((acc, curr) => acc + curr.stock, 0);
     const bajo = this.stockItems.filter(item => item.stock > 0 && item.stock <= 5).length;
     const agotado = this.stockItems.filter(item => item.stock === 0).length;
     
     // Obtener movimientos de hoy
-    const movementsTodayCount = this.movements.filter(mov => mov.fecha.includes('19/05/2026')).length;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const movementsTodayCount = this.movements.filter(mov => {
+      if (!mov.fechaObj) return false;
+      const movDate = new Date(mov.fechaObj.getTime());
+      movDate.setHours(0, 0, 0, 0);
+      return movDate.getTime() === today.getTime();
+    }).length;
 
     this.statsStock = {
       totalProductos: total,
@@ -185,13 +277,26 @@ export class AdminInventarioComponent implements OnInit {
   }
 
   getFilteredMovements(): MovimientoInventario[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return this.movements.filter(mov => {
+      if (!mov.fechaObj) return false;
+      const movDate = new Date(mov.fechaObj.getTime());
+      movDate.setHours(0, 0, 0, 0);
+
       if (this.filtroHistorialActivo === 'hoy') {
-        return mov.fecha.includes('19/05/2026');
+        return movDate.getTime() === today.getTime();
       } else if (this.filtroHistorialActivo === 'semana') {
-        return mov.fecha.includes('19/05/2026') || mov.fecha.includes('18/05/2026') || mov.fecha.includes('17/05/2026') || mov.fecha.includes('15/05/2026');
+        const limitDate = new Date(today);
+        limitDate.setDate(today.getDate() - 7);
+        return movDate.getTime() >= limitDate.getTime() && movDate.getTime() <= today.getTime();
+      } else if (this.filtroHistorialActivo === 'mes') {
+        const limitDate = new Date(today);
+        limitDate.setDate(today.getDate() - 30);
+        return movDate.getTime() >= limitDate.getTime() && movDate.getTime() <= today.getTime();
       }
-      return true; // mes
+      return true;
     });
   }
 
@@ -213,55 +318,32 @@ export class AdminInventarioComponent implements OnInit {
   saveEditStock() {
     const item = this.stockItems.find(i => i.id === this.editingStockItem.id);
     if (item) {
-      let finalStock = item.stock;
       const cant = this.editingStockItem.cantidadMovimiento;
       const tipo = this.editingStockItem.tipoMovimiento;
 
+      let delta = 0;
       if (tipo === 'entrada') {
-        finalStock += cant;
+        delta = cant;
       } else if (tipo === 'salida') {
-        finalStock = Math.max(0, finalStock - cant);
+        delta = -cant;
       } else {
-        // ajuste manual
-        finalStock = Math.max(0, cant); // en este caso cantidad es el valor final deseado
+        delta = cant - item.stock;
       }
 
-      item.stock = finalStock;
-      
-      // Actualizar estado del badge
-      if (item.stock === 0) {
-        item.estado = 'agotado';
-      } else if (item.stock <= 5) {
-        item.estado = 'bajo';
-      } else {
-        item.estado = 'disponible';
-      }
-
-      const now = new Date();
-      const timestamp = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      item.ultimaActualizacion = timestamp;
-
-      // Registrar movimiento
-      this.movements.unshift({
-        fecha: timestamp,
-        producto: item.nombre,
-        tipo: tipo,
-        cantidad: tipo === 'ajuste' ? finalStock : cant,
-        usuario: 'Admin Principal',
-        observacion: this.editingStockItem.observacion || `Actualización manual (${tipo})`
+      this.productosService.agregarStock(+item.id, {
+        cantidad: delta,
+        proveedor: 'Ajuste de inventario',
+        notes: this.editingStockItem.observacion || `Actualización manual (${tipo})`
+      } as any).subscribe({
+        next: () => {
+          alert('¡Stock actualizado con éxito en el servidor!');
+          this.cargarDatos();
+        },
+        error: (err) => {
+          console.error('Error al actualizar stock:', err);
+          alert('No se pudo guardar la actualización en el servidor.');
+        }
       });
-
-      // Registrar en recientemente modificados
-      this.summaryData.recentlyModified.unshift({
-        nombre: item.nombre,
-        fecha: 'Hace un momento',
-        stock: item.stock
-      });
-      if (this.summaryData.recentlyModified.length > 5) {
-        this.summaryData.recentlyModified.pop();
-      }
-
-      this.recalcularEstadisticas();
     }
     this.showEditStockModal = false;
   }
@@ -272,7 +354,8 @@ export class AdminInventarioComponent implements OnInit {
       cantidad: 15,
       proveedor: 'Cerámicas Artisan SAC',
       fechaIngreso: new Date().toISOString().split('T')[0],
-      nota: ''
+      nota: '',
+      tipoMovimiento: 'ENTRADA'
     };
     this.showAddStockModal = true;
   }
@@ -281,49 +364,41 @@ export class AdminInventarioComponent implements OnInit {
     const item = this.stockItems.find(i => i.id === this.newStockIngreso.productoId);
     if (item) {
       const cant = this.newStockIngreso.cantidad;
-      item.stock += cant;
+      const prov = this.newStockIngreso.proveedor || 'Proveedor';
+      const nota = this.newStockIngreso.nota || 'Sin notas';
 
-      // Actualizar estado del badge
-      if (item.stock === 0) {
-        item.estado = 'agotado';
-      } else if (item.stock <= 5) {
-        item.estado = 'bajo';
-      } else {
-        item.estado = 'disponible';
-      }
-
-      const now = new Date();
-      const timestamp = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      item.ultimaActualizacion = timestamp;
-
-      // Registrar movimiento
-      this.movements.unshift({
-        fecha: timestamp,
-        producto: item.nombre,
-        tipo: 'entrada',
+      this.productosService.agregarStock(+item.id, {
         cantidad: cant,
-        usuario: 'Admin Principal',
-        observacion: `Reabastecimiento (${this.newStockIngreso.proveedor || 'Proveedor'}) - ${this.newStockIngreso.nota || 'Sin notas'}`
+        proveedor: prov,
+        notas: nota,
+        tipoMovimiento: this.newStockIngreso.tipoMovimiento
+      }).subscribe({
+        next: () => {
+          alert('¡Ingreso de stock registrado con éxito!');
+          this.cargarDatos();
+        },
+        error: (err) => {
+          console.error('Error al registrar ingreso de stock:', err);
+          alert('No se pudo registrar el ingreso en el servidor.');
+        }
       });
-
-      // Registrar en recientemente modificados
-      this.summaryData.recentlyModified.unshift({
-        nombre: item.nombre,
-        fecha: 'Hace un momento',
-        stock: item.stock
-      });
-      if (this.summaryData.recentlyModified.length > 5) {
-        this.summaryData.recentlyModified.pop();
-      }
-
-      this.recalcularEstadisticas();
     }
     this.showAddStockModal = false;
   }
 
   ocultarProducto(item: InventarioItem) {
-    item.visible = !item.visible;
-    alert(`El producto "${item.nombre}" ahora está ${item.visible ? 'VISIBLE' : 'OCULTO'} en la tienda web del cliente.`);
+    const nuevoEstado = !item.visible;
+    this.productosService.actualizarVisibilidadProducto(+item.id, nuevoEstado).subscribe({
+      next: () => {
+        item.visible = nuevoEstado;
+        alert(`El producto "${item.nombre}" ahora está ${nuevoEstado ? 'VISIBLE' : 'OCULTO'} en la tienda web.`);
+        this.cargarDatos();
+      },
+      error: (err) => {
+        console.error('Error al cambiar visibilidad:', err);
+        alert('No se pudo actualizar la visibilidad en el servidor.');
+      }
+    });
   }
 
   exportarInventario() {

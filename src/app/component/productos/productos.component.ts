@@ -13,6 +13,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 })
 export class ProductosComponent implements OnInit {
   productos: any[] = [];
+  cargando = true;
 
   constructor(
     private productosService: ProductosService,
@@ -21,12 +22,16 @@ export class ProductosComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.cargando = true;
     this.productosService.obtenerProductosPublicos().subscribe({
-      next: (data) => {
-        this.productos = data;
+      next: (res: any) => {
+        const data = Array.isArray(res) ? res : (res && Array.isArray(res.content) ? res.content : []);
+        this.productos = data.filter((p: any) => p.visible !== false && p.activo !== false);
+        this.cargando = false;
       },
       error: (err) => {
         console.error('Error al obtener productos públicos:', err);
+        this.cargando = false;
       }
     });
   }

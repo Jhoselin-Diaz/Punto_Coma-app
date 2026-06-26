@@ -66,6 +66,10 @@
 }
 
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: #fff;
   height: 82px;
   display: flex;
   align-items: center;

@@ -1,18 +1,6 @@
 <app-cliente-layout>
   <main class="content">
-    @if (!isBannerLoading && banner && banner.visible) {
-      <section class="hero" [style.background-image]="bannerPreviewStyle" [attr.aria-label]="banner.titulo">
-        <div class="hero-overlay">
-          <div class="hero-content">
-            <h1 class="hero-title">{{ banner.titulo }}</h1>
-            <p class="hero-subtitle">{{ banner.subtitulo }}</p>
-            @if (banner.textoBoton && banner.linkBoton) {
-              <a [routerLink]="banner.linkBoton" class="btn-hero-client">{{ banner.textoBoton }}</a>
-            }
-          </div>
-        </div>
-      </section>
-    }
+    <section class="hero" aria-label="Elegantes tazas y vasos de moda"></section>
 
     <section class="section">
       <div class="section-title">

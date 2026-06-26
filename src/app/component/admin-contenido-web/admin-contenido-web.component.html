@@ -111,167 +111,20 @@
       </div>
     }
 
-    <!-- SECCIÓN 1: INICIO -->
+    <!-- SUBCOMPONENTES DYNAMICALLY LOADED -->
     @if (seccionActiva === 'inicio') {
-      <div class="cms-layout">
-        <!-- Pestañas internas de Inicio -->
-        <div class="cms-tabs">
-          <button [class.active]="inicioTabActiva === 'banner'" (click)="setInicioTab('banner')" type="button">Banner principal</button>
-          <button [class.active]="inicioTabActiva === 'categorias'" (click)="setInicioTab('categorias')" type="button">Categorías destacadas</button>
-          <button [class.active]="inicioTabActiva === 'productos'" (click)="setInicioTab('productos')" type="button">Productos destacados</button>
-          <button [class.active]="inicioTabActiva === 'config'" (click)="setInicioTab('config')" type="button">Configuración visual</button>
-        </div>
-
-        <div class="cms-content-box">
-          @if (inicioTabActiva === 'banner') {
-            <app-admin-inicio></app-admin-inicio>
-          }
-
-          <!-- SUB-TAB 2: CATEGORÍAS DESTACADAS (CARDS AESTHETIC) -->
-          @if (inicioTabActiva === 'categorias') {
-            <div class="categorias-cms">
-              <div class="sub-header-cms">
-                <h4>Categorías visuales mostradas en el home del cliente</h4>
-                <button type="button" class="btn-add-item">+ Agregar categoría</button>
-              </div>
-
-              <div class="categorias-cards-grid">
-                @for (cat of categorias; track cat.id; let idx = $index) {
-                  <div class="cat-aesthetic-card" [class.invisible-state]="!cat.visible">
-                    <div class="cat-card-img-wrap">
-                      <img [src]="cat.imagen" [alt]="cat.nombre" />
-                      <div class="cat-card-order-badge">#{{ cat.orden }}</div>
-                    </div>
-
-                    <div class="cat-card-info">
-                      <h5>{{ cat.nombre }}</h5>
-                      <span class="cat-card-count">{{ cat.productosCount }} productos vinculados</span>
-
-                      <div class="cat-card-switch-row">
-                        <span>Visible en Web:</span>
-                        <button type="button" class="switch-btn small-switch" [class.on]="cat.visible" (click)="toggleVisible(cat)">
-                          <span></span>
-                        </button>
-                      </div>
-
-                      <div class="cat-card-actions">
-                        <button class="btn-row-edit" type="button">Editar</button>
-                        <button class="btn-row-delete" (click)="eliminarFila(categorias, idx)" type="button">Eliminar</button>
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- SUB-TAB 3: PRODUCTOS DESTACADOS -->
-          @if (inicioTabActiva === 'productos') {
-            <div class="productos-destacados-cms">
-              <div class="sub-header-cms mb-15">
-                <h4>Elige qué productos salen en la sección "Destacados del día" en Inicio</h4>
-                <button class="btn-save" type="button">Guardar selección</button>
-              </div>
-
-              <div class="prod-dest-grid">
-                @for (prod of productosDestacados; track prod.id) {
-                  <div class="selectable-prod-card" [class.selected]="prod.seleccionado">
-                    <div class="card-selection-indicator" (click)="toggleSeleccionado(prod)">
-                      <span class="chk-box"></span>
-                    </div>
-
-                    <div class="prod-img-wrap">
-                      <img [src]="prod.imagen" [alt]="prod.nombre" />
-                    </div>
-
-                    <div class="prod-meta">
-                      <h5>{{ prod.nombre }}</h5>
-                      <span class="price-val">S/ {{ prod.precio }}</span>
-                      <div class="tag-chips">
-                        @for (tag of prod.tags; track tag) {
-                          <span class="tag-chip" [class]="tag">{{ tag | uppercase }}</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- SUB-TAB 4: CONFIGURACIÓN VISUAL -->
-          @if (inicioTabActiva === 'config') {
-            <div class="visual-config-cms">
-              <div class="sub-header-cms">
-                <h3>Configuración de Elementos Dinámicos</h3>
-                <button class="btn-save" type="button">Guardar cambios</button>
-              </div>
-              <span class="bar-divider"></span>
-
-              <div class="config-switches-panel">
-                <div class="config-row-switch">
-                  <div class="config-label-area">
-                    <h5>Activar micro-animaciones en tarjetas</h5>
-                    <p>Agrega un efecto de hover premium y escala en imágenes.</p>
-                  </div>
-                  <button type="button" class="switch-btn" [class.on]="configAnimaciones" (click)="configAnimaciones = !configAnimaciones">
-                    <span></span>
-                  </button>
-                </div>
-
-                <div class="config-row-switch">
-                  <div class="config-label-area">
-                    <h5>Habilitar carrusel automático</h5>
-                    <p>Las categorías e inicio rotarán de forma autónoma.</p>
-                  </div>
-                  <button type="button" class="switch-btn" [class.on]="configCarrusel" (click)="configCarrusel = !configCarrusel">
-                    <span></span>
-                  </button>
-                </div>
-
-                <div class="config-row-switch">
-                  <div class="config-label-area">
-                    <h5>Mostrar sección destacada de Ofertas</h5>
-                    <p>Habilita el banner y contador en la página home.</p>
-                  </div>
-                  <button type="button" class="switch-btn" [class.on]="configMostrarOfertas" (click)="configMostrarOfertas = !configMostrarOfertas">
-                    <span></span>
-                  </button>
-                </div>
-
-                <div class="config-row-switch">
-                  <div class="config-label-area">
-                    <h5>Mostrar bloque "Categorías populares"</h5>
-                    <p>Visualiza accesos directos redondos de categorías.</p>
-                  </div>
-                  <button type="button" class="switch-btn" [class.on]="configCategoriasPopulares" (click)="configCategoriasPopulares = !configCategoriasPopulares">
-                    <span></span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      </div>
+      <app-admin-inicio></app-admin-inicio>
     }
-
-    <!-- SECCIÓN 2: PRODUCTOS -->
-    @if (seccionActiva === 'productos') {
+    @else if (seccionActiva === 'productos') {
       <app-admin-productos></app-admin-productos>
     }
-
-    <!-- SECCIÓN 3: OFERTAS -->
-    @if (seccionActiva === 'ofertas') {
+    @else if (seccionActiva === 'ofertas') {
       <app-admin-ofertas></app-admin-ofertas>
     }
-
-    <!-- SECCIÓN 4: SHOP VIDEO -->
-    @if (seccionActiva === 'shop-video') {
+    @else if (seccionActiva === 'shop-video') {
       <app-admin-shop-video></app-admin-shop-video>
     }
-
-    <!-- SECCIÓN 5: CONTACTO -->
-    @if (seccionActiva === 'contacto') {
+    @else if (seccionActiva === 'contacto') {
       <app-admin-contacto></app-admin-contacto>
     }
   </div>

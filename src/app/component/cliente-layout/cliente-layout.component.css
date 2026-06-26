@@ -11,7 +11,7 @@
 }
 
 .topbar {
-  height: 84px;
+  height: 64px;
   display: grid;
   grid-template-columns: 214px minmax(280px, 714px) 1fr;
   align-items: center;
@@ -128,14 +128,14 @@
 }
 
 .menu {
-  height: 66px;
+  height: 48px;
   display: flex;
   justify-content: center;
   align-items: stretch;
   gap: 44px;
   border-bottom: 1px solid var(--line);
   position: sticky;
-  top: 84px;
+  top: 64px;
   z-index: 99;
   background: #fff;
 }
@@ -147,7 +147,7 @@
   gap: 8px;
   padding: 0 4px;
   color: #2b2522;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   text-decoration: none;
 }

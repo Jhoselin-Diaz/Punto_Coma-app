@@ -1,65 +1,156 @@
-<div class="ofertas-cms">
-  <div class="ofertas-stats-grid">
-    <div class="stat-card-white">
-      <span class="stat-num">{{ statsOfertas.activas }}</span>
-      <span class="stat-label">Ofertas Activas</span>
-    </div>
-    <div class="stat-card-white">
-      <span class="stat-num">{{ statsOfertas.productosDescuento }}</span>
-      <span class="stat-label">Productos con Descuento</span>
-    </div>
-    <div class="stat-card-white highlight-orange-border">
-      <span class="stat-num">{{ statsOfertas.proximas }}</span>
-      <span class="stat-label">Campañas Próximas</span>
-    </div>
+<div class="cms-layout">
+  <!-- Pestañas internas de Ofertas -->
+  <div class="cms-tabs">
+    <button [class.active]="pestanaActiva === 'descuentos'" (click)="pestanaActiva = 'descuentos'" type="button">Descuentos vigentes</button>
+    <button [class.active]="pestanaActiva === 'banner'" (click)="pestanaActiva = 'banner'" type="button">Banner promocional</button>
   </div>
 
-  <div class="table-card mt-25">
-    <div class="table-header-flex">
-      <h3>Listado de Descuentos Vigentes</h3>
-      <button class="btn-add-product" (click)="openAddOffer()" type="button">+ Crear oferta</button>
-    </div>
-    <table class="premium-table mt-15">
-      <thead>
-        <tr>
-          <th>Producto Relacionado</th>
-          <th>Descuento Asignado</th>
-          <th>Fecha de Inicio</th>
-          <th>Fecha de Finalización</th>
-          <th>Estado Visible</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (of of ofertasList; track of.id; let idx = $index) {
-          <tr>
-            <td><strong>{{ of.producto }}</strong></td>
-            <td><span class="discount-badge-table">{{ of.descuento }}% OFF</span></td>
-            <td>{{ of.fechaInicio }}</td>
-            <td>{{ of.fechaFin }}</td>
-            <td>
-              <button type="button" class="switch-btn small-switch" [class.on]="of.visible" (click)="toggleVisible(of)">
-                <span></span>
+  <div class="cms-content-box" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+    <!-- PESTAÑA 1: DESCUENTOS VIGENTES -->
+    @if (pestanaActiva === 'descuentos') {
+      <div class="ofertas-cms" style="padding: 0; border: none; box-shadow: none; background: transparent;">
+        <div class="ofertas-stats-grid">
+          <div class="stat-card-white">
+            <span class="stat-num">{{ statsOfertas.activas }}</span>
+            <span class="stat-label">Ofertas Activas</span>
+          </div>
+          <div class="stat-card-white">
+            <span class="stat-num">{{ statsOfertas.productosDescuento }}</span>
+            <span class="stat-label">Productos con Descuento</span>
+          </div>
+          <div class="stat-card-white highlight-orange-border">
+            <span class="stat-num">{{ statsOfertas.proximas }}</span>
+            <span class="stat-label">Campañas Próximas</span>
+          </div>
+        </div>
+
+        <div class="table-card mt-25">
+          <div class="table-header-flex">
+            <h3>Listado de Descuentos Vigentes</h3>
+            <button class="btn-add-product" (click)="openAddOffer()" type="button">+ Crear oferta</button>
+          </div>
+          <table class="premium-table mt-15">
+            <thead>
+              <tr>
+                <th>Producto Relacionado</th>
+                <th>Descuento Asignado</th>
+                <th>Fecha de Inicio</th>
+                <th>Fecha de Finalización</th>
+                <th>Estado Visible</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (cargando) {
+                <tr>
+                  <td colspan="6" style="padding: 40px 0; text-align: center;">
+                    <div class="loading-spinner-container">
+                      <div class="spinner"></div>
+                      <p>Cargando ofertas...</p>
+                    </div>
+                  </td>
+                </tr>
+              }
+              @for (of of ofertasList; track of.id; let idx = $index) {
+                <tr>
+                  <td><strong>{{ of.producto }}</strong></td>
+                  <td><span class="discount-badge-table">{{ of.descuento }}% OFF</span></td>
+                  <td>{{ of.fechaInicioOferta ? (of.fechaInicioOferta | date:'yyyy-MM-dd') : 'No especificada' }}</td>
+                  <td>{{ of.fechaFinOferta ? (of.fechaFinOferta | date:'yyyy-MM-dd') : 'No especificada' }}</td>
+                  <td>
+                    <button type="button" class="switch-btn small-switch" [class.on]="of.visible" (click)="toggleVisible(of)">
+                      <span></span>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="row-actions">
+                      <button class="btn-row-edit" (click)="openEditOffer(of)" type="button">Editar</button>
+                      <button class="btn-row-delete" (click)="eliminarOferta(of)" type="button">Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                @if (!cargando) {
+                  <tr>
+                    <td colspan="6" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+                      No hay ofertas promocionales configuradas.
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- PESTAÑA 2: BANNER PROMOCIONAL -->
+    @if (pestanaActiva === 'banner') {
+      <div class="grid-two-cols">
+        <!-- Formulario de Banner de Ofertas -->
+        <div class="form-card-visual">
+          <h3>Editar Banner de Ofertas</h3>
+          <span class="bar-divider"></span>
+
+          <div class="form-group">
+            <label for="bannerTitle">Título del Banner</label>
+            <input id="bannerTitle" [(ngModel)]="bannerConfig.titulo" type="text" placeholder="Ej: Ofertas Especiales" />
+          </div>
+
+          <div class="form-group">
+            <label for="bannerDesc">Descripción</label>
+            <textarea id="bannerDesc" [(ngModel)]="bannerConfig.descripcion" rows="3" placeholder="Ej: Aprovecha estas promociones..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="bannerImg">Imagen de Fondo (URL / Google Drive)</label>
+            <div style="display: flex; gap: 8px; width: 100%;">
+              <input id="bannerImg" [(ngModel)]="bannerConfig.imagenUrl" type="text" placeholder="Ej: https://images.unsplash.com/... o enlace de Drive" style="flex: 1;" />
+              <button class="btn-add-product" (click)="abrirPicker('banner')" type="button" style="margin-top: 0; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; background-color: #ef6737; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                </svg>
+                Google Drive
               </button>
-            </td>
-            <td>
-              <div class="row-actions">
-                <button class="btn-row-edit" (click)="openEditOffer(of)" type="button">Editar</button>
-                <button class="btn-row-delete" (click)="eliminarFila(ofertasList, idx)" type="button">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="6" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
-              No hay ofertas promocionales configuradas.
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-</div>
+            </div>
+          </div>
+
+          <div class="flex-end-row mt-15">
+            <button class="btn-save" (click)="guardarConfiguracionBannerOfertas()" type="button">Guardar cambios</button>
+          </div>
+        </div>
+
+        <!-- Vista previa en tiempo real -->
+        <div class="preview-panel-container">
+          <h3>Previsualización en tiempo real (Cliente)</h3>
+          <!-- We style this to resemble .ofertas-hero from ofertas.component.css -->
+          <div class="client-banner-preview" [style.background-image]="'url(' + bannerPreviewUrl + ')'" style="min-height: 280px; position: relative; border-radius: 12px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; padding: 24px; color: #2b1b16;">
+            <!-- Overlay that replicates the client page styling -->
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 12px; background: linear-gradient(90deg, rgba(247,237,227,0.3) 20%, #f7ede3 65%); z-index: 1;"></div>
+            
+            <div style="position: relative; z-index: 2; text-align: center; max-width: 400px; margin-left: auto;">
+              <h4 style="margin: 0 0 10px; color: #2b1b16; font-family: Georgia, serif; font-size: 28px; font-weight: 700; line-height: 1.2;">
+                {{ bannerConfig.titulo || 'Ofertas Especiales' }}
+              </h4>
+              <p style="margin: 0 0 16px; color: #5d524d; font-size: 13px; line-height: 1.4;">
+                {{ bannerConfig.descripcion || 'Descripción del banner.' }}
+              </p>
+              <button type="button" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: 6px; background-color: #df6c1b; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer;">
+                Pedir por WhatsApp
+              </button>
+            </div>
+            
+            <!-- Ribbon replicating the client design -->
+            <div style="position: absolute; top: -10px; right: 20px; width: 40px; height: 60px; background-color: #df6c1b; z-index: 10; display: flex; justify-content: center; align-items: center; box-shadow: 1px 1px 3px rgba(0,0,0,0.15);">
+              <span style="color: #fff; writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); font-weight: 800; font-size: 10px; letter-spacing: 1px;">OFERTA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+  </div><!-- /cms-content-box -->
+</div><!-- /cms-layout -->
 
 <!-- MODAL 3: CREAR OFERTA (Vacio) -->
 @if (showAddOfferModal) {
@@ -76,28 +167,26 @@
           <div class="video-form-fields">
             <div class="form-group">
               <label>Seleccionar Producto</label>
-              <select [(ngModel)]="newOffer.producto">
-                <option>Taza de cerámica jaspeada</option>
-                <option>Taza de vidrio verde</option>
-                <option>Taza de cerámica rosa</option>
-                <option>Vaso ondulado transparente</option>
+              <select [(ngModel)]="productoSeleccionado" (change)="onProductoSeleccionadoChange()">
+                <option [ngValue]="null" disabled>Seleccione un producto</option>
+                @for (prod of productosDisponibles; track prod.id) {
+                  <option [ngValue]="prod">{{ prod.nombre }}</option>
+                }
               </select>
             </div>
 
             <div class="form-grid-3">
               <div class="form-group">
                 <label>Precio Original (S/)</label>
-                <input type="number" [(ngModel)]="newOffer.precioOriginal" />
+                <input type="number" [(ngModel)]="newOffer.precioOriginal" (input)="onPrecioOriginalOrOfertaChange()" />
               </div>
               <div class="form-group">
                 <label>Precio de Oferta (S/)</label>
-                <input type="number" [(ngModel)]="newOffer.precioOferta" />
+                <input type="number" [(ngModel)]="newOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChange()" />
               </div>
               <div class="form-group">
-                <label>Descuento Calculado</label>
-                <div class="static-computed-val">
-                  {{ getDescuentoPorcentaje(newOffer.precioOriginal, newOffer.precioOferta) }}% OFF
-                </div>
+                <label>Descuento (%)</label>
+                <input type="number" [(ngModel)]="newOffer.descuento" (input)="onDescuentoChange()" placeholder="Ej: 20" />
               </div>
             </div>
 
@@ -110,11 +199,6 @@
                 <label>Fecha de Fin</label>
                 <input type="date" [(ngModel)]="newOffer.fechaFin" />
               </div>
-            </div>
-
-            <div class="form-group">
-              <label>Banner Promocional Opcional (URL)</label>
-              <input type="text" [(ngModel)]="newOffer.banner" placeholder="URL de la imagen del banner de campaña" />
             </div>
 
             <div class="switch-row">
@@ -130,16 +214,16 @@
             <h3>Previsualización Tarjeta de Oferta (Cliente)</h3>
             <div class="client-offer-preview-card">
               <div class="offer-img-box">
-                <img src="images/prod-jaspeada.png" alt="preview" />
+                <img [src]="getProductoImagen(productoSeleccionado)" alt="preview" />
                 <span class="discount-badge-bubble">
-                  {{ getDescuentoPorcentaje(newOffer.precioOriginal, newOffer.precioOferta) }}% OFF
+                  {{ newOffer.descuento }}% OFF
                 </span>
               </div>
               <div class="offer-info-box">
-                <h5>{{ newOffer.producto }}</h5>
+                <h5>{{ newOffer.producto || 'Producto de ejemplo' }}</h5>
                 <div class="prices-flex-row">
-                  <span class="original-strike">S/ {{ newOffer.precioOriginal }}</span>
-                  <span class="final-offer-val">S/ {{ newOffer.precioOferta }}</span>
+                  <span class="original-strike">S/ {{ newOffer.precioOriginal || '0.00' }}</span>
+                  <span class="final-offer-val">S/ {{ newOffer.precioOferta || '0.00' }}</span>
                 </div>
                 <button type="button" class="btn-pedir-wa-preview">Pedir por WhatsApp</button>
               </div>
@@ -150,7 +234,7 @@
 
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showAddOfferModal = false" type="button">Cancelar</button>
-        <button class="btn-save" (click)="showAddOfferModal = false" type="button">Crear oferta</button>
+        <button class="btn-save" (click)="guardarNuevaOferta()" type="button">Crear oferta</button>
       </div>
     </div>
   </div>
@@ -177,17 +261,15 @@
             <div class="form-grid-3">
               <div class="form-group">
                 <label>Precio Original (S/)</label>
-                <input type="number" [(ngModel)]="editingOffer.precioOriginal" />
+                <input type="number" [(ngModel)]="editingOffer.precioOriginal" (input)="onPrecioOriginalOrOfertaChangeEdit()" />
               </div>
               <div class="form-group">
                 <label>Precio de Oferta (S/)</label>
-                <input type="number" [(ngModel)]="editingOffer.precioOferta" />
+                <input type="number" [(ngModel)]="editingOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChangeEdit()" />
               </div>
               <div class="form-group">
-                <label>Descuento Calculado</label>
-                <div class="static-computed-val">
-                  {{ getDescuentoPorcentaje(editingOffer.precioOriginal, editingOffer.precioOferta) }}% OFF
-                </div>
+                <label>Descuento (%)</label>
+                <input type="number" [(ngModel)]="editingOffer.descuento" (input)="onDescuentoChangeEdit()" placeholder="Ej: 20" />
               </div>
             </div>
 
@@ -200,11 +282,6 @@
                 <label>Fecha de Fin</label>
                 <input type="date" [(ngModel)]="editingOffer.fechaFin" />
               </div>
-            </div>
-
-            <div class="form-group">
-              <label>Banner Promocional Opcional (URL)</label>
-              <input type="text" [(ngModel)]="editingOffer.banner" />
             </div>
 
             <div class="switch-row">
@@ -220,9 +297,9 @@
             <h3>Previsualización Tarjeta de Oferta (Cliente)</h3>
             <div class="client-offer-preview-card">
               <div class="offer-img-box">
-                <img src="images/prod-jaspeada.png" alt="preview" />
+                <img [src]="getProductoImagen(productoSeleccionadoEdit)" alt="preview" />
                 <span class="discount-badge-bubble">
-                  {{ getDescuentoPorcentaje(editingOffer.precioOriginal, editingOffer.precioOferta) }}% OFF
+                  {{ editingOffer.descuento }}% OFF
                 </span>
               </div>
               <div class="offer-info-box">
@@ -240,8 +317,8 @@
 
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showEditOfferModal = false" type="button">Cancelar</button>
-        <button class="btn-del-img" (click)="showEditOfferModal = false" style="position: static;" type="button">Desactivar oferta</button>
-        <button class="btn-save" (click)="showEditOfferModal = false" type="button">Guardar cambios</button>
+        <button class="btn-del-img" (click)="eliminarOferta(editingOffer); showEditOfferModal = false" style="position: static;" type="button">Eliminar oferta</button>
+        <button class="btn-save" (click)="guardarCambiosOferta()" type="button">Guardar cambios</button>
       </div>
     </div>
   </div>
