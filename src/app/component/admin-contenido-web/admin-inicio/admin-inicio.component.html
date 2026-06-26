@@ -1,0 +1,73 @@
+<div class="grid-two-cols">
+  <!-- Formulario de Banner -->
+  <div class="form-card-visual">
+    <h3>Editar Banner de Bienvenida</h3>
+    <span class="bar-divider"></span>
+
+    <div class="form-group">
+      <label for="bannerTitle">Título Principal</label>
+      <input id="bannerTitle" [(ngModel)]="bannerTitle" type="text" />
+    </div>
+
+    <div class="form-group">
+      <label for="bannerSubtitle">Subtítulo</label>
+      <textarea id="bannerSubtitle" [(ngModel)]="bannerSubtitle" rows="3"></textarea>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label for="bannerBtnText">Texto Botón</label>
+        <input id="bannerBtnText" [(ngModel)]="bannerBtnText" type="text" />
+      </div>
+      <div class="form-group">
+        <label for="bannerBtnLink">Link de Botón</label>
+        <input id="bannerBtnLink" [(ngModel)]="bannerBtnLink" type="text" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Imagen del Banner</label>
+      <input type="file" #fileInput (change)="onBannerFileSelected($event)" accept="image/*" style="display: none;">
+      
+      <div class="uploader-mock" (click)="fileInput.click()" style="cursor: pointer; margin-bottom: 8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <span>Subir imagen desde PC (Recomendado 1920x800)</span>
+      </div>
+
+      <button type="button" class="btn-orange-preview" (click)="abrirPicker('banner')" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; background: #3a302c; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 500;">
+        Seleccionar desde Google Drive
+      </button>
+    </div>
+
+    <div class="switch-row">
+      <label>Visibilidad del Banner</label>
+      <button type="button" class="switch-btn" [class.on]="bannerVisible" (click)="bannerVisible = !bannerVisible">
+        <span></span>
+      </button>
+    </div>
+
+    <div class="flex-end-row mt-15">
+      <button class="btn-cancel" (click)="cargarBanner()" type="button">Cancelar</button>
+      <button class="btn-save" (click)="guardarCambios()" type="button">Guardar cambios</button>
+    </div>
+  </div>
+
+  <!-- Vista previa en tiempo real -->
+  <div class="preview-panel-container">
+    <h3>Previsualización en tiempo real (Cliente)</h3>
+    <div class="client-banner-preview" [style.background-image]="bannerPreviewStyle" [class.invisible-state]="!bannerVisible">
+      <div class="client-banner-overlay">
+        <h4>{{ bannerTitle || 'Título de ejemplo' }}</h4>
+        <p>{{ bannerSubtitle || 'Subtítulo descriptivo.' }}</p>
+        <button type="button" class="btn-client-preview">{{ bannerBtnText || 'Comprar' }}</button>
+      </div>
+      @if (!bannerVisible) {
+        <div class="invisible-watermark">OCULTO PARA CLIENTES</div>
+      }
+    </div>
+  </div>
+</div>

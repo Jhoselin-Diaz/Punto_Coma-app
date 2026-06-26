@@ -1,0 +1,438 @@
+<div class="productos-cms">
+  <div class="prod-header-controls">
+    <!-- Buscador -->
+    <div class="search-bar-cms">
+      <input type="text" placeholder="Buscar producto por nombre..." [(ngModel)]="searchTerm" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+    </div>
+
+    <!-- Filtros de categoría -->
+    <div class="filter-chips">
+      <button [class.active]="filtroActivo === 'todos'" (click)="filtroActivo = 'todos'" type="button">Todos</button>
+      <button [class.active]="filtroActivo === 'visibles'" (click)="filtroActivo = 'visibles'" type="button">Visibles</button>
+      <button [class.active]="filtroActivo === 'ocultos'" (click)="filtroActivo = 'ocultos'" type="button">Ocultos</button>
+      <button [class.active]="filtroActivo === 'oferta'" (click)="filtroActivo = 'oferta'" type="button">En Oferta</button>
+      <button [class.active]="filtroActivo === 'nuevos'" (click)="filtroActivo = 'nuevos'" type="button">Nuevos</button>
+    </div>
+
+    <!-- Agregar producto button -->
+    <button class="btn-add-product" (click)="openAddProduct()" type="button">+ Agregar producto</button>
+  </div>
+
+  <div class="table-card mt-20">
+    <table class="premium-table">
+      <thead>
+        <tr>
+          <th>Imagen</th>
+          <th>Nombre</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Visible en Web</th>
+          <th>Destacado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (prod of productosAdmin; track prod.id; let idx = $index) {
+          <tr>
+            <td>
+              <div class="prod-thumb-small">
+                <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-' + (prod.nombre.toLowerCase().includes('verde') ? 'verde' : prod.nombre.toLowerCase().includes('rosa') ? 'rosa-grande' : prod.nombre.toLowerCase().includes('ondulado') ? 'ondulado' : prod.nombre.toLowerCase().includes('iridiscente') ? 'iridiscente' : 'jaspeada') + '.png'" [alt]="prod.nombre" />
+              </div>
+            </td>
+            <td><strong>{{ prod.nombre }}</strong></td>
+            <td>S/ {{ prod.precio }}</td>
+            <td><span class="stock-badge" [class.low]="prod.stock < 15">{{ prod.stock }} unidades</span></td>
+            <td>
+              <button type="button" class="switch-btn small-switch" [class.on]="prod.visible" (click)="toggleVisible(prod)">
+                <span></span>
+              </button>
+            </td>
+            <td>
+              <button type="button" class="switch-btn small-switch" [class.on]="prod.destacado" (click)="toggleDestacado(prod)">
+                <span></span>
+              </button>
+            </td>
+            <td>
+              <div class="row-actions">
+                <button class="btn-row-edit" (click)="openEditProduct(prod)" type="button">Editar</button>
+                <button class="btn-row-delete" (click)="eliminarProducto(prod.id)" type="button">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+              No hay productos registrados en el catálogo.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL 1: AGREGAR PRODUCTO (Vacio) -->
+@if (showAddProductModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-large">
+      <div class="modal-header">
+        <h3>Agregar nuevo producto</h3>
+        <button class="btn-close-modal" (click)="showAddProductModal = false" type="button">×</button>
+      </div>
+
+      <!-- Tabs del Modal -->
+      <div class="modal-tabs">
+        <button [class.active]="addProductModalTab === 'general'" (click)="setAddProductModalTab('general')" type="button">General</button>
+        <button [class.active]="addProductModalTab === 'imagenes'" (click)="setAddProductModalTab('imagenes')" type="button">Imágenes</button>
+        <button [class.active]="addProductModalTab === 'descripcion'" (click)="setAddProductModalTab('descripcion')" type="button">Descripción</button>
+        <button [class.active]="addProductModalTab === 'relacionados'" (click)="setAddProductModalTab('relacionados')" type="button">Relacionados</button>
+      </div>
+
+      <div class="modal-body-content">
+        <!-- TAB 1: GENERAL -->
+        @if (addProductModalTab === 'general') {
+          <div class="modal-form-grid">
+            <div class="form-group">
+              <label>Nombre del Producto</label>
+              <input type="text" placeholder="Ej: Taza artesana de arcilla" [(ngModel)]="newProduct.nombre" />
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Precio Original</label>
+                <input type="number" placeholder="0.00" [(ngModel)]="newProduct.precio" />
+              </div>
+              <div class="form-group">
+                <label>Precio Oferta</label>
+                <input type="number" placeholder="Opcional" [(ngModel)]="newProduct.precioOferta" />
+              </div>
+              <div class="form-group">
+                <label>Stock Inicial</label>
+                <input type="number" placeholder="Cantidad" [(ngModel)]="newProduct.stock" />
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Categoría</label>
+                <select [(ngModel)]="newProduct.categoria">
+                  <option>Tazas</option>
+                  <option>Vasos</option>
+                  <option>Sets de Cerámica</option>
+                  <option>Accesorios</option>
+                </select>
+              </div>
+              <div class="switches-grid-inside">
+                <div class="switch-row-micro">
+                  <label>Visible</label>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.visible" (click)="newProduct.visible = !newProduct.visible">
+                    <span></span>
+                  </button>
+                </div>
+                <div class="switch-row-micro">
+                  <label>Destacado</label>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.destacado" (click)="newProduct.destacado = !newProduct.destacado">
+                    <span></span>
+                  </button>
+                </div>
+                <div class="switch-row-micro">
+                  <label>Nuevo</label>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.nuevo" (click)="newProduct.nuevo = !newProduct.nuevo">
+                    <span></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 2: IMÁGENES -->
+        @if (addProductModalTab === 'imagenes') {
+          <div class="uploader-tab-layout">
+            <div class="main-image-preview">
+              <p class="section-sub">Imagen Principal</p>
+              <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none" />
+
+              <div class="big-preview-box"
+                   [class.empty-state]="!imagenTemporalUrl"
+                   (dragover)="onDragOver($event)"
+                   (drop)="onDrop($event)">
+
+                @if (imagenTemporalUrl) {
+                  <img [src]="imagenTemporalUrl" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <button class="btn-del-img" (click)="removeImage($event)" type="button">Eliminar</button>
+                } @else {
+                  <div class="placeholder-drag-drop">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="16 16 12 12 8 16"></polyline>
+                      <line x1="12" y1="12" x2="12" y2="21"></line>
+                      <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+                    </svg>
+                    <span style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">Arrastra una imagen o selecciona el origen</span>
+                    <div class="origin-buttons-row">
+                      <button type="button" class="btn-picker-choice" (click)="fileInput.click()">Desde PC</button>
+                      <button type="button" class="btn-picker-choice-primary" (click)="abrirPicker('principal')">Google Drive</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="gallery-thumbs-layout">
+              <p class="section-sub">Miniaturas adicionales</p>
+              <div class="thumbs-grid">
+                <!-- Miniatura 1 -->
+                @if (miniaturasTemp[0]) {
+                  <div class="thumb-preview-box">
+                    <img [src]="miniaturasTemp[0]" alt="Miniatura 1" />
+                    <button class="btn-del-thumb" (click)="removeMiniatura(0, $event)" type="button">×</button>
+                  </div>
+                } @else {
+                  <div class="thumb-uploader-box" (click)="abrirPicker('miniatura1')">
+                    <span>+ Añadir</span>
+                  </div>
+                }
+
+                <!-- Miniatura 2 -->
+                @if (miniaturasTemp[1]) {
+                  <div class="thumb-preview-box">
+                    <img [src]="miniaturasTemp[1]" alt="Miniatura 2" />
+                    <button class="btn-del-thumb" (click)="removeMiniatura(1, $event)" type="button">×</button>
+                  </div>
+                } @else {
+                  <div class="thumb-uploader-box" (click)="abrirPicker('miniatura2')">
+                    <span>+ Añadir</span>
+                  </div>
+                }
+
+                <!-- Miniatura 3 -->
+                @if (miniaturasTemp[2]) {
+                  <div class="thumb-preview-box">
+                    <img [src]="miniaturasTemp[2]" alt="Miniatura 3" />
+                    <button class="btn-del-thumb" (click)="removeMiniatura(2, $event)" type="button">×</button>
+                  </div>
+                } @else {
+                  <div class="thumb-uploader-box" (click)="abrirPicker('miniatura3')">
+                    <span>+ Añadir</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 3: DESCRIPCIÓN -->
+        @if (addProductModalTab === 'descripcion') {
+          <div class="description-tab-layout">
+            <div class="form-group">
+              <label>Descripción Corta (Lista de productos)</label>
+              <input type="text" placeholder="Ej: Vaso elegante con relieves ondulados y textura suave..." [(ngModel)]="newProduct.descripcionCorta" />
+            </div>
+
+            <div class="form-group">
+              <label>Descripción Detallada (Ficha del producto)</label>
+              <textarea rows="4" placeholder="Escribe aquí las propiedades y fabricación artesana..." [(ngModel)]="newProduct.descripcionLarga"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Características destacadas (Separadas por puntos)</label>
+              <textarea rows="3" placeholder="Ej: Resistente a lavavajillas. Capacidad de 350ml. Cocido a 1200 grados." [(ngModel)]="newProduct.caracteristicas"></textarea>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 4: RELACIONADOS -->
+        @if (addProductModalTab === 'relacionados') {
+          <div class="relacionados-tab-layout">
+            <h4>Vincular productos sugeridos</h4>
+            <span class="bar-divider"></span>
+            <p class="sub-caption-picker">Selecciona qué productos se mostrarán en la ficha técnica de este nuevo artículo:</p>
+
+            <div class="relacionados-grid">
+              @for (prod of productosAdmin; track prod.id) {
+                <div class="rel-product-row" [class.selected]="newProduct.sugeridosIds.includes(prod.id)" (click)="toggleSugerido(prod.id)">
+                  <span class="chk-indicator"></span>
+                  <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-' + (prod.nombre.toLowerCase().includes('verde') ? 'verde' : prod.nombre.toLowerCase().includes('rosa') ? 'rosa-grande' : prod.nombre.toLowerCase().includes('ondulado') ? 'ondulado' : prod.nombre.toLowerCase().includes('iridiscente') ? 'iridiscente' : 'jaspeada') + '.png'" [alt]="prod.nombre" />
+                  <span><strong>{{ prod.nombre }}</strong> - S/ {{ prod.precio }}</span>
+                </div>
+              } @empty {
+                <p style="color: var(--muted); font-style: italic; padding: 12px;">
+                  No hay otros productos registrados en el catálogo para vincular.
+                </p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showAddProductModal = false" type="button">Cancelar</button>
+        <button class="btn-save" (click)="guardarNuevoProducto()" type="button">Guardar producto</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL 2: EDITAR PRODUCTO (Precargado con datos) -->
+@if (showEditProductModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-large">
+      <div class="modal-header">
+        <h3>Editar producto</h3>
+        <button class="btn-close-modal" (click)="showEditProductModal = false" type="button">×</button>
+      </div>
+
+      <!-- Tabs del Modal -->
+      <div class="modal-tabs">
+        <button [class.active]="editProductModalTab === 'general'" (click)="setEditProductModalTab('general')" type="button">General</button>
+        <button [class.active]="editProductModalTab === 'imagenes'" (click)="setEditProductModalTab('imagenes')" type="button">Imágenes</button>
+        <button [class.active]="editProductModalTab === 'descripcion'" (click)="setEditProductModalTab('descripcion')" type="button">Descripción</button>
+        <button [class.active]="editProductModalTab === 'relacionados'" (click)="setEditProductModalTab('relacionados')" type="button">Relacionados</button>
+      </div>
+
+      <div class="modal-body-content">
+        <!-- TAB 1: GENERAL -->
+        @if (editProductModalTab === 'general') {
+          <div class="modal-form-grid">
+            <div class="form-group">
+              <label>Nombre del Producto</label>
+              <input type="text" [(ngModel)]="editingProduct.nombre" />
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Precio Original</label>
+                <input type="number" [(ngModel)]="editingProduct.precio" />
+              </div>
+              <div class="form-group">
+                <label>Precio Oferta</label>
+                <input type="number" [(ngModel)]="editingProduct.precioOferta" />
+              </div>
+              <div class="form-group">
+                <label>Stock actual</label>
+                <input type="number" [(ngModel)]="editingProduct.stock" />
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Categoría</label>
+                <select [(ngModel)]="editingProduct.categoria">
+                  <option>Tazas</option>
+                  <option>Vasos</option>
+                  <option>Sets de Cerámica</option>
+                  <option>Accesorios</option>
+                </select>
+              </div>
+              <div class="switches-grid-inside">
+                <div class="switch-row-micro">
+                  <label>Visible</label>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.visible" (click)="editingProduct.visible = !editingProduct.visible">
+                    <span></span>
+                  </button>
+                </div>
+                <div class="switch-row-micro">
+                  <label>Destacado</label>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.destacado" (click)="editingProduct.destacado = !editingProduct.destacado">
+                    <span></span>
+                  </button>
+                </div>
+                <div class="switch-row-micro">
+                  <label>Nuevo</label>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.nuevo" (click)="editingProduct.nuevo = !editingProduct.nuevo">
+                    <span></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 2: IMÁGENES -->
+        @if (editProductModalTab === 'imagenes') {
+          <div class="uploader-tab-layout">
+            <div class="main-image-preview">
+              <p class="section-sub">Imagen Principal</p>
+              <div class="big-preview-box">
+                <img [src]="editingProduct.imagenPrincipal" alt="Vista previa principal" />
+                <button class="btn-del-img" type="button">Eliminar</button>
+              </div>
+            </div>
+
+            <div class="gallery-thumbs-layout">
+              <p class="section-sub">Galería del Producto</p>
+              <div class="thumbs-grid">
+                <div class="thumb-preview-box selected">
+                  <img [src]="editingProduct.imagenPrincipal" alt="Miniatura" />
+                  <span class="main-tag">PRINCIPAL</span>
+                </div>
+                <div class="thumb-preview-box">
+                  <img src="images/prod-verde.png" alt="Miniatura 2" />
+                </div>
+                <div class="thumb-uploader-box">
+                  <span>+ Sube</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 3: DESCRIPCIÓN -->
+        @if (editProductModalTab === 'descripcion') {
+          <div class="description-tab-layout">
+            <div class="form-group">
+              <label>Descripción Corta (Lista de productos)</label>
+              <input type="text" [(ngModel)]="editingProduct.descripcionCorta" />
+            </div>
+
+            <div class="form-group">
+              <label>Descripción Detallada (Ficha del producto)</label>
+              <textarea rows="4" [(ngModel)]="editingProduct.descripcionLarga"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Características destacadas (Separadas por puntos)</label>
+              <textarea rows="3" [(ngModel)]="editingProduct.caracteristicas"></textarea>
+            </div>
+          </div>
+        }
+
+        <!-- TAB 4: RELACIONADOS -->
+        @if (editProductModalTab === 'relacionados') {
+          <div class="relacionados-tab-layout">
+            <h4>Sugerir ventas cruzadas</h4>
+            <span class="bar-divider"></span>
+
+            <div class="relacionados-grid">
+              <div class="rel-product-row selected">
+                <span class="chk-indicator">✓</span>
+                <img src="images/prod-verde.png" alt="..." />
+                <span><strong>Taza de vidrio verde</strong> - S/ 45</span>
+              </div>
+              <div class="rel-product-row">
+                <span class="chk-indicator"></span>
+                <img src="images/prod-rosa-grande.png" alt="..." />
+                <span><strong>Taza de cerámica rosa</strong> - S/ 45</span>
+              </div>
+              <div class="rel-product-row selected">
+                <span class="chk-indicator">✓</span>
+                <img src="images/prod-ondulado.png" alt="..." />
+                <span><strong>Vaso ondulado transparente</strong> - S/ 32</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showEditProductModal = false" type="button">Cancelar</button>
+        <button class="btn-del-img" (click)="eliminarProducto(editingProduct.id); showEditProductModal = false" style="position: static;" type="button">Eliminar producto</button>
+        <button class="btn-save" (click)="showEditProductModal = false" type="button">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+}

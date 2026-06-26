@@ -131,18 +131,28 @@
   box-shadow: 0 4px 12px rgba(136, 107, 85, 0.06);
   flex-shrink: 0;
   z-index: 2;
+  padding: 0 !important;
 }
 
 .icon-wa {
-  width: 44px;
-  height: 44px;
+  width: 2.8rem !important;
+  height: 2.8rem !important;
   color: #25d366; /* Verde original WhatsApp */
+  display: block;
 }
 
+.wa-phone {
+  transform: scale(1.5);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+
 .icon-ig {
-  width: 42px;
-  height: 42px;
+  width: 2.6rem !important;
+  height: 2.6rem !important;
   color: #e1306c; /* Color rosa Instagram */
+  display: block;
 }
 
 .social-info {
@@ -202,9 +212,9 @@
 }
 
 .btn-ig-action {
-  background-color: transparent;
-  border: 1.5px solid #d3a286;
-  color: #8c5d41;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  color: #ffffff;
+  border: none;
 }
 
 /* --- TARJETA DE INFORMACIÓN (TRES COLUMNAS) --- */
@@ -432,4 +442,100 @@
   .dudas-left {
     flex-direction: column;
   }
+}
+
+/* --- SKELETON LOADER ANIMATION & STYLES --- */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton::before,
+.skeleton::after {
+  display: none !important;
+}
+
+.skeleton-circle,
+.skeleton-title,
+.skeleton-title-center,
+.skeleton-text,
+.skeleton-text-center,
+.skeleton-button,
+.skeleton-button-right {
+  background: linear-gradient(90deg, #ecdcd0 25%, #f4e8e0 50%, #ecdcd0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border-radius: 8px;
+}
+
+/* Specific sizing to preserve layout heights and widths */
+.social-icon-wrapper.skeleton-circle {
+  background: linear-gradient(90deg, #ecdcd0 25%, #f4e8e0 50%, #ecdcd0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border: none;
+  box-shadow: none;
+}
+
+.skeleton-title {
+  width: 50%;
+  height: 24px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text {
+  width: 80%;
+  height: 16px;
+  margin-bottom: 12px;
+}
+
+.skeleton-button {
+  width: 120px;
+  height: 38px;
+  border-radius: 8px;
+}
+
+/* Info Blocks Skeletons */
+.info-icon.skeleton-circle {
+  background: linear-gradient(90deg, #ecdcd0 25%, #f4e8e0 50%, #ecdcd0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border: none;
+}
+
+.skeleton-title-center {
+  width: 60%;
+  height: 20px;
+  margin: 0 auto 12px;
+}
+
+.skeleton-text-center {
+  width: 70%;
+  height: 14px;
+  margin: 6px auto;
+}
+
+/* Banner Quick Dudas Skeleton */
+.banner-quick-dudas.skeleton {
+  background-color: #fdf9f5;
+  border: 1px solid var(--line);
+}
+
+.cup-decor-wrapper.skeleton-circle {
+  background: linear-gradient(90deg, #ecdcd0 25%, #f4e8e0 50%, #ecdcd0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border: none;
+  border-radius: 14px !important;
+}
+
+.skeleton-button-right {
+  width: 140px;
+  height: 44px;
+  border-radius: 8px;
+  flex-shrink: 0;
 }

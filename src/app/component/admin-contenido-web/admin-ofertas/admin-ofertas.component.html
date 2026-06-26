@@ -1,0 +1,248 @@
+<div class="ofertas-cms">
+  <div class="ofertas-stats-grid">
+    <div class="stat-card-white">
+      <span class="stat-num">{{ statsOfertas.activas }}</span>
+      <span class="stat-label">Ofertas Activas</span>
+    </div>
+    <div class="stat-card-white">
+      <span class="stat-num">{{ statsOfertas.productosDescuento }}</span>
+      <span class="stat-label">Productos con Descuento</span>
+    </div>
+    <div class="stat-card-white highlight-orange-border">
+      <span class="stat-num">{{ statsOfertas.proximas }}</span>
+      <span class="stat-label">Campañas Próximas</span>
+    </div>
+  </div>
+
+  <div class="table-card mt-25">
+    <div class="table-header-flex">
+      <h3>Listado de Descuentos Vigentes</h3>
+      <button class="btn-add-product" (click)="openAddOffer()" type="button">+ Crear oferta</button>
+    </div>
+    <table class="premium-table mt-15">
+      <thead>
+        <tr>
+          <th>Producto Relacionado</th>
+          <th>Descuento Asignado</th>
+          <th>Fecha de Inicio</th>
+          <th>Fecha de Finalización</th>
+          <th>Estado Visible</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (of of ofertasList; track of.id; let idx = $index) {
+          <tr>
+            <td><strong>{{ of.producto }}</strong></td>
+            <td><span class="discount-badge-table">{{ of.descuento }}% OFF</span></td>
+            <td>{{ of.fechaInicio }}</td>
+            <td>{{ of.fechaFin }}</td>
+            <td>
+              <button type="button" class="switch-btn small-switch" [class.on]="of.visible" (click)="toggleVisible(of)">
+                <span></span>
+              </button>
+            </td>
+            <td>
+              <div class="row-actions">
+                <button class="btn-row-edit" (click)="openEditOffer(of)" type="button">Editar</button>
+                <button class="btn-row-delete" (click)="eliminarFila(ofertasList, idx)" type="button">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+              No hay ofertas promocionales configuradas.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL 3: CREAR OFERTA (Vacio) -->
+@if (showAddOfferModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-ultra-large">
+      <div class="modal-header">
+        <h3>Crear oferta</h3>
+        <button class="btn-close-modal" (click)="showAddOfferModal = false" type="button">×</button>
+      </div>
+
+      <div class="modal-body-content">
+        <div class="modal-grid-two-cols">
+          <!-- Formulario Izquierda -->
+          <div class="video-form-fields">
+            <div class="form-group">
+              <label>Seleccionar Producto</label>
+              <select [(ngModel)]="newOffer.producto">
+                <option>Taza de cerámica jaspeada</option>
+                <option>Taza de vidrio verde</option>
+                <option>Taza de cerámica rosa</option>
+                <option>Vaso ondulado transparente</option>
+              </select>
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Precio Original (S/)</label>
+                <input type="number" [(ngModel)]="newOffer.precioOriginal" />
+              </div>
+              <div class="form-group">
+                <label>Precio de Oferta (S/)</label>
+                <input type="number" [(ngModel)]="newOffer.precioOferta" />
+              </div>
+              <div class="form-group">
+                <label>Descuento Calculado</label>
+                <div class="static-computed-val">
+                  {{ getDescuentoPorcentaje(newOffer.precioOriginal, newOffer.precioOferta) }}% OFF
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Fecha de Inicio</label>
+                <input type="date" [(ngModel)]="newOffer.fechaInicio" />
+              </div>
+              <div class="form-group">
+                <label>Fecha de Fin</label>
+                <input type="date" [(ngModel)]="newOffer.fechaFin" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Banner Promocional Opcional (URL)</label>
+              <input type="text" [(ngModel)]="newOffer.banner" placeholder="URL de la imagen del banner de campaña" />
+            </div>
+
+            <div class="switch-row">
+              <label>Visibilidad del descuento en la web</label>
+              <button type="button" class="switch-btn small-switch" [class.on]="newOffer.visible" (click)="newOffer.visible = !newOffer.visible">
+                <span></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Previsualización Derecha -->
+          <div class="preview-panel-container">
+            <h3>Previsualización Tarjeta de Oferta (Cliente)</h3>
+            <div class="client-offer-preview-card">
+              <div class="offer-img-box">
+                <img src="images/prod-jaspeada.png" alt="preview" />
+                <span class="discount-badge-bubble">
+                  {{ getDescuentoPorcentaje(newOffer.precioOriginal, newOffer.precioOferta) }}% OFF
+                </span>
+              </div>
+              <div class="offer-info-box">
+                <h5>{{ newOffer.producto }}</h5>
+                <div class="prices-flex-row">
+                  <span class="original-strike">S/ {{ newOffer.precioOriginal }}</span>
+                  <span class="final-offer-val">S/ {{ newOffer.precioOferta }}</span>
+                </div>
+                <button type="button" class="btn-pedir-wa-preview">Pedir por WhatsApp</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showAddOfferModal = false" type="button">Cancelar</button>
+        <button class="btn-save" (click)="showAddOfferModal = false" type="button">Crear oferta</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL 4: EDITAR OFERTA (Precargado) -->
+@if (showEditOfferModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-ultra-large">
+      <div class="modal-header">
+        <h3>Editar oferta</h3>
+        <button class="btn-close-modal" (click)="showEditOfferModal = false" type="button">×</button>
+      </div>
+
+      <div class="modal-body-content">
+        <div class="modal-grid-two-cols">
+          <!-- Formulario Izquierda -->
+          <div class="video-form-fields">
+            <div class="form-group">
+              <label>Producto Vinculado</label>
+              <input type="text" [(ngModel)]="editingOffer.producto" disabled />
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Precio Original (S/)</label>
+                <input type="number" [(ngModel)]="editingOffer.precioOriginal" />
+              </div>
+              <div class="form-group">
+                <label>Precio de Oferta (S/)</label>
+                <input type="number" [(ngModel)]="editingOffer.precioOferta" />
+              </div>
+              <div class="form-group">
+                <label>Descuento Calculado</label>
+                <div class="static-computed-val">
+                  {{ getDescuentoPorcentaje(editingOffer.precioOriginal, editingOffer.precioOferta) }}% OFF
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Fecha de Inicio</label>
+                <input type="date" [(ngModel)]="editingOffer.fechaInicio" />
+              </div>
+              <div class="form-group">
+                <label>Fecha de Fin</label>
+                <input type="date" [(ngModel)]="editingOffer.fechaFin" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Banner Promocional Opcional (URL)</label>
+              <input type="text" [(ngModel)]="editingOffer.banner" />
+            </div>
+
+            <div class="switch-row">
+              <label>Estado Activo / Visible</label>
+              <button type="button" class="switch-btn small-switch" [class.on]="editingOffer.visible" (click)="editingOffer.visible = !editingOffer.visible">
+                <span></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Previsualización Derecha -->
+          <div class="preview-panel-container">
+            <h3>Previsualización Tarjeta de Oferta (Cliente)</h3>
+            <div class="client-offer-preview-card">
+              <div class="offer-img-box">
+                <img src="images/prod-jaspeada.png" alt="preview" />
+                <span class="discount-badge-bubble">
+                  {{ getDescuentoPorcentaje(editingOffer.precioOriginal, editingOffer.precioOferta) }}% OFF
+                </span>
+              </div>
+              <div class="offer-info-box">
+                <h5>{{ editingOffer.producto }}</h5>
+                <div class="prices-flex-row">
+                  <span class="original-strike">S/ {{ editingOffer.precioOriginal }}</span>
+                  <span class="final-offer-val">S/ {{ editingOffer.precioOferta }}</span>
+                </div>
+                <button type="button" class="btn-pedir-wa-preview">Pedir por WhatsApp</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showEditOfferModal = false" type="button">Cancelar</button>
+        <button class="btn-del-img" (click)="showEditOfferModal = false" style="position: static;" type="button">Desactivar oferta</button>
+        <button class="btn-save" (click)="showEditOfferModal = false" type="button">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+}
