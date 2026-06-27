@@ -41,36 +41,37 @@
               </tr>
             </thead>
             <tbody>
-              @if (cargando) {
-                <tr>
-                  <td colspan="6" style="padding: 40px 0; text-align: center;">
-                    <div class="loading-spinner-container">
-                      <div class="spinner"></div>
-                      <p>Cargando ofertas...</p>
-                    </div>
-                  </td>
-                </tr>
-              }
-              @for (of of ofertasList; track of.id; let idx = $index) {
-                <tr>
-                  <td><strong>{{ of.producto }}</strong></td>
-                  <td><span class="discount-badge-table">{{ of.descuento }}% OFF</span></td>
-                  <td>{{ of.fechaInicioOferta ? (of.fechaInicioOferta | date:'yyyy-MM-dd') : 'No especificada' }}</td>
-                  <td>{{ of.fechaFinOferta ? (of.fechaFinOferta | date:'yyyy-MM-dd') : 'No especificada' }}</td>
-                  <td>
-                    <button type="button" class="switch-btn small-switch" [class.on]="of.visible" (click)="toggleVisible(of)">
-                      <span></span>
-                    </button>
-                  </td>
-                  <td>
-                    <div class="row-actions">
-                      <button class="btn-row-edit" (click)="openEditOffer(of)" type="button">Editar</button>
-                      <button class="btn-row-delete" (click)="eliminarOferta(of)" type="button">Eliminar</button>
-                    </div>
-                  </td>
-                </tr>
-              } @empty {
-                @if (!cargando) {
+              @if (isLoading) {
+                @for (i of [1, 2, 3]; track i) {
+                  <tr class="skeleton-row">
+                    <td class="skeleton-cell"></td>
+                    <td class="skeleton-cell"></td>
+                    <td class="skeleton-cell"></td>
+                    <td class="skeleton-cell"></td>
+                    <td class="skeleton-cell"></td>
+                    <td class="skeleton-cell"></td>
+                  </tr>
+                }
+              } @else {
+                @for (of of ofertasList; track of.id; let idx = $index) {
+                  <tr>
+                    <td><strong>{{ of.producto }}</strong></td>
+                    <td><span class="discount-badge-table">{{ of.descuento }}% OFF</span></td>
+                    <td>{{ of.fechaInicioOferta ? (of.fechaInicioOferta | date:'yyyy-MM-dd') : 'No especificada' }}</td>
+                    <td>{{ of.fechaFinOferta ? (of.fechaFinOferta | date:'yyyy-MM-dd') : 'No especificada' }}</td>
+                    <td>
+                      <button type="button" class="switch-btn small-switch" [class.on]="of.visible" (click)="toggleVisible(of)">
+                        <span></span>
+                      </button>
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        <button class="btn-row-edit" (click)="openEditOffer(of)" type="button">Editar</button>
+                        <button class="btn-row-delete" (click)="eliminarOferta(of)" type="button">Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
                   <tr>
                     <td colspan="6" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
                       No hay ofertas promocionales configuradas.
@@ -105,7 +106,7 @@
           <div class="form-group">
             <label for="bannerImg">Imagen de Fondo (URL / Google Drive)</label>
             <div style="display: flex; gap: 8px; width: 100%;">
-              <input id="bannerImg" [(ngModel)]="bannerConfig.imagenUrl" type="text" placeholder="Ej: https://images.unsplash.com/... o enlace de Drive" style="flex: 1;" />
+              <input id="bannerImg" [(ngModel)]="bannerConfig.imagenUrl" (ngModelChange)="onBannerImgChange($event)" type="text" placeholder="Ej: https://images.unsplash.com/... o enlace de Drive" style="flex: 1;" />
               <button class="btn-add-product" (click)="abrirPicker('banner')" type="button" style="margin-top: 0; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; background-color: #ef6737; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>

@@ -1,5 +1,4 @@
 <div class="cms-layout">
-  <!-- Pestañas internas de Inicio -->
   <div class="cms-tabs">
     <button [class.active]="inicioTabActiva === 'banner'" (click)="setInicioTab('banner')" type="button">Banner principal</button>
     <button [class.active]="inicioTabActiva === 'categorias'" (click)="setInicioTab('categorias')" type="button">Categorías destacadas</button>
@@ -8,22 +7,20 @@
   </div>
 
   <div class="cms-content-box">
-    <!-- SUB-TAB 1: BANNER PRINCIPAL -->
     @if (inicioTabActiva === 'banner') {
       <div class="grid-two-cols">
-        <!-- Formulario de Banner -->
         <div class="form-card-visual">
           <h3>Editar Banner de Bienvenida</h3>
           <span class="bar-divider"></span>
 
           <div class="form-group">
             <label for="bannerTitle">Título Principal</label>
-            <input id="bannerTitle" [(ngModel)]="bannerTitle" type="text" />
+            <input id="bannerTitle" [(ngModel)]="bannerTitle" (ngModelChange)="emitirPreviewLocal()" type="text" placeholder="Ej: Elegantes tazas y vasos de moda" />
           </div>
 
           <div class="form-group">
             <label for="bannerSubtitle">Subtítulo</label>
-            <textarea id="bannerSubtitle" [(ngModel)]="bannerSubtitle" rows="3"></textarea>
+            <textarea id="bannerSubtitle" [(ngModel)]="bannerSubtitle" (ngModelChange)="emitirPreviewLocal()" rows="3" placeholder="Ej: Descubre la colección más trendy"></textarea>
           </div>
 
           <div class="form-grid-2">
@@ -39,13 +36,36 @@
 
           <div class="form-group">
             <label>Imagen del Banner</label>
-            <div class="uploader-mock">
+            <input type="file" #fileInput (change)="onBannerFileSelected($event)" accept="image/*" style="display: none;">
+
+            <div class="uploader-mock" (click)="fileInput.click()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                 <circle cx="8.5" cy="8.5" r="1.5"></circle>
                 <polyline points="21 15 16 10 5 21"></polyline>
               </svg>
-              <span>Subir nueva imagen (Recomendado 1920x800)</span>
+              <span>Subir imagen desde PC (Recomendado 1920x800)</span>
+            </div>
+
+            <button type="button" class="btn-orange-preview" (click)="abrirPicker('banner')" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; background: #3a302c; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 500; cursor: pointer;">
+               Seleccionar desde Google Drive
+            </button>
+
+            <!-- Campo de URL manual: alternativa directa al Picker -->
+            <div class="form-group" style="margin-top: 10px;">
+              <label style="font-size: 12px; color: #9a8d87; font-weight: 500; margin-bottom: 4px; display: block;">
+                 O pega la URL o ID de Google Drive aquí:
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="driveUrlManual"
+                (ngModelChange)="onUrlManualChange($event)"
+                placeholder="https://drive.google.com/..."
+                class="form-control"
+              />
+              <span style="font-size: 11px; color: #b0a49e; margin-top: 4px; display: block; line-height: 1.4;">
+                Acepta URLs de Drive, lh3.googleusercontent.com, Supabase o cualquier URL directa de imagen.
+              </span>
             </div>
           </div>
 
@@ -57,15 +77,14 @@
           </div>
 
           <div class="flex-end-row mt-15">
-            <button class="btn-cancel" type="button">Cancelar</button>
-            <button class="btn-save" type="button">Guardar cambios</button>
+            <button class="btn-cancel" (click)="cargarBanner()" type="button">Cancelar</button>
+            <button class="btn-save" (click)="guardarCambios()" type="button">Guardar cambios</button>
           </div>
         </div>
 
-        <!-- Vista previa en tiempo real -->
         <div class="preview-panel-container">
           <h3>Previsualización en tiempo real (Cliente)</h3>
-          <div class="client-banner-preview" [style.background-image]="'url(' + bannerImage + ')'" [class.invisible-state]="!bannerVisible">
+          <div class="client-banner-preview" [style.background-image]="bannerPreviewStyle" [class.invisible-state]="!bannerVisible">
             <div class="client-banner-overlay">
               <h4>{{ bannerTitle || 'Título de ejemplo' }}</h4>
               <p>{{ bannerSubtitle || 'Subtítulo descriptivo.' }}</p>
@@ -79,49 +98,48 @@
       </div>
     }
 
-    <!-- SUB-TAB 2: CATEGORÍAS DESTACADAS (CARDS AESTHETIC) -->
     @if (inicioTabActiva === 'categorias') {
       <div class="categorias-cms">
         <div class="sub-header-cms">
           <h4>Categorías visuales mostradas en el home del cliente</h4>
-          <button type="button" class="btn-add-item">+ Agregar categoría</button>
+          <button type="button" class="btn-add-item" (click)="openAddCategory()">+ Agregar categoría</button>
         </div>
 
         <div class="categorias-cards-grid">
           @for (cat of categorias; track cat.id; let idx = $index) {
             <div class="cat-aesthetic-card" [class.invisible-state]="!cat.visible">
               <div class="cat-card-img-wrap">
-                <img [src]="cat.imagen" [alt]="cat.nombre" />
-                <div class="cat-card-order-badge">#{{ cat.orden }}</div>
+                <img [src]="cat.imagenUrl || 'images/prod-jaspeada.png'" [alt]="cat.nombreCategoria" />
+                <div class="cat-card-order-badge">Prioridad: #{{ cat.prioridad }}</div>
               </div>
-              
+
               <div class="cat-card-info">
-                <h5>{{ cat.nombre }}</h5>
-                <span class="cat-card-count">{{ cat.productosCount }} productos vinculados</span>
-                
+                <h5>{{ cat.nombreCategoria }}</h5>
+                <span class="cat-card-count">{{ cat.productosCount }} productos vinculados ({{ cat.tipo }})</span>
+
                 <div class="cat-card-switch-row">
                   <span>Visible en Web:</span>
-                  <button type="button" class="switch-btn small-switch" [class.on]="cat.visible" (click)="toggleVisible(cat)">
+                  <button type="button" class="switch-btn small-switch" [class.on]="cat.visible" (click)="toggleCategoryVisibility(cat)">
                     <span></span>
                   </button>
                 </div>
 
                 <div class="cat-card-actions">
-                  <button class="btn-row-edit" type="button">Editar</button>
-                  <button class="btn-row-delete" (click)="eliminarFila(categorias, idx)" type="button">Eliminar</button>
+                  <button class="btn-row-edit" (click)="openEditCategory(cat)" type="button">Editar</button>
+                  <button class="btn-row-delete" (click)="borrarCategoria(cat.id)" type="button">Eliminar</button>
                 </div>
               </div>
             </div>
           } @empty {
-            <div class="empty-cms-placeholder" style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--gray); font-style: italic; border: 1px dashed var(--border); border-radius: 8px; width: 100%;">
-              No hay categorías configuradas.
+            <div class="empty-state-card" style="grid-column: 1 / -1; width: 100%; text-align: center; padding: 40px; border: 1px solid var(--line); border-radius: 8px;">
+              <h4>No hay categorías destacadas configuradas</h4>
+              <p>Haz clic en "+ Agregar categoría" para crear la primera sección visual del home.</p>
             </div>
           }
         </div>
       </div>
     }
 
-    <!-- SUB-TAB 3: PRODUCTOS DESTACADOS -->
     @if (inicioTabActiva === 'productos') {
       <div class="productos-destacados-cms">
         <div class="sub-header-cms mb-15">
@@ -130,36 +148,85 @@
         </div>
 
         <div class="prod-dest-grid">
-          @for (prod of productosDestacados; track prod.id) {
-            <div class="selectable-prod-card" [class.selected]="prod.seleccionado">
-              <div class="card-selection-indicator" (click)="toggleSeleccionado(prod)">
-                <span class="chk-box"></span>
+          @for (prod of productosDisponibles; track prod.id) {
+            <div class="selectable-prod-card" [class.selected]="prod.destacado">
+              <div class="card-selection-indicator">
+                <span class="chk-box" [class.checked]="prod.destacado"></span>
               </div>
 
               <div class="prod-img-wrap">
-                <img [src]="prod.imagen" [alt]="prod.nombre" />
+                <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-jaspeada.png'" [alt]="prod.nombre" />
               </div>
 
               <div class="prod-meta">
                 <h5>{{ prod.nombre }}</h5>
                 <span class="price-val">S/ {{ prod.precio }}</span>
-                <div class="tag-chips">
-                  @for (tag of prod.tags; track tag) {
-                    <span class="tag-chip" [class]="tag">{{ tag | uppercase }}</span>
-                  }
-                </div>
               </div>
-            </div>
-          } @empty {
-            <div class="empty-cms-placeholder" style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--gray); font-style: italic; border: 1px dashed var(--border); border-radius: 8px; width: 100%;">
-              No hay productos destacados seleccionados.
             </div>
           }
         </div>
       </div>
     }
 
-    <!-- SUB-TAB 4: CONFIGURACIÓN VISUAL -->
+    @if (inicioTabActiva === 'estadisticas') {
+      <div class="estadisticas-cms">
+        <div class="sub-header-cms">
+          <h4>Estadísticas de Tráfico: Productos más vistos por clientes</h4>
+          <button type="button" class="btn-save" (click)="cargarEstadisticas()" style="background-color: var(--orange); border: none; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 700;">
+            Actualizar conteos
+          </button>
+        </div>
+        
+        <div class="table-responsive-container" style="margin-top: 15px;">
+          <table class="luxury-stock-table">
+            <thead>
+              <tr>
+                <th>Imagen</th>
+                <th>Nombre del Producto</th>
+                <th>SKU / ID</th>
+                <th>Categoría</th>
+                <th class="txt-center">Vistas Totales</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (prod of productosMasVistos; track prod.id; let idx = $index) {
+                <tr>
+                  <td>
+                    <div class="tbl-prod-img-box">
+                      <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-jaspeada.png'" [alt]="prod.nombre" />
+                    </div>
+                  </td>
+                  <td>
+                    <div class="tbl-prod-name">
+                      <strong>{{ prod.nombre }}</strong>
+                      <span class="sku-sub">{{ prod.subtitulo || 'Sin subtítulo descriptivo' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="sku-code">{{ prod.id }}</span>
+                  </td>
+                  <td>
+                    <span class="category-pill">{{ prod.categoria || 'Sin categoría' }}</span>
+                  </td>
+                  <td class="txt-center">
+                    <span class="stock-digit font-serif font-bold" style="color: var(--orange); font-size: 15px; font-weight: 700;">
+                      {{ prod.vistas_contador }} vistas
+                    </span>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+                    No hay estadísticas de tráfico registradas aún.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
     @if (inicioTabActiva === 'config') {
       <div class="visual-config-cms">
         <div class="sub-header-cms">
@@ -213,3 +280,81 @@
     }
   </div>
 </div>
+
+<!-- MODAL DE CREACIÓN / EDICIÓN DE CATEGORÍA -->
+@if (showAddCategoryModal) {
+  <div class="modal-overlay" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); z-index: 1000;">
+    <div class="modal-card" style="width: 500px; max-height: 90vh; overflow-y: auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; box-sizing: border-box;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line);">
+        <h4 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--ink);">{{ isEditingCategory ? 'Editar Categoría Destacada' : 'Nueva Categoría Destacada' }}</h4>
+        <button class="close-button" (click)="showAddCategoryModal = false" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted);">&times;</button>
+      </div>
+      
+      <div class="modal-body" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box;">
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 13px; font-weight: 700; color: var(--ink);">Nombre de la Categoría</label>
+          <input type="text" [(ngModel)]="categoriaEnEdicion.nombreCategoria" placeholder="Ej: Categorías populares, Lo más vendido" style="padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 13.5px; outline: none;" />
+        </div>
+
+        <div class="form-grid-2" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--ink);">Tipo de Asignación</label>
+            <select [(ngModel)]="categoriaEnEdicion.tipo" style="padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 13.5px; outline: none; background: white;">
+              <option value="MANUAL">Manual de Productos</option>
+              <option value="AUTOMATICA_MAS_VISTOS">Automático (Top 5 más vistos)</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--ink);">Prioridad / Orden</label>
+            <input type="number" [(ngModel)]="categoriaEnEdicion.prioridad" style="padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 13.5px; outline: none;" />
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 13px; font-weight: 700; color: var(--ink);">Imagen de Portada (Opcional)</label>
+          <input type="text" [(ngModel)]="categoriaEnEdicion.imagenUrl" placeholder="URL de la imagen o banner decorativo" style="padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 13.5px; outline: none;" />
+        </div>
+
+        <div class="switch-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+          <span style="font-size: 13.5px; font-weight: 700; color: var(--ink);">Categoría Visible en Web</span>
+          <button type="button" class="switch-btn small-switch" [class.on]="categoriaEnEdicion.visible" (click)="categoriaEnEdicion.visible = !categoriaEnEdicion.visible">
+            <span></span>
+          </button>
+        </div>
+
+        <!-- SELECCIÓN DE PRODUCTOS PARA TIPO MANUAL -->
+        @if (categoriaEnEdicion.tipo === 'MANUAL') {
+          <div class="manual-products-selector" style="margin-top: 15px; border-top: 1px solid var(--line); padding-top: 15px; box-sizing: border-box;">
+            <label style="font-weight: 700; margin-bottom: 8px; display: block; font-size: 13px; color: var(--ink);">Vincular Productos (Selecciona todos los que apliquen)</label>
+            
+            <div class="products-selection-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+              @for (prod of productosDisponibles; track prod.id) {
+                <div class="product-selection-item" style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                  <input type="checkbox" [checked]="isProductSelected(prod.id)" (change)="toggleProductInSelection(prod.id)" [id]="'prod_chk_' + prod.id" style="width: 16px; height: 16px; cursor: pointer;" />
+                  <label [for]="'prod_chk_' + prod.id" style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; color: var(--ink);">
+                    <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-jaspeada.png'" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--line);" />
+                    <span>
+                      {{ prod.nombre }}
+                      @if (prod.precioAnterior && prod.precioAnterior > prod.precio) {
+                        (S/ {{ prod.precio }} antes S/ {{ prod.precioAnterior }}) <strong style="color: var(--orange); font-size: 11px;">[OFERTA]</strong>
+                      } @else {
+                        (S/ {{ prod.precio }})
+                      }
+                    </span>
+                  </label>
+                </div>
+              } @empty {
+                <p style="font-style: italic; color: var(--muted); font-size: 12px; margin: 0;">No hay productos registrados en el catálogo.</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer" style="padding: 18px 24px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 12px;">
+        <button class="btn-cancel" (click)="showAddCategoryModal = false" type="button" style="padding: 10px 20px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); font-weight: 700; cursor: pointer; transition: all 0.2s;">Cancelar</button>
+        <button class="btn-save" (click)="saveCategory()" type="button" style="padding: 10px 20px; border: none; border-radius: 8px; background: var(--orange); color: white; font-weight: 700; cursor: pointer; transition: all 0.2s;">Guardar Categoría</button>
+      </div>
+    </div>
+  </div>
+}

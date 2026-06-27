@@ -5,14 +5,29 @@
       <p>Descubre y compra las tazas y vasos que<br>salen en nuestros últimos videos</p>
     </section>
 
-    @if (cargando) {
-    <div class="loading-spinner-container"
-      style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 16px;">
-      <div class="spinner"
-        style="width: 40px; height: 40px; border: 3px solid #eee4dd; border-top: 3px solid #df6c1b; border-radius: 50%; animation: spin 0.8s linear infinite;">
+    @if (isLoading) {
+      <div class="video-rows" aria-label="Cargando videos...">
+        <div class="video-row skeleton-video-row">
+          <div class="video-player skeleton-video-player"></div>
+          <div class="featured-products-card skeleton-products-card">
+            <div class="skeleton-title"></div>
+            <div class="featured-products-grid">
+              <div class="mini-product-card skeleton-mini-card"></div>
+              <div class="mini-product-card skeleton-mini-card"></div>
+            </div>
+          </div>
+        </div>
+        <div class="video-row skeleton-video-row">
+          <div class="video-player skeleton-video-player"></div>
+          <div class="featured-products-card skeleton-products-card">
+            <div class="skeleton-title"></div>
+            <div class="featured-products-grid">
+              <div class="mini-product-card skeleton-mini-card"></div>
+              <div class="mini-product-card skeleton-mini-card"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <p style="color: #766c67; font-size: 14px; font-weight: 500;">Cargando videos...</p>
-    </div>
     } @else {
     <div class="video-rows">
       @for (video of videos; track video.id) {

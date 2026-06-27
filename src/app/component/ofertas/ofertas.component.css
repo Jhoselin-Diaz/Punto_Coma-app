@@ -20,15 +20,15 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 280px;
+  min-height: 240px;
   margin-bottom: 52px;
-  padding: 40px 80px;
-  border-radius: 12px;
+  padding: 24px 60px;
+  border-radius: 18px;
   background-color: #f7ede3; /* Color arena suave */
   /* Recreación del estilo de imagen de fondo (opcional/decorativo) */
   background-image: url('https://images.unsplash.com/photo-1577918349257-2e1d7fbebf96?q=80&w=2940&auto=format&fit=crop');
-  background-size: 50%;
-  background-position: left center;
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
   box-shadow: 0 4px 20px rgba(0,0,0,0.03);
 }
@@ -38,8 +38,30 @@
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgba(247,237,227,0.3) 20%, #f7ede3 65%);
+}
+
+.skeleton-banner {
+  min-height: 240px;
+  margin-bottom: 52px;
+  background: linear-gradient(90deg, #f3efe9 25%, #eadecc 50%, #f3efe9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 15px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-card {
+  background: linear-gradient(90deg, #f4f1eb 25%, #eadecc 50%, #f4f1eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  height: 350px;
   border-radius: 12px;
-  background: linear-gradient(90deg, rgba(247,237,227,0) 20%, #f7ede3 45%);
 }
 
 .hero-content {
@@ -94,7 +116,7 @@
 .hero-ribbon {
   position: absolute;
   top: -10px;
-  right: 40px;
+  left: 40px;
   width: 60px;
   height: 90px;
   background-color: var(--orange);
@@ -116,14 +138,14 @@
   border-bottom: 30px solid transparent;
 }
 
-/* Sombra pequeña (pliegue) arriba a la derecha si es necesario */
+/* Sombra pequeña (pliegue) arriba a la izquierda si es necesario */
 .hero-ribbon::before {
   content: '';
   position: absolute;
   top: 0;
-  right: -10px;
+  left: -10px;
   border-bottom: 10px solid #a8480c;
-  border-right: 10px solid transparent;
+  border-left: 10px solid transparent;
 }
 
 .hero-ribbon span {
@@ -383,7 +405,7 @@
   }
 
   .hero-ribbon {
-    right: 20px;
+    left: 20px;
   }
 
   .products-grid {

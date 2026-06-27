@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface Producto {
@@ -81,8 +82,12 @@ export class ProductosService {
     return this.http.get<any[]>(`${this.apiUrl}/productos`);
   }
 
-  obtenerProductosPublicos(): Observable<any[]> {
+  obtenerProductosPublicos(forceReload: boolean = false): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/productos/publicos`);
+  }
+
+  obtenerMasVistos(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/productos/mas-vistos`);
   }
 
   obtenerProductoPorId(id: any): Observable<any> {

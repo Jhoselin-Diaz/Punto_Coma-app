@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router, NavigationEnd } from '@angular/router';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { ProductosService } from '../../service/productos.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeUrl, SafeStyle } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-ofertas',
@@ -13,23 +15,70 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
   templateUrl: './ofertas.component.html',
   styleUrl: './ofertas.component.css'
 })
-export class OfertasComponent implements OnInit {
+export class OfertasComponent implements OnInit, OnDestroy {
   productosEnOferta: any[] = [];
+  productos: any[] = [];
   cargando = true;
+  isConfigLoading = true;
+  isLoading = true;
+  bannerStyle: SafeStyle = '';
+  bannerTitulo = '';
+  bannerSubtitulo = '';
+
+  private configSub?: Subscription;
 
   constructor(
     private productosService: ProductosService,
     public configService: ConfiguracionService,
-    private sanitizer: DomSanitizer
-  ) {}
+    private sanitizer: DomSanitizer,
+    private router: Router
+  ) {
+    this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+  }
 
-  ngOnInit() {
+  obtenerUrlRenderizable(url: string): string {
+    if (!url) return '';
+
+    if (url.includes('lh3.googleusercontent.com')) return url;
+    if (url.includes('supabase.co/storage') || url.includes('supabase.in/storage')) return url;
+    if (url.startsWith('blob:')) return url;
+
+    if (url.includes('docs.google.com/uc') || url.includes('drive.google.com/uc')) {
+      const match = url.match(/[?&]id=([^&]+)/);
+      if (match && match[1]) {
+        return `https://lh3.googleusercontent.com/d/${match[1]}`;
+      }
+    }
+
+    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
+      const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (fileMatch && fileMatch[1]) {
+        return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`;
+      }
+      const dMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (dMatch && dMatch[1]) {
+        return `https://lh3.googleusercontent.com/d/${dMatch[1]}`;
+      }
+    }
+
+    return url;
+  }
+
+  cargarProductosDesdeCache() {
     this.cargando = true;
-    this.productosService.obtenerProductosPublicos().subscribe({
+    this.isLoading = true;
+
+    // Disparar recarga de la configuración desde la caché
+    this.configService.cargarDesdeBackend(false).subscribe({
+      error: (err) => console.error('Error al recargar configuracion en ofertas:', err)
+    });
+
+    // Disparar recarga de los productos en oferta desde la caché
+    this.productosService.obtenerProductosPublicos(false).subscribe({
       next: (data) => {
         const hoy = new Date().toISOString().split('T')[0];
         
-        this.productosEnOferta = data.filter((p: any) => {
+        const filtered = data.filter((p: any) => {
           // 1. Debe ser visible y activo
           if (p.visible === false || p.activo === false) return false;
 
@@ -49,13 +98,41 @@ export class OfertasComponent implements OnInit {
           return cumpleInicio && cumpleFin;
         });
 
+        this.productos = filtered;
+        this.productosEnOferta = filtered;
         this.cargando = false;
+        this.isLoading = false;
       },
       error: (err) => {
-        console.error('Error al obtener ofertas públicas:', err);
+        console.error('Error al obtener ofertas públicas desde cache:', err);
         this.cargando = false;
+        this.isLoading = false;
       }
     });
+  }
+
+  ngOnInit() {
+    // Suscripción única reactiva a config$
+    this.configSub = this.configService.config$.subscribe(config => {
+      if (config) {
+        this.bannerTitulo = config.ofertas_banner_titulo || 'Ofertas Especiales';
+        this.bannerSubtitulo = config.ofertas_banner_subtitulo || 'Aprovecha estas promociones exclusivas y consigue nuestras tazas y vasos más trendy al mejor precio.';
+        const imgUrl = config.ofertas_banner_img || '';
+        if (imgUrl) {
+          const renderUrl = this.obtenerUrlRenderizable(imgUrl);
+          this.bannerStyle = this.sanitizer.bypassSecurityTrustStyle(`url('${renderUrl}')`);
+        } else {
+          this.bannerStyle = '';
+        }
+        this.isConfigLoading = false;
+      }
+    });
+
+    this.cargarProductosDesdeCache();
+  }
+
+  ngOnDestroy() {
+    this.configSub?.unsubscribe();
   }
 
   parseDateToYYYYMMDD(dateVal: any): string {

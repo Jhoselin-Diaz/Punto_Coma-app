@@ -1,8 +1,7 @@
 <div class="productos-cms">
   <div class="prod-header-controls">
-    <!-- Buscador -->
     <div class="search-bar-cms">
-      <input type="text" placeholder="Buscar producto por nombre..." [(ngModel)]="searchTerm" />
+      <input type="text" placeholder="Buscar producto por nombre..." [(ngModel)]="searchTerm" (input)="filtrarProductos(filtroActivo)" />
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -11,11 +10,10 @@
 
     <!-- Filtros de categoría -->
     <div class="filter-chips">
-      <button [class.active]="filtroActivo === 'todos'" (click)="filtroActivo = 'todos'" type="button">Todos</button>
-      <button [class.active]="filtroActivo === 'visibles'" (click)="filtroActivo = 'visibles'" type="button">Visibles</button>
-      <button [class.active]="filtroActivo === 'ocultos'" (click)="filtroActivo = 'ocultos'" type="button">Ocultos</button>
-      <button [class.active]="filtroActivo === 'oferta'" (click)="filtroActivo = 'oferta'" type="button">En Oferta</button>
-      <button [class.active]="filtroActivo === 'nuevos'" (click)="filtroActivo = 'nuevos'" type="button">Nuevos</button>
+      <button [class.active]="filtroActivo === 'todos'" (click)="filtrarProductos('todos')" type="button">Todos</button>
+      <button [class.active]="filtroActivo === 'visibles'" (click)="filtrarProductos('visibles')" type="button">Visibles</button>
+      <button [class.active]="filtroActivo === 'ocultos'" (click)="filtrarProductos('ocultos')" type="button">Ocultos</button>
+      <button [class.active]="filtroActivo === 'en-oferta'" (click)="filtrarProductos('en-oferta')" type="button">En Oferta</button>
     </div>
 
     <!-- Agregar producto button -->
@@ -39,44 +37,58 @@
         </tr>
       </thead>
       <tbody>
-        @for (prod of productosAdmin; track prod.id; let idx = $index) {
-          <tr>
-            <td>
-              <div class="prod-thumb-small">
-                <img [src]="prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || 'images/prod-jaspeada.png'" [alt]="prod.nombre" />
-              </div>
-            </td>
-            <td><strong>{{ prod.nombre }}</strong></td>
-            <td>S/ {{ prod.precio }}</td>
-            <td><span class="stock-badge" [class.low]="prod.stock < 15">{{ prod.stock }} unidades</span></td>
-            <td>
-              <button
-                type="button"
-                class="switch-btn small-switch"
-                [class.on]="prod.visible"
-                (click)="prod.visible = !prod.visible; cambiarVisibilidadProducto(prod)"
-              >
-                <span></span>
-              </button>
-            </td>
-            <td>
-              <button type="button" class="switch-btn small-switch" [class.on]="prod.destacado" (click)="toggleDestacado(prod)">
-                <span></span>
-              </button>
-            </td>
-            <td>
-              <div class="row-actions">
-                <button class="btn-row-edit" (click)="openEditProduct(prod)" type="button">Editar</button>
-                <button class="btn-row-delete" (click)="eliminarProducto(prod.id)" type="button">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="7" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
-              No hay productos registrados en el catálogo.
-            </td>
-          </tr>
+        @if (isLoading) {
+          @for (i of [1, 2, 3]; track i) {
+            <tr class="skeleton-row">
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+            </tr>
+          }
+        } @else {
+          @for (prod of productosFiltrados; track prod.id; let idx = $index) {
+            <tr>
+              <td>
+                <div class="prod-thumb-small">
+                  <img [src]="prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || 'images/prod-jaspeada.png'" [alt]="prod.nombre" />
+                </div>
+              </td>
+              <td><strong>{{ prod.nombre }}</strong></td>
+              <td>S/ {{ prod.precio }}</td>
+              <td><span class="stock-badge" [class.low]="prod.stock < 15">{{ prod.stock }} unidades</span></td>
+              <td>
+                <button
+                  type="button"
+                  class="switch-btn small-switch"
+                  [class.on]="prod.visible"
+                  (click)="prod.visible = !prod.visible; cambiarVisibilidadProducto(prod)"
+                >
+                  <span></span>
+                </button>
+              </td>
+              <td>
+                <button type="button" class="switch-btn small-switch" [class.on]="prod.destacado" (click)="toggleDestacado(prod)">
+                  <span></span>
+                </button>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn-row-edit" (click)="openEditProduct(prod)" type="button">Editar</button>
+                  <button class="btn-row-delete" (click)="eliminarProducto(prod.id)" type="button">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+                No hay productos registrados en el catálogo.
+              </td>
+            </tr>
+          }
         }
       </tbody>
     </table>

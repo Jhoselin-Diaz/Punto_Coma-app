@@ -31,6 +31,7 @@ export class AdminShopVideoComponent implements OnInit {
   videosAdmin: VideoRow[] = [];
   productosDisponibles: any[] = [];
   selectedProductsIds: number[] = [];
+  isLoading = true;
 
   showAddVideoModal = false;
   showEditVideoModal = false;
@@ -74,6 +75,7 @@ export class AdminShopVideoComponent implements OnInit {
   }
 
   cargarVideos() {
+    this.isLoading = true;
     this.shopVideoService.obtenerTodos().subscribe({
       next: (data) => {
         this.videosAdmin = data.map(v => ({
@@ -90,9 +92,11 @@ export class AdminShopVideoComponent implements OnInit {
           url: v.videoUrl,
           productosIds: v.productosIds || []
         }));
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Error al cargar videos:', err);
+        this.isLoading = false;
       }
     });
   }

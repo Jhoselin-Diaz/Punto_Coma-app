@@ -17,7 +17,7 @@ declare var gapi: any;
 })
 export class AdminOfertasComponent implements OnInit {
   pestanaActiva = 'descuentos';
-  cargando = true;
+  isLoading = true;
 
   statsOfertas = {
     activas: 0,
@@ -99,7 +99,7 @@ export class AdminOfertasComponent implements OnInit {
   }
 
   cargarOfertas() {
-    this.cargando = true;
+    this.isLoading = true;
     this.productosService.obtenerTodosBackend().subscribe({
       next: (data) => {
         this.productosDisponibles = data;
@@ -127,11 +127,11 @@ export class AdminOfertasComponent implements OnInit {
           });
           
         this.recalcularStats();
-        this.cargando = false;
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Error al cargar ofertas del backend:', err);
-        this.cargando = false;
+        this.isLoading = false;
       }
     });
   }
@@ -190,6 +190,7 @@ export class AdminOfertasComponent implements OnInit {
     this.productosService.actualizarVisibilidadProducto(of.id, nuevoEstado).subscribe({
       next: () => {
         of.visible = nuevoEstado;
+        this.productosService.obtenerProductosPublicos(true).subscribe(); // Pre-cargar cache fresco
         console.log(`✅ Visibilidad de la oferta/producto "${of.producto}" conmutada a ${nuevoEstado}`);
         this.recalcularStats();
       },
@@ -223,6 +224,7 @@ export class AdminOfertasComponent implements OnInit {
  
         this.productosService.actualizarProducto(prod.id, payload).subscribe({
           next: () => {
+            this.productosService.obtenerProductosPublicos(true).subscribe(); // Pre-cargar cache fresco
             alert('¡Oferta eliminada con éxito!');
             this.cargarOfertas();
           },
@@ -318,6 +320,7 @@ export class AdminOfertasComponent implements OnInit {
  
     this.productosService.actualizarProducto(prod.id, payload).subscribe({
       next: () => {
+        this.productosService.obtenerProductosPublicos(true).subscribe(); // Pre-cargar cache fresco
         alert('¡Oferta creada y guardada con éxito!');
         this.showAddOfferModal = false;
         this.cargarOfertas();
@@ -366,6 +369,7 @@ export class AdminOfertasComponent implements OnInit {
  
     this.productosService.actualizarProducto(prod.id, payload).subscribe({
       next: () => {
+        this.productosService.obtenerProductosPublicos(true).subscribe(); // Pre-cargar cache fresco
         alert('¡Cambios guardados con éxito!');
         this.showEditOfferModal = false;
         this.cargarOfertas();
@@ -389,6 +393,7 @@ export class AdminOfertasComponent implements OnInit {
     this.configService.negocio.ofertas_banner_img = this.bannerConfig.imagenUrl;
     
     this.configService.actualizarNegocio(this.configService.negocio);
+    this.configService.cargarDesdeBackend(true).subscribe(); // Pre-cargar cache config fresco
     alert('¡Configuración del banner de ofertas guardada con éxito!');
   }
 
@@ -525,16 +530,45 @@ export class AdminOfertasComponent implements OnInit {
     return `https://lh3.googleusercontent.com/d/${id}`;
   }
 
-  obtenerImagenUrl(url: string): string {
+  obtenerUrlRenderizable(url: string): string {
     if (!url) return '';
-    if (!url.includes('drive.google.com') && !url.includes('docs.google.com') && !url.includes('googleusercontent.com')) {
-      return url;
+
+    if (url.includes('lh3.googleusercontent.com')) return url;
+    if (url.includes('supabase.co/storage') || url.includes('supabase.in/storage')) return url;
+    if (url.startsWith('blob:')) return url;
+
+    if (url.includes('docs.google.com/uc') || url.includes('drive.google.com/uc')) {
+      const match = url.match(/[?&]id=([^&]+)/);
+      if (match && match[1]) {
+        return `https://lh3.googleusercontent.com/d/${match[1]}`;
+      }
     }
-    const fileId = this.extraerGoogleDriveId(url);
-    return this.obtenerGoogleDrivePreviewUrl(fileId);
+
+    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
+      const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (fileMatch && fileMatch[1]) {
+        return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`;
+      }
+      const dMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (dMatch && dMatch[1]) {
+        return `https://lh3.googleusercontent.com/d/${dMatch[1]}`;
+      }
+    }
+
+    return url;
+  }
+
+  onBannerImgChange(value: string) {
+    const trimmed = (value || '').trim();
+    if (trimmed) {
+      const renderUrl = this.obtenerUrlRenderizable(trimmed);
+      this.bannerConfig.imagenUrl = renderUrl;
+    } else {
+      this.bannerConfig.imagenUrl = '';
+    }
   }
 
   get bannerPreviewUrl(): string {
-    return this.obtenerImagenUrl(this.bannerConfig.imagenUrl);
+    return this.obtenerUrlRenderizable(this.bannerConfig.imagenUrl);
   }
 }

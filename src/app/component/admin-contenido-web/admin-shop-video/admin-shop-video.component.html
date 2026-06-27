@@ -5,34 +5,46 @@
   </div>
 
   <div class="videos-grid-admin">
-    @for (vid of videosAdmin; track vid.id; let idx = $index) {
-    <div class="video-card-admin">
-      <div class="vid-thumb-large" [style.background-image]="'url(' + obtenerPortadaVideo(vid) + ')'">
-        <div class="platform-badge" [class]="vid.platform.toLowerCase().replace(' ', '-')">{{ vid.platform }}</div>
-        <div class="play-btn-circle">▶</div>
-      </div>
-      <div class="vid-info-admin">
-        <h4>{{ vid.title }}</h4>
-        <p>📍 {{ vid.productsCount }} productos vinculados</p>
-        <div class="vid-actions-bar">
-          <div class="visible-switch-wrap">
-            <span>Visible:</span>
-            <button type="button" class="switch-btn small-switch" [class.on]="vid.visible" (click)="toggleVisible(vid)">
-              <span></span>
-            </button>
+    @if (isLoading) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="video-card-admin skeleton-video-card-admin" style="min-height: 310px;">
+          <div class="vid-thumb-large skeleton-cell" style="height: 180px; border-radius: 8px 8px 0 0; background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+          <div class="vid-info-admin" style="padding: 16px;">
+            <div class="skeleton-cell" style="height: 18px; width: 80%; margin-bottom: 12px; background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;"></div>
+            <div class="skeleton-cell" style="height: 14px; width: 60%; background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;"></div>
           </div>
-          <div class="row-actions">
-            <button class="btn-row-edit" (click)="openEditVideo(vid)" type="button">Editar</button>
-            <button class="btn-row-delete" (click)="eliminarVideo(vid.id)" type="button">Eliminar</button>
+        </div>
+      }
+    } @else {
+      @for (vid of videosAdmin; track vid.id; let idx = $index) {
+      <div class="video-card-admin">
+        <div class="vid-thumb-large" [style.background-image]="'url(' + obtenerPortadaVideo(vid) + ')'">
+          <div class="platform-badge" [class]="vid.platform.toLowerCase().replace(' ', '-')">{{ vid.platform }}</div>
+          <div class="play-btn-circle">▶</div>
+        </div>
+        <div class="vid-info-admin">
+          <h4>{{ vid.title }}</h4>
+          <p>📍 {{ vid.productsCount }} productos vinculados</p>
+          <div class="vid-actions-bar">
+            <div class="visible-switch-wrap">
+              <span>Visible:</span>
+              <button type="button" class="switch-btn small-switch" [class.on]="vid.visible" (click)="toggleVisible(vid)">
+                <span></span>
+              </button>
+            </div>
+            <div class="row-actions">
+              <button class="btn-row-edit" (click)="openEditVideo(vid)" type="button">Editar</button>
+              <button class="btn-row-delete" (click)="eliminarVideo(vid.id)" type="button">Eliminar</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    } @empty {
-    <div class="empty-cms-placeholder"
-      style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--gray); font-style: italic; border: 1px dashed var(--border); border-radius: 8px; width: 100%;">
-      No hay videos de tienda registrados.
-    </div>
+      } @empty {
+      <div class="empty-cms-placeholder"
+        style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--gray); font-style: italic; border: 1px dashed var(--border); border-radius: 8px; width: 100%;">
+        No hay videos de tienda registrados.
+      </div>
+      }
     }
   </div>
 </div>

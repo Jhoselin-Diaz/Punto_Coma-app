@@ -6,10 +6,16 @@
       <p>Selecciona tu favorito y pidelo en segundos por WhatsApp.</p>
     </section>
 
-    @if (cargando) {
-      <div class="loading-spinner-container">
-        <div class="spinner"></div>
-        <p>Cargando nuestro catálogo...</p>
+    @if (isLoading) {
+      <div class="products-grid" aria-label="Cargando catálogo...">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
       </div>
     } @else {
       <section class="products-grid" aria-label="Lista de productos">

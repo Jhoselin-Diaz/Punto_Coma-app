@@ -17,10 +17,10 @@
           </div>
         </div>
         <p class="block-card-desc">{{ block.description }}</p>
-        
+
         <div class="block-btn-preview">
-          <span>Botón:</span>
-          <span class="btn-preview-tag">{{ block.btnText }}</span>
+          <span>Botón / Valor:</span>
+          <span class="btn-preview-tag">{{ block.btnText || '(Sin botón/texto)' }}</span>
         </div>
 
         <div class="block-card-actions">
@@ -42,18 +42,17 @@
 
       <div class="form-group">
         <label>Texto Principal del Banner</label>
-        <input type="text" [(ngModel)]="contactoWaBottom.btnText" />
+        <input type="text" [(ngModel)]="inputCierreTitulo" name="rawTitulo" class="form-control" />
       </div>
 
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label>Número WhatsApp destino</label>
-          <input type="text" [(ngModel)]="contactoWaBottom.number" />
-        </div>
-        <div class="form-group">
-          <label>Mensaje automático pre-grabado</label>
-          <input type="text" [(ngModel)]="contactoWaBottom.message" />
-        </div>
+      <div class="form-group">
+        <label>SUBTÍTULO / DESCRIPCIÓN DEL BANNER</label>
+        <input type="text" [(ngModel)]="inputCierreSubtitulo" name="rawSubtitulo" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>ENLACE DIRECTO DE WHATSAPP</label>
+        <input type="text" [(ngModel)]="inputCierreLink" name="rawLink" class="form-control" />
       </div>
 
       <div class="switch-row">
@@ -64,7 +63,7 @@
       </div>
 
       <div class="flex-end-row mt-15">
-        <button class="btn-save" (click)="openEditWaBottom()" type="button">Editar valores</button>
+        <button class="btn-save" (click)="guardarCierreDirecto()" type="button">Guardar cambios</button>
       </div>
     </div>
 
@@ -75,13 +74,13 @@
         <div class="wa-preview-left">
           <div class="wa-preview-decor">✿</div>
           <div>
-            <h5>{{ contactoWaBottom.btnText }}</h5>
-            <p>Resolvamos tus dudas al instante</p>
+            <h5>{{ inputCierreTitulo }}</h5>
+            <p>{{ inputCierreSubtitulo }}</p>
           </div>
         </div>
-        <button type="button" class="btn-wa-green-preview">
+        <a class="btn-wa-green-preview" [href]="inputCierreLink" target="_blank">
           <span>💬</span> Chatea ahora
-        </button>
+        </a>
       </div>
     </div>
   </div>
@@ -108,16 +107,25 @@
             <input type="text" [(ngModel)]="editingBlock.description" />
           </div>
 
-          <div class="form-grid-2">
+          @if (editingBlock.id === 'block-email') {
             <div class="form-group">
-              <label>Texto del Botón / Valor</label>
+              <label>Correo Electrónico (Valor visible)</label>
               <input type="text" [(ngModel)]="editingBlock.btnText" />
             </div>
-            <div class="form-group">
-              <label>Enlace de redirección (Link)</label>
-              <input type="text" [(ngModel)]="editingBlock.btnLink" />
+          } @else if (editingBlock.id === 'block-info') {
+            <!-- Bloque puramente informativo, no requiere botón ni enlace de redirección -->
+          } @else {
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Texto del Botón / Valor</label>
+                <input type="text" [(ngModel)]="editingBlock.btnText" />
+              </div>
+              <div class="form-group">
+                <label>Enlace de redirección (Link)</label>
+                <input type="text" [(ngModel)]="editingBlock.btnLink" />
+              </div>
             </div>
-          </div>
+          }
 
           <div class="switch-row">
             <label>Habilitar visualización de este bloque</label>
@@ -136,38 +144,4 @@
   </div>
 }
 
-<!-- MODAL BOTÓN WA FINAL -->
-@if (showWaBottomModal) {
-  <div class="modal-backdrop">
-    <div class="modal-card-large">
-      <div class="modal-header">
-        <h3>Configurar Botón WhatsApp Final</h3>
-        <button class="btn-close-modal" (click)="showWaBottomModal = false" type="button">×</button>
-      </div>
 
-      <div class="modal-body-content">
-        <div class="modal-form-grid">
-          <div class="form-group">
-            <label>Texto Principal</label>
-            <input type="text" [(ngModel)]="editingWaBottom.btnText" />
-          </div>
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label>Número WhatsApp</label>
-              <input type="text" [(ngModel)]="editingWaBottom.number" />
-            </div>
-            <div class="form-group">
-              <label>Mensaje Preestablecido</label>
-              <input type="text" [(ngModel)]="editingWaBottom.message" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn-cancel" (click)="showWaBottomModal = false" type="button">Cancelar</button>
-        <button class="btn-save" (click)="saveWaBottom()" type="button">Guardar cambios</button>
-      </div>
-    </div>
-  </div>
-}

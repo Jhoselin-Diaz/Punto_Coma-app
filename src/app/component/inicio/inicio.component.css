@@ -1,267 +1,452 @@
+/* ===================================================
+   INICIO COMPONENT — Vista pública del cliente
+   =================================================== */
+
 :host {
-  --orange: #df6c1b;
-  --ink: #2b1b16;
-  --line: #eee4dd;
-  --wash: #fbf5f1;
+  --orange:  #df6c1b;
+  --ink:     #2b1b16;
+  --muted:   #766c67;
+  --line:    #eee4dd;
+  --wash:    #fbf5f1;
+  --green:   #4b8d37;
   display: block;
 }
 
+/* ── CONTENIDO PRINCIPAL ──────────────────────────── */
 .content {
-  width: min(1324px, calc(100% - 112px));
-  margin: 16px auto 56px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px 64px;
 }
 
+/* ── HERO BANNER ──────────────────────────────────── */
 .hero {
-  height: 339px;
-  border-radius: 5px;
-  background: url("/images/hero.png") center / cover no-repeat;
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  margin: 20px 0 40px;
+  border-radius: 18px;
+  overflow: hidden;
+
+  /* Fallback beige mientras carga la imagen real */
+  background-color: #f5ede4;
+
+  /* La imagen viene desde [style.background-image] — éstas deben estar siempre presentes */
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+
+  display: flex;
+  align-items: center;
+
+  box-shadow: 0 6px 32px rgba(43, 27, 22, 0.08);
 }
 
+/* Degradado suave sobre la imagen — texto legible sin tapar la foto */
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  /* Degradado de izquierda (opaco para el texto) → derecho (transparente para la foto) */
+  background: linear-gradient(
+    90deg,
+    rgba(247, 237, 227, 0.92) 0%,
+    rgba(247, 237, 227, 0.75) 35%,
+    rgba(247, 237, 227, 0.10) 65%,
+    rgba(247, 237, 227, 0.00) 100%
+  );
+  border-radius: 18px;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 28px 48px;
+  max-width: 460px;
+}
+
+.hero-title {
+  margin: 0 0 8px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(22px, 3vw, 36px);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.18;
+  letter-spacing: -0.3px;
+}
+
+.hero-subtitle {
+  margin: 0 0 20px;
+  font-size: 14.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-hero-client {
+  display: inline-block;
+  padding: 13px 28px;
+  border-radius: 100px;
+  background-color: var(--orange);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  text-decoration: none;
+  letter-spacing: 0.2px;
+  transition: background-color 0.2s, transform 0.15s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-hero-client:hover {
+  background-color: #c55e14;
+  transform: translateY(-2px);
+}
+
+/* Skeleton mientras carga el banner */
+.hero-skeleton {
+  width: 100%;
+  min-height: 240px;
+  margin: 20px 0 40px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, #ecddd4 25%, #f4e7de 50%, #ecddd4 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ── SECCIONES GENERALES ──────────────────────────── */
 .section {
-  margin-top: 20px;
+  margin-bottom: 48px;
 }
 
 .section-title {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
 }
 
 .section-title h2 {
   margin: 0;
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--ink);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 24px;
-  line-height: 1.1;
+  letter-spacing: -0.2px;
 }
 
 .section-title a {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+  font-size: 13.5px;
   color: var(--orange);
-  font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
+  transition: opacity 0.2s;
 }
 
-.section-title span {
-  font-size: 20px;
-  line-height: 1;
-}
+.section-title a:hover { opacity: 0.75; }
 
+.section-title a span { font-size: 11px; }
+
+/* ── GRIDS DE PRODUCTOS ───────────────────────────── */
 .grid {
   display: grid;
-  gap: 28px;
+  gap: 20px;
 }
 
-.recent-grid,
+.recent-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
 .category-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.product-card,
-.category-card {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #fff;
-}
-
-.product-card img {
-  width: 100%;
-  height: 151px;
-  display: block;
-  object-fit: cover;
-}
-
-.card-info,
-.category-info {
-  flex: 1;
-  min-height: 83px;
-  padding: 10px 18px 14px;
-}
-
-h3 {
-  margin: 0;
-  color: #3a302c;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.25;
-}
-
-.tag,
-.offer-tag {
-  display: inline-block;
-  border-radius: 3px;
-  background: var(--orange);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.tag {
-  margin-top: 6px;
-  padding: 4px 6px;
-}
-
-p {
-  margin: 6px 0 0;
-}
-
-strong {
-  color: var(--orange);
-  font-size: 18px;
-  font-weight: 500;
-}
-
-s {
-  margin-left: 7px;
-  color: #a6a09b;
-  font-size: 13px;
-  text-decoration-thickness: 1px;
-}
-
-.category-band {
-  margin-top: 22px;
-  padding: 20px 16px 16px;
-  border-radius: 8px;
-  background: var(--wash);
-}
-
-.category-card img {
-  width: 100%;
-  height: 185px;
-  display: block;
-  object-fit: cover;
-}
-
-.category-info {
-  min-height: 76px;
-  background: #fff;
-}
-
-.category-info h3 {
-  font-size: 18px;
-}
-
-.offers {
-  margin-top: 32px;
-  padding: 0 22px;
-}
-
-.pill-link {
-  padding: 8px 18px;
-  border-radius: 999px;
-  background: var(--orange);
-  color: #fff !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 }
 
 .offer-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
 }
 
-.offer-card img {
-  height: 168px;
+/* ── TARJETA DE PRODUCTO ──────────────────────────── */
+.product-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.22s, box-shadow 0.22s;
+  cursor: pointer;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(43, 27, 22, 0.09);
+}
+
+.product-card img,
+.category-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background-color: var(--wash);
+}
+
+.card-info {
+  padding: 12px 14px 16px;
+}
+
+.card-info h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.card-info p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.card-info strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ── TARJETA CATEGORÍA ────────────────────────────── */
+.category-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.22s, box-shadow 0.22s;
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(43, 27, 22, 0.08);
+}
+
+.category-info {
+  padding: 12px 14px 16px;
+}
+
+.category-info h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── TARJETA OFERTA ───────────────────────────────── */
+.offer-card {
+  position: relative;
 }
 
 .image-wrap {
   position: relative;
+  overflow: hidden;
 }
 
-.offer-tag {
-  position: absolute;
-  top: 13px;
-  left: 14px;
-  padding: 5px 8px;
+.image-wrap img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background-color: var(--wash);
 }
 
-.whatsapp-banner {
-  min-height: 98px;
+/* ── PLACEHOLDER VACÍO ────────────────────────────── */
+.empty-client-placeholder {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 26px;
-  margin: 26px 8px 0;
-  padding: 22px 28px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #fbf5f1;
+  text-align: center;
+  padding: 40px 24px;
+  background: var(--wash);
+  border-radius: 12px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  gap: 8px;
+}
+
+.large-placeholder {
+  min-height: 160px;
+  grid-column: 1 / -1;
+}
+
+.placeholder-icon {
+  font-size: 36px;
+}
+
+.empty-client-placeholder h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.empty-client-placeholder p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+/* ── SPINNER DE CARGA ─────────────────────────────── */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--line);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── BANNER WHATSAPP INFERIOR ─────────────────────── */
+.whatsapp-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 32px;
+  background-color: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(43, 27, 22, 0.04);
+  margin-top: 24px;
 }
 
 .whatsapp-badge {
-  width: 54px;
-  height: 54px;
-  display: grid;
-  place-items: center;
-  border: 5px solid #e9f7e8;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: #31c65b;
+  background-color: #25d366;
   color: #fff;
-  font-size: 26px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.whatsapp-text {
+  flex: 1;
 }
 
 .whatsapp-text h2 {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.1;
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: Georgia, serif;
 }
 
 .whatsapp-text p {
-  color: #766c67;
-  font-size: 14px;
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
 }
 
 .whatsapp-banner a {
-  min-width: 214px;
-  padding: 14px 20px;
-  border-radius: 999px;
-  background: var(--orange);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 100px;
+  background-color: #25d366;
   color: #fff;
-  text-align: center;
-  text-decoration: none;
   font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.15s;
 }
 
-@media (max-width: 1050px) {
+.whatsapp-banner a:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ── RESPONSIVE ───────────────────────────────────── */
+@media (max-width: 900px) {
   .content {
-    width: min(100% - 32px, 1324px);
+    padding: 0 20px 48px;
   }
 
-  .recent-grid,
-  .category-grid,
-  .offer-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
   .hero {
-    height: 210px;
+    min-height: 240px;
+    margin: 16px 0 36px;
+    border-radius: 14px;
+  }
+
+  .hero-content {
+    padding: 32px 28px;
+    max-width: 100%;
+  }
+
+  .hero-overlay {
+    background: linear-gradient(
+      180deg,
+      rgba(247, 237, 227, 0.88) 0%,
+      rgba(247, 237, 227, 0.60) 100%
+    );
+  }
+
+  .hero-title {
+    font-size: 26px;
   }
 
   .recent-grid,
   .category-grid,
   .offer-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .offers {
-    padding: 0;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .whatsapp-banner {
-    align-items: flex-start;
     flex-direction: column;
-    gap: 14px;
+    text-align: center;
+    padding: 24px;
+  }
+
+  .whatsapp-banner a {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero {
+    min-height: 200px;
+  }
+
+  .hero-title {
+    font-size: 22px;
+  }
+
+  .hero-subtitle {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .btn-hero-client {
+    padding: 10px 22px;
+    font-size: 14px;
+  }
+
+  .recent-grid,
+  .category-grid,
+  .offer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
 }

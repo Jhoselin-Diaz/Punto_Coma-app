@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, tap, shareReplay } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ConfiguracionService {
-  private apiUrl = 'http://localhost:8080/api';
+  private apiUrl = environment.apiUrl;
 
   negocio = {
     nombreTienda: '',
@@ -33,44 +36,64 @@ export class ConfiguracionService {
     ofertas_banner_img: ''
   };
 
+  private configSubject = new BehaviorSubject<any | null>(null);
+  readonly config$ = this.configSubject.asObservable();
+  private configCache$?: Observable<any>;
+
   constructor(private http: HttpClient) {
     const saved = localStorage.getItem('puntoycoma_config_negocio');
     if (saved) {
       try {
         this.negocio = JSON.parse(saved);
+        this.configSubject.next(this.negocio); // Emit cached values immediately to prevent 3s blank space
       } catch (e) {
         // Fallback en caso de error de parseo
       }
     }
-    this.cargarDesdeBackend();
-  }
-
-  cargarDesdeBackend() {
-    this.http.get<any>(`${this.apiUrl}/configuracion`).subscribe({
-      next: (data) => {
-        if (data) {
-          this.negocio = {
-            ...this.negocio,
-            nombreTienda: data.nombreTienda || this.negocio.nombreTienda,
-            correo: data.correo || this.negocio.correo,
-            telefono: data.telefono || this.negocio.telefono,
-            whatsapp: data.whatsapp || this.negocio.whatsapp,
-            instagram: data.instagram || this.negocio.instagram,
-            direccion: data.direccion || this.negocio.direccion,
-            ofertas_banner_titulo: data.ofertasBannerTitulo || this.negocio.ofertas_banner_titulo,
-            ofertas_banner_subtitulo: data.ofertasBannerSubtitulo || this.negocio.ofertas_banner_subtitulo,
-            ofertas_banner_img: data.ofertasBannerImg || this.negocio.ofertas_banner_img
-          };
-          localStorage.setItem('puntoycoma_config_negocio', JSON.stringify(this.negocio));
-        }
-      },
-      error: (err) => {
-        console.warn('⚠️ No se pudo obtener la configuración del backend. Usando LocalStorage.', err);
-      }
+    this.cargarDesdeBackend().subscribe({
+      error: (err) => console.error('Error al inicializar configuracion desde backend', err)
     });
   }
 
+  cargarDesdeBackend(forceReload: boolean = false): Observable<any> {
+    if (forceReload) {
+      this.configCache$ = undefined;
+    }
+    if (!this.configCache$) {
+      this.configCache$ = this.http.get<any>(`${this.apiUrl}/configuracion`).pipe(
+        tap((data) => {
+          if (data) {
+            this.negocio = {
+              ...this.negocio,
+              nombreTienda: data.nombreTienda || this.negocio.nombreTienda,
+              correo: data.correo || this.negocio.correo,
+              telefono: data.telefono || this.negocio.telefono,
+              whatsapp: data.whatsapp || this.negocio.whatsapp,
+              instagram: data.instagram || this.negocio.instagram,
+              direccion: data.direccion || this.negocio.direccion,
+              ofertas_banner_titulo: data.ofertasBannerTitulo || this.negocio.ofertas_banner_titulo,
+              ofertas_banner_subtitulo: data.ofertasBannerSubtitulo || this.negocio.ofertas_banner_subtitulo,
+              ofertas_banner_img: data.ofertasBannerImg || this.negocio.ofertas_banner_img
+            };
+            localStorage.setItem('puntoycoma_config_negocio', JSON.stringify(this.negocio));
+            this.configSubject.next(this.negocio);
+          } else {
+            this.configSubject.next(this.negocio);
+          }
+        }),
+        catchError((err) => {
+          console.warn('⚠️ No se pudo obtener la configuración del backend. Usando LocalStorage.', err);
+          this.configSubject.next(this.negocio);
+          return of(this.negocio);
+        }),
+        shareReplay(1)
+      );
+    }
+    return this.configCache$;
+  }
+
   actualizarNegocio(datos: any) {
+    this.configCache$ = undefined;
     this.negocio = { ...this.negocio, ...datos };
     localStorage.setItem('puntoycoma_config_negocio', JSON.stringify(this.negocio));
 
@@ -89,9 +112,11 @@ export class ConfiguracionService {
     this.http.put(`${this.apiUrl}/configuracion`, payload).subscribe({
       next: () => {
         console.log('✅ Configuración sincronizada exitosamente con el servidor Spring Boot / Supabase.');
+        this.configSubject.next(this.negocio);
       },
       error: (err) => {
         console.error('❌ Error al persistir la configuración en el backend:', err);
+        this.configSubject.next(this.negocio);
       }
     });
   }

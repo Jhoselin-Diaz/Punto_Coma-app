@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { ContactoService, ContactoBlock, ContactoCierre } from '../../service/contacto.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-contacto',
@@ -10,7 +11,7 @@ import { ContactoService, ContactoBlock, ContactoCierre } from '../../service/co
   templateUrl: './contacto.component.html',
   styleUrl: './contacto.component.css'
 })
-export class ContactoComponent implements OnInit {
+export class ContactoComponent implements OnInit, OnDestroy {
   blockWa: ContactoBlock = {
     id: 'block-wa',
     title: '',
@@ -62,37 +63,55 @@ export class ContactoComponent implements OnInit {
     message: '',
     visible: true
   };
-  
+
   isContactLoading = true;
+  private subBlocks?: Subscription;
+  private subCierre?: Subscription;
 
   constructor(private contactoService: ContactoService) {}
 
   ngOnInit() {
     this.isContactLoading = true;
-    this.contactoService.getBloques().subscribe({
-      next: (blocks) => {
-        this.blockWa = blocks.find(b => b.id === 'block-wa') || this.blockWa;
-        this.blockIg = blocks.find(b => b.id === 'block-ig') || this.blockIg;
-        this.blockSupport = blocks.find(b => b.id === 'block-support') || this.blockSupport;
-        this.blockEmail = blocks.find(b => b.id === 'block-email') || this.blockEmail;
-        this.blockInfo = blocks.find(b => b.id === 'block-info') || this.blockInfo;
 
-        this.contactoService.getCierre().subscribe({
-          next: (cierre) => {
-            this.contactoWaBottom = cierre;
-            this.isContactLoading = false;
-          },
-          error: (err) => {
-            console.error('Error al cargar cierre del banner de contacto', err);
-            this.isContactLoading = false;
-          }
-        });
-      },
-      error: (err) => {
-        console.error('Error al cargar bloques de contacto', err);
-        this.isContactLoading = false;
+    // Subscribe to reactive blocks channel
+    this.subBlocks = this.contactoService.blocks$.subscribe({
+      next: (blocks) => {
+        if (blocks) {
+          this.blockWa = blocks.find(b => b.id === 'block-wa') || this.blockWa;
+          this.blockIg = blocks.find(b => b.id === 'block-ig') || this.blockIg;
+          this.blockSupport = blocks.find(b => b.id === 'block-support') || this.blockSupport;
+          this.blockEmail = blocks.find(b => b.id === 'block-email') || this.blockEmail;
+          this.blockInfo = blocks.find(b => b.id === 'block-info') || this.blockInfo;
+        }
       }
     });
+
+    // Subscribe to reactive cierre channel
+    this.subCierre = this.contactoService.cierre$.subscribe({
+      next: (cierre) => {
+        if (cierre) {
+          this.contactoWaBottom = cierre;
+          this.isContactLoading = false;
+        }
+      }
+    });
+
+    // Trigger initial load from backend
+    this.contactoService.getBloques().subscribe({
+      error: () => this.isContactLoading = false
+    });
+    this.contactoService.getCierre().subscribe({
+      error: () => this.isContactLoading = false
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.subBlocks) {
+      this.subBlocks.unsubscribe();
+    }
+    if (this.subCierre) {
+      this.subCierre.unsubscribe();
+    }
   }
 
   irAlEnlace(enlace: string) {

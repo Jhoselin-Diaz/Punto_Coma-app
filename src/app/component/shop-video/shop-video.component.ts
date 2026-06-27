@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { ConfiguracionService } from '../../service/configuracion.service';
@@ -38,21 +38,24 @@ interface VideoRow {
 export class ShopVideoComponent implements OnInit {
   videos: VideoRow[] = [];
   productosDisponibles: any[] = [];
-  cargando = true;
+  isLoading = true;
 
   constructor(
     public configService: ConfiguracionService,
     private shopVideoService: ShopVideoService,
     private productosService: ProductosService,
-    private sanitizer: DomSanitizer
-  ) { }
+    private sanitizer: DomSanitizer,
+    private router: Router
+  ) {
+    this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+  }
 
   ngOnInit() {
     this.cargarDatos();
   }
 
   cargarDatos() {
-    this.cargando = true;
+    this.isLoading = true;
     this.productosService.obtenerProductosPublicos().subscribe({
       next: (resProducts: any) => {
         const products = Array.isArray(resProducts) ? resProducts : (resProducts && Array.isArray(resProducts.content) ? resProducts.content : []);
@@ -90,17 +93,17 @@ export class ShopVideoComponent implements OnInit {
                 productos: linkedProducts
               };
             });
-            this.cargando = false;
+            this.isLoading = false;
           },
           error: (err) => {
             console.error('Error al cargar videos públicos:', err);
-            this.cargando = false;
+            this.isLoading = false;
           }
         });
       },
       error: (err) => {
         console.error('Error al cargar productos públicos:', err);
-        this.cargando = false;
+        this.isLoading = false;
       }
     });
   }

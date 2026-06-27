@@ -1,85 +1,76 @@
 <app-cliente-layout>
   <main class="content">
-    <section class="hero" aria-label="Elegantes tazas y vasos de moda"></section>
 
-    <section class="section">
-      <div class="section-title">
-        <h2>Recien vistos</h2>
-        <a routerLink="/productos">Ver todo <span>&gt;</span></a>
-      </div>
-      <div class="grid recent-grid">
-        @for (producto of recienVistos; track producto.nombre) {
-          <article class="product-card">
-            <img [src]="producto.imagen" [alt]="producto.nombre" />
-            <div class="card-info">
-              <h3>{{ producto.nombre }}</h3>
-              <p><strong>S/ {{ producto.precio }}</strong></p>
-            </div>
-          </article>
-        } @empty {
-          <div class="empty-client-placeholder large-placeholder">
-            <span class="placeholder-icon">☕</span>
-            <p>Aún no has visto ningún producto. ¡Explora nuestro catálogo!</p>
-          </div>
-        }
-      </div>
-    </section>
+    <!-- HERO BANNER: skeleton mientras carga, real cuando hay datos -->
+    @if (isBannerLoading) {
+      <div class="hero-skeleton" aria-label="Cargando banner..."></div>
+    }
 
-    <section class="section category-band">
-      <div class="section-title">
-        <h2>Categorias populares</h2>
-        <a routerLink="/productos">Ver todo <span>&gt;</span></a>
-      </div>
-      <div class="grid category-grid">
-        @for (categoria of categorias; track categoria.nombre) {
-          <article class="category-card">
-            <img [src]="categoria.imagen" [alt]="categoria.nombre" />
-            <div class="category-info">
-              <h3>{{ categoria.nombre }}</h3>
-              <p><strong>S/ {{ categoria.precio }}</strong></p>
-            </div>
-          </article>
-        } @empty {
-          <div class="empty-client-placeholder large-placeholder">
-            <span class="placeholder-icon">✨</span>
-            <p>Estamos preparando nuestras nuevas colecciones de tazas y vasos aesthetic...</p>
-          </div>
-        }
-      </div>
-    </section>
+    @if (!isBannerLoading && banner && banner.visible) {
+      <section
+        class="hero"
+        [style.background-image]="bannerPreviewStyle"
+        [attr.aria-label]="banner.titulo">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <h1 class="hero-title">{{ banner.titulo }}</h1>
+          <p class="hero-subtitle">{{ banner.subtitulo }}</p>
+          @if (banner.textoBoton && banner.linkBoton) {
+            <a [routerLink]="banner.linkBoton" class="btn-hero-client">
+              {{ banner.textoBoton }}
+            </a>
+          }
+        </div>
+      </section>
+    }
 
-    <section class="section offers">
-      <div class="section-title">
-        <h2>Destacados del dia</h2>
-        <a class="pill-link" routerLink="/productos">Ver todos los destacados <span>&gt;</span></a>
-      </div>
-      <div class="offer-grid">
-        @for (oferta of ofertas; track oferta.nombre + oferta.imagen) {
-          <article class="product-card offer-card">
-            <div class="image-wrap">
-              <img [src]="oferta.imagen" [alt]="oferta.nombre" />
+    <!-- Secciones Dinámicas de Categorías Destacadas -->
+    @for (cat of categoriasDestacadas; track cat.id) {
+      <section class="section" [attr.aria-label]="cat.nombreCategoria">
+        <div class="section-title">
+          <h2>{{ cat.nombreCategoria }}</h2>
+          <a routerLink="/productos">Ver todo <span>&gt;</span></a>
+        </div>
+        <div class="grid recent-grid">
+          @for (prod of cat.productos; track prod.id) {
+            <article class="product-card" [routerLink]="['/productos', prod.id]" style="cursor: pointer;">
+              <div class="image-wrap">
+                <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-jaspeada.png'" [alt]="prod.nombre" loading="lazy" />
+              </div>
+              <div class="card-info">
+                <h3>{{ prod.nombre }}</h3>
+                <p>
+                  @if (prod.precioAnterior && prod.precioAnterior > prod.precio) {
+                    <strong class="price-discount" style="color: var(--orange);">S/ {{ prod.precio }}</strong>
+                    <span class="price-old" style="text-decoration: line-through; font-size: 12px; color: var(--muted); margin-left: 6px;">S/ {{ prod.precioAnterior }}</span>
+                  } @else {
+                    <strong>S/ {{ prod.precio }}</strong>
+                  }
+                </p>
+              </div>
+            </article>
+          } @empty {
+            <div class="empty-client-placeholder large-placeholder">
+              <span class="placeholder-icon">✨</span>
+              <h3>Próximamente más novedades</h3>
+              <p>Estamos preparando el catálogo de productos especiales para esta sección...</p>
             </div>
-            <div class="card-info">
-              <h3>{{ oferta.nombre }}</h3>
-              <p><strong>S/ {{ oferta.precio }}</strong></p>
-            </div>
-          </article>
-        } @empty {
-          <div class="empty-client-placeholder large-placeholder">
-            <span class="placeholder-icon">🏷️</span>
-            <p>Muy pronto descubrirás nuestras ofertas del día...</p>
-          </div>
-        }
-      </div>
-    </section>
+          }
+        </div>
+      </section>
+    }
 
-    <section class="whatsapp-banner">
+    <!-- Banner WhatsApp inferior -->
+    <section class="whatsapp-banner" aria-label="Comprar por WhatsApp">
       <div class="whatsapp-badge">W</div>
       <div class="whatsapp-text">
-        <h2>Ordena facilmente por WhatsApp</h2>
-        <p>Elige tus productos favoritos y haz tu pedido por WhatsApp.</p>
+        <h2>Ordena fácilmente por WhatsApp</h2>
+        <p>Elige tus productos favoritos y haz tu pedido directo por WhatsApp.</p>
       </div>
-      <a [href]="configService.obtenerWhatsappUrl('Hola, me gustaría comprar productos de la tienda.')">W Comprar por WhatsApp</a>
+      <a [href]="configService.obtenerWhatsappUrl('Hola, me gustaría comprar productos de la tienda.')">
+        W Comprar por WhatsApp
+      </a>
     </section>
+
   </main>
 </app-cliente-layout>

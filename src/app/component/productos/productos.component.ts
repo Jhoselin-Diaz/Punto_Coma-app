@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { ProductosService } from '../../service/productos.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
@@ -13,25 +13,28 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 })
 export class ProductosComponent implements OnInit {
   productos: any[] = [];
-  cargando = true;
+  isLoading = true;
 
   constructor(
     private productosService: ProductosService,
     public configService: ConfiguracionService,
-    private sanitizer: DomSanitizer
-  ) {}
+    private sanitizer: DomSanitizer,
+    private router: Router
+  ) {
+    this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+  }
 
   ngOnInit() {
-    this.cargando = true;
+    this.isLoading = true;
     this.productosService.obtenerProductosPublicos().subscribe({
       next: (res: any) => {
         const data = Array.isArray(res) ? res : (res && Array.isArray(res.content) ? res.content : []);
         this.productos = data.filter((p: any) => p.visible !== false && p.activo !== false);
-        this.cargando = false;
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Error al obtener productos públicos:', err);
-        this.cargando = false;
+        this.isLoading = false;
       }
     });
   }

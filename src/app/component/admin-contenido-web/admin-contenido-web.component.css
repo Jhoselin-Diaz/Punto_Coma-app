@@ -83,7 +83,7 @@
   opacity: 0.95;
 }
 
-/* --- CUADRÍCULA DE MÓDULOS --- */
+/* --- CUADRÍCULA DE MÓDULOS (INTEGRACIÓN COMPAÑERO - INICIO) --- */
 .modules-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -1078,17 +1078,6 @@
   cursor: pointer;
 }
 
-.btn-save {
-  background-color: var(--orange);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 22px;
-  font-weight: 700;
-  font-size: 13.5px;
-  cursor: pointer;
-}
-
 /* IMÁGENES TAB LAYOUT */
 .uploader-tab-layout {
   display: grid;
@@ -1732,7 +1721,7 @@
   opacity: 0.85;
 }
 
-/* --- SECCIÓN 5: CONTACTO INDIVIDUAL POR TARJETAS --- */
+/* --- SECCIÓN 5: CONTACTO INDIVIDUAL POR TARJETAS (INTEGRACIÓN COMPAÑERO) --- */
 .contacto-cms-layout {
   display: flex;
   flex-direction: column;
@@ -1842,7 +1831,7 @@
   padding-top: 12px;
 }
 
-/* BOTÓN FINAL DE WHATSAPP */
+/* BOTÓN FINAL DE WHATSAPP (INTEGRACIÓN COMPAÑERO) */
 .bottom-wa-config-box {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
@@ -1941,7 +1930,7 @@
   }
 }
 
-/* --- GOOGLE DRIVE PICKER EXTRA STYLES --- */
+/* --- GOOGLE DRIVE PICKER EXTRA STYLES (TUS MEJORAS) --- */
 .btn-del-thumb {
   position: absolute;
   top: 4px;
@@ -2009,4 +1998,3 @@
   opacity: 0.95;
   transform: translateY(-1px);
 }
-

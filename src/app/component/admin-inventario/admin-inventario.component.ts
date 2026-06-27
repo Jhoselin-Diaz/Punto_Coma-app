@@ -49,6 +49,11 @@ export class AdminInventarioComponent implements OnInit {
   Math = Math;
   filtroStockActivo: 'todos' | 'disponibles' | 'bajo' | 'agotados' = 'todos';
   filtroHistorialActivo: 'hoy' | 'semana' | 'mes' = 'semana';
+  isLoading = true;
+
+  get productos(): InventarioItem[] {
+    return this.getFilteredStockItems();
+  }
 
   // Modales
   showEditStockModal = false;
@@ -112,6 +117,7 @@ export class AdminInventarioComponent implements OnInit {
   }
 
   cargarDatos() {
+    this.isLoading = true;
     // 1. Cargar productos desde el backend
     this.productosService.obtenerTodosBackend().subscribe({
       next: (data) => {
@@ -136,9 +142,11 @@ export class AdminInventarioComponent implements OnInit {
           };
         });
         this.recalcularEstadisticas();
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Error al cargar productos para inventario:', err);
+        this.isLoading = false;
       }
     });
 

@@ -20,9 +20,11 @@ type ProductModalTab = 'general' | 'imagenes' | 'descripcion' | 'relacionados';
 })
 export class AdminProductosComponent implements OnInit {
   searchTerm = '';
-  filtroActivo: 'todos' | 'visibles' | 'ocultos' | 'oferta' | 'nuevos' = 'todos';
+  filtroActivo: 'todos' | 'visibles' | 'ocultos' | 'en-oferta' = 'todos';
   productosAdmin: any[] = [];
+  productosFiltrados: any[] = [];
   productosDisponiblesRelacionados: any[] = [];
+  isLoading = true;
 
   // Modales y pestañas
   showAddProductModal = false;
@@ -158,16 +160,48 @@ export class AdminProductosComponent implements OnInit {
   }
 
   cargarProductos() {
+    this.isLoading = true;
     this.productosService.obtenerTodosBackend().subscribe({
       next: (res: any) => {
         const data = Array.isArray(res) ? res : (res && Array.isArray(res.content) ? res.content : []);
         this.productosAdmin = data;
+        this.filtrarProductos(this.filtroActivo);
+        this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar productos del backend:', err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
+  }
+
+  filtrarProductos(filtro: string) {
+    this.filtroActivo = filtro as any;
+    
+    this.productosFiltrados = this.productosAdmin.filter((prod: any) => {
+      const visible = prod.visible !== false && prod.activo !== false;
+      
+      let cumpleFiltro = true;
+      if (filtro === 'visibles') {
+        cumpleFiltro = visible;
+      } else if (filtro === 'ocultos') {
+        cumpleFiltro = !visible;
+      } else if (filtro === 'en-oferta') {
+        const original = prod.precioOriginal || prod.precioAnterior || prod.precio || 0;
+        const oferta = prod.precioOferta || 0;
+        cumpleFiltro = oferta > 0 && original > oferta;
+      }
+      
+      let cumpleSearch = true;
+      if (this.searchTerm && this.searchTerm.trim() !== '') {
+        cumpleSearch = prod.nombre.toLowerCase().includes(this.searchTerm.toLowerCase());
+      }
+      
+      return cumpleFiltro && cumpleSearch;
+    });
+    this.cdr.detectChanges();
   }
 
   eliminarProducto(id: any) {
@@ -190,13 +224,13 @@ export class AdminProductosComponent implements OnInit {
     this.productosService.actualizarVisibilidadProducto(prod.id, nuevoEstado).subscribe({
       next: () => {
         console.log(`✅ Visibilidad del producto "${prod.nombre}" actualizada a ${nuevoEstado}`);
-        this.cdr.detectChanges();
+        this.filtrarProductos(this.filtroActivo);
       },
       error: (err) => {
         console.error('Error al actualizar visibilidad:', err);
         prod.visible = !nuevoEstado;
         alert(`No se pudo actualizar la visibilidad de "${prod.nombre}". Intenta de nuevo.`);
-        this.cdr.detectChanges();
+        this.filtrarProductos(this.filtroActivo);
       }
     });
   }

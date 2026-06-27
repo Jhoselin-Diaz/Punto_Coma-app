@@ -1,16 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface ContactoBlock {
-  id: string;
-  title: string;
-  description: string;
-  icon: 'whatsapp' | 'instagram' | 'support' | 'email' | 'info';
-  btnText: string;
-  btnLink: string;
-  visible: boolean;
-}
+import { ContactoService, ContactoBlock, ContactoCierre } from '../../../service/contacto.service';
+import { ConfiguracionService } from '../../../service/configuracion.service';
+import { ProductosService } from '../../../service/productos.service';
 
 @Component({
   selector: 'app-admin-contacto',
@@ -20,63 +13,18 @@ interface ContactoBlock {
   styleUrl: './admin-contacto.component.css'
 })
 export class AdminContactoComponent implements OnInit {
-  contactoBlocks: ContactoBlock[] = [
-    {
-      id: 'block-wa',
-      title: 'WhatsApp Ventas',
-      description: 'Escríbenos directamente para consultas rápidas, pedidos mayoristas o dudas de stock.',
-      icon: 'whatsapp',
-      btnText: 'Iniciar Chat',
-      btnLink: 'https://wa.me/51987654321',
-      visible: true
-    },
-    {
-      id: 'block-ig',
-      title: 'Instagram Oficial',
-      description: 'Síguenos en @puntoycoma_art para ver novedades diarias, procesos de producción y sorteos.',
-      icon: 'instagram',
-      btnText: 'Ir a Perfil',
-      btnLink: 'https://instagram.com/puntoycoma_art',
-      visible: true
-    },
-    {
-      id: 'block-support',
-      title: 'Soporte y Reclamos',
-      description: '¿Tuviste algún problema con tu envío? Escríbenos y te daremos respuesta prioritaria.',
-      icon: 'support',
-      btnText: 'Soporte Técnico',
-      btnLink: 'https://wa.me/51987654322',
-      visible: true
-    },
-    {
-      id: 'block-email',
-      title: 'Correo Electrónico',
-      description: 'Para propuestas comerciales, colaboraciones o facturación, envíanos un email.',
-      icon: 'email',
-      btnText: 'Enviar Email',
-      btnLink: 'mailto:contacto@puntoycoma.pe',
-      visible: true
-    },
-    {
-      id: 'block-info',
-      title: 'Horario de Atención',
-      description: 'Lunes a Viernes de 9:00 am a 6:00 pm. Sábados de 9:00 am a 1:00 pm.',
-      icon: 'info',
-      btnText: 'Ver Preguntas Frecuentes',
-      btnLink: '/faq',
-      visible: true
-    }
-  ];
-
-  contactoWaBottom = {
-    btnText: '¿Necesitas ayuda? Escríbenos',
-    number: '+51 987 654 321',
-    message: 'Hola! Deseo recibir información sobre los productos.',
+  contactoBlocks: ContactoBlock[] = [];
+  contactoWaBottom: ContactoCierre = {
+    btnText: '',
+    number: '',
+    message: '',
     visible: true
   };
 
+  isContactLoading = false;
+
+  // Modals state
   showBlockModal = false;
-  showWaBottomModal = false;
 
   editingBlock: ContactoBlock = {
     id: '',
@@ -88,17 +36,75 @@ export class AdminContactoComponent implements OnInit {
     visible: true
   };
 
-  editingWaBottom = {
-    btnText: '',
-    number: '',
-    message: '',
-    visible: true
-  };
+  public inputCierreTitulo: string = '';
+  public inputCierreSubtitulo: string = '';
+  public inputCierreLink: string = '';
 
-  ngOnInit() {}
+  constructor(
+    private contactoService: ContactoService,
+    private configService: ConfiguracionService,
+    private productosService: ProductosService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
+  ) {}
 
-  toggleVisible(item: { visible: boolean }) {
-    item.visible = !item.visible;
+  ngOnInit() {
+    this.cargarDatos();
+  }
+
+  cargarDatos() {
+    this.isContactLoading = true;
+    this.contactoService.getBloques().subscribe({
+      next: (blocks) => {
+        const orderMap = {
+          'block-wa': 1,
+          'block-ig': 2,
+          'block-support': 3,
+          'block-email': 4,
+          'block-info': 5
+        };
+        this.contactoBlocks = blocks.sort((a, b) => {
+          return (orderMap[a.id as keyof typeof orderMap] || 99) - (orderMap[b.id as keyof typeof orderMap] || 99);
+        });
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar bloques de contacto', err);
+      }
+    });
+
+    this.contactoService.getCierre().subscribe({
+      next: (cierre) => {
+        this.contactoWaBottom = cierre;
+        this.inputCierreTitulo = cierre.btnText || '';
+        this.inputCierreSubtitulo = cierre.message || '';
+        this.inputCierreLink = cierre.number || '';
+        this.isContactLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar cierre de contacto', err);
+        this.isContactLoading = false;
+      }
+    });
+  }
+
+  toggleVisible(block: ContactoBlock) {
+    block.visible = !block.visible;
+    this.contactoService.updateBloque(block.id, block).subscribe({
+      next: (res) => {
+        const idx = this.contactoBlocks.findIndex(b => b.id === block.id);
+        if (idx !== -1) {
+          this.contactoBlocks[idx] = res;
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al actualizar visibilidad del block', err);
+        block.visible = !block.visible; // revert on error
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   openEditBlock(block: ContactoBlock) {
@@ -107,22 +113,49 @@ export class AdminContactoComponent implements OnInit {
   }
 
   saveBlock() {
-    const idx = this.contactoBlocks.findIndex(b => b.id === this.editingBlock.id);
-    if (idx !== -1) {
-      this.contactoBlocks[idx] = { ...this.editingBlock };
-    }
-    this.showBlockModal = false;
-    alert('Información de contacto guardada exitosamente (Local).');
+    this.contactoService.updateBloque(this.editingBlock.id, this.editingBlock).subscribe({
+      next: (res) => {
+        const idx = this.contactoBlocks.findIndex(b => b.id === this.editingBlock.id);
+        if (idx !== -1) {
+          this.contactoBlocks[idx] = res;
+        }
+        this.showBlockModal = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al guardar bloque de contacto', err);
+        alert('Ocurrió un error al intentar guardar los cambios.');
+      }
+    });
   }
 
-  openEditWaBottom() {
-    this.editingWaBottom = { ...this.contactoWaBottom };
-    this.showWaBottomModal = true;
-  }
+  guardarCierreDirecto() {
+    const payload: ContactoCierre = {
+      id: this.contactoWaBottom.id,
+      btnText: this.inputCierreTitulo,
+      message: this.inputCierreSubtitulo,
+      number: this.inputCierreLink,
+      visible: this.contactoWaBottom.visible
+    };
+    this.contactoService.updateCierre(payload).subscribe({
+      next: (res) => {
+        this.ngZone.run(() => {
+          this.contactoWaBottom = res;
+          this.inputCierreTitulo = res.btnText || '';
+          this.inputCierreSubtitulo = res.message || '';
+          this.inputCierreLink = res.number || '';
+        });
+        // Forzar actualización inteligente y destrucción de cachés viejas para el cliente en segundo plano
+        this.configService.cargarDesdeBackend(true).subscribe();
+        this.productosService.obtenerProductosPublicos(true).subscribe();
 
-  saveWaBottom() {
-    this.contactoWaBottom = { ...this.editingWaBottom };
-    this.showWaBottomModal = false;
-    alert('Botón flotante de WhatsApp guardado exitosamente (Local).');
+        alert('Cambios del banner de cierre guardados correctamente.');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al guardar cierre de contacto', err);
+        alert('Ocurrió un error al intentar guardar los cambios.');
+      }
+    });
   }
 }
