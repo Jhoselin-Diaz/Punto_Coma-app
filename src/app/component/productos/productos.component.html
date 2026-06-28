@@ -39,7 +39,7 @@
               </p>
               <div class="buttons">
                 <a class="detail-link" [routerLink]="['/productos', producto.id]">Ver detalles</a>
-                <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto: ' + producto.nombre)">W Comprar por WhatsApp</a>
+                <a (click)="agregarAlCarrito(producto)" style="cursor: pointer;">Agregar al carrito</a>
               </div>
             </div>
           </article>

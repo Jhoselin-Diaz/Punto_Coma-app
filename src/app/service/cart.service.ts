@@ -48,17 +48,13 @@ export interface ChatConversacion {
 export class CartService {
 
   // ─── CARRITO ────────────────────────────────────────────────────────────────
-  private itemsSubject = new BehaviorSubject<CartItem[]>([
-    { id: 'taza-marmol',       nombre: 'Taza de cerámica mármol',  precio: 45, imagen: 'images/visto-marmol.png',    cantidad: 1 },
-    { id: 'cucharitas-doradas',nombre: 'Set de cucharitas doradas', precio: 25, imagen: 'images/rel-cucharitas.png', cantidad: 1 },
-    { id: 'taza-termica',      nombre: 'Taza térmica café',         precio: 45, imagen: 'images/prod-termica.png',   cantidad: 2 },
-    { id: 'plato-porta-taza',  nombre: 'Plato porta-taza',          precio: 19, imagen: 'images/rel-plato.png',      cantidad: 2 }
-  ]);
+  private itemsSubject = new BehaviorSubject<CartItem[]>([]);
 
   items$ = this.itemsSubject.asObservable();
 
-  private discountValue = 20;
-  private couponApplied  = 'DESC20';
+  private discountValue = 0;
+  private couponApplied  = '';
+  private couponPercentage = 0;
   private pendingOrder: PlacedOrder | null = null;
   private allOrders: PlacedOrder[] = [];
 
@@ -188,7 +184,12 @@ export class CartService {
 
   // ─── CARRITO ─────────────────────────────────────────────────────────────────
   get items(): CartItem[] { return this.itemsSubject.value; }
-  get discount(): number  { return this.discountValue; }
+  get discount(): number {
+    if (this.couponPercentage > 0) {
+      return Math.round(this.subtotal * (this.couponPercentage / 100));
+    }
+    return this.discountValue;
+  }
   get coupon(): string    { return this.couponApplied; }
 
   get subtotal(): number {
@@ -211,15 +212,30 @@ export class CartService {
 
   applyCoupon(code: string): boolean {
     const c = code.trim().toUpperCase();
-    if (c === 'DESC20' || c === 'PUNTOYCOMA') {
+    if (c === 'DESC20') {
       this.couponApplied  = c;
-      this.discountValue  = 20;
+      this.couponPercentage = 20;
+      return true;
+    }
+    if (c === 'PUNTOYCOMA') {
+      this.couponApplied  = c;
+      this.couponPercentage = 10;
       return true;
     }
     return false;
   }
 
-  removeCoupon() { this.couponApplied = ''; this.discountValue = 0; }
+  applyDynamicCoupon(codigo: string, porcentaje: number) {
+    this.couponApplied = codigo;
+    this.couponPercentage = porcentaje;
+    this.discountValue = 0;
+  }
+
+  removeCoupon() {
+    this.couponApplied = '';
+    this.couponPercentage = 0;
+    this.discountValue = 0;
+  }
 
   finalizarPedido() {
     if (this.items.length === 0) return;
@@ -243,4 +259,21 @@ export class CartService {
   getPendingOrder(): PlacedOrder | null { return this.pendingOrder; }
   clearPendingOrder() { this.pendingOrder = null; }
   getAllOrders(): PlacedOrder[] { return this.allOrders; }
+
+  addItem(product: any) {
+    const existing = this.items.find(item => item.id === String(product.id));
+    if (existing) {
+      this.updateQuantity(existing.id, existing.cantidad + 1);
+    } else {
+      const price = product.precioOferta && product.precioOferta > 0 ? product.precioOferta : product.precio;
+      const newItem: CartItem = {
+        id: String(product.id),
+        nombre: product.nombre,
+        precio: price,
+        imagen: product.imagenPrincipal || product.imageUrl || product.imagen || 'images/prod-jaspeada.png',
+        cantidad: 1
+      };
+      this.itemsSubject.next([...this.items, newItem]);
+    }
+  }
 }

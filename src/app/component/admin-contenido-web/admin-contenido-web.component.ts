@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AdminLayoutComponent } from '../admin-layout/admin-layout.component';
 
 // Subcomponentes modularizados (Tu arquitectura limpia de la Fase 22)
@@ -24,6 +25,7 @@ type SubSeccion = 'main' | 'inicio' | 'productos' | 'ofertas' | 'shop-video' | '
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     AdminLayoutComponent,
     AdminInicioComponent,
     AdminProductosComponent,

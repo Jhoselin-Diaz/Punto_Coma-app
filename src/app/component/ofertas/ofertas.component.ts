@@ -4,6 +4,7 @@ import { RouterLink, Router, NavigationEnd } from '@angular/router';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { ProductosService } from '../../service/productos.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
+import { CartService } from '../../service/cart.service';
 import { DomSanitizer, SafeUrl, SafeStyle } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -30,10 +31,15 @@ export class OfertasComponent implements OnInit, OnDestroy {
   constructor(
     private productosService: ProductosService,
     public configService: ConfiguracionService,
+    private cartService: CartService,
     private sanitizer: DomSanitizer,
     private router: Router
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+  }
+
+  agregarAlCarrito(producto: any) {
+    this.cartService.addItem(producto);
   }
 
   obtenerUrlRenderizable(url: string): string {

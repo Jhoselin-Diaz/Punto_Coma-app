@@ -198,3 +198,19 @@
     overflow-x: auto;
   }
 }
+
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #80cf00;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 50%;
+  padding: 2px 6px;
+  min-width: 12px;
+  text-align: center;
+  line-height: 12px;
+  box-sizing: border-box;
+}

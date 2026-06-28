@@ -36,7 +36,7 @@
               </p>
               <div class="buttons">
                 <a class="detail-link" [routerLink]="['/productos', oferta.id]">Ver detalles</a>
-                <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto en oferta: ' + oferta.nombre)" class="btn-buy-wa" style="text-decoration: none; text-align: center; display: inline-block;">W Comprar por WhatsApp</a>
+                <a (click)="agregarAlCarrito(oferta)" class="btn-buy-wa" style="text-decoration: none; text-align: center; display: inline-block; cursor: pointer;">Agregar al carrito</a>
               </div>
             </div>
           </article>

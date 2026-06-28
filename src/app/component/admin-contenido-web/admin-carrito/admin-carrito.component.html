@@ -1,0 +1,242 @@
+<app-admin-layout>
+  <h1 page-title>Contenido Web</h1>
+
+  <div class="contenido-web-wrapper">
+    <!-- SUB-BARRA SUPERIOR DE LA SECCIÓN ACTIVA -->
+    <div class="section-header-bar">
+      <div class="module-header-block">
+        <a routerLink="/admin/contenido-web" class="back-link">
+          ← Volver a Módulos
+        </a>
+        <h2 class="module-title">Módulo: Carrito</h2>
+        <p class="module-subtitle">Administra los parámetros de conversión, cupones y beneficios de la bolsa de compras.</p>
+      </div>
+    </div>
+
+    <div class="admin-carrito-wrapper" style="margin-top: 24px;">
+      <!-- PESTAÑAS SUPERIORES -->
+      <div class="tabs-header-bar">
+        <button 
+          class="tab-btn" 
+          [class.active]="pestanaActiva === 'config'" 
+          (click)="cambiarPestana('config')" 
+          type="button">
+          ⚙️ Configuración del Carrito
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="pestanaActiva === 'cupones'" 
+          (click)="cambiarPestana('cupones')" 
+          type="button">
+          🎟️ Gestión de Cupones
+        </button>
+      </div>
+
+      <!-- CONTENIDO DE PESTAÑA: CONFIGURACIÓN -->
+      @if (pestanaActiva === 'config') {
+        <section class="tab-content-panel">
+          <form (ngSubmit)="guardarConfiguracion()" class="config-form">
+            <div class="form-section-title">
+              <h3>Enlace de WhatsApp & Beneficios</h3>
+              <p>Define el enlace de WhatsApp para finalizar compras y activa hasta 4 beneficios que se muestran al final del resumen.</p>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="whatsappUrl">Enlace de Conversión a WhatsApp</label>
+              <input 
+                type="text" 
+                id="whatsappUrl" 
+                name="whatsappUrl" 
+                [(ngModel)]="config.whatsappUrl" 
+                placeholder="https://wa.me/51999999999?text=" 
+                required />
+              <small>URL base que el botón "Finalizar pedido por WhatsApp" llamará para redirigir al cliente.</small>
+            </div>
+
+            <!-- SECCIÓN DE BENEFICIOS CON SWITCHES -->
+            <div class="benefits-selector-section">
+              <h4 class="selector-title">Beneficios en el Resumen (Activar hasta 4 opciones)</h4>
+              
+              <div class="benefits-toggles-grid">
+                <!-- 1. Envíos -->
+                <div class="benefit-toggle-card" (click)="toggleBeneficio('envios')">
+                  <label class="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      [checked]="switchEnvios" 
+                      (click)="$event.stopPropagation(); toggleBeneficio('envios')" />
+                    <span class="slider round"></span>
+                  </label>
+                  <span class="benefit-text">Envíos a todo el Perú</span>
+                </div>
+
+                <!-- 2. Pago -->
+                <div class="benefit-toggle-card" (click)="toggleBeneficio('pago')">
+                  <label class="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      [checked]="switchPago" 
+                      (click)="$event.stopPropagation(); toggleBeneficio('pago')" />
+                    <span class="slider round"></span>
+                  </label>
+                  <span class="benefit-text">Pago seguro coordinado por WhatsApp</span>
+                </div>
+
+                <!-- 3. Empaque -->
+                <div class="benefit-toggle-card" (click)="toggleBeneficio('empaque')">
+                  <label class="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      [checked]="switchEmpaque" 
+                      (click)="$event.stopPropagation(); toggleBeneficio('empaque')" />
+                    <span class="slider round"></span>
+                  </label>
+                  <span class="benefit-text">Empaque cuidadoso para productos frágiles</span>
+                </div>
+
+                <!-- 4. Cambios -->
+                <div class="benefit-toggle-card" (click)="toggleBeneficio('cambios')">
+                  <label class="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      [checked]="switchCambios" 
+                      (click)="$event.stopPropagation(); toggleBeneficio('cambios')" />
+                    <span class="slider round"></span>
+                  </label>
+                  <span class="benefit-text">Cambios y devoluciones dentro de 48 horas</span>
+                </div>
+
+                <!-- 5. Artesanal -->
+                <div class="benefit-toggle-card" (click)="toggleBeneficio('artesanal')">
+                  <label class="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      [checked]="switchArtesanal" 
+                      (click)="$event.stopPropagation(); toggleBeneficio('artesanal')" />
+                    <span class="slider round"></span>
+                  </label>
+                  <span class="benefit-text">Productos 100% artesanales y seleccionados</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-bar" style="margin-top: 32px;">
+              <button type="button" class="btn-save" (click)="guardarConfiguracion()" [disabled]="guardandoConfig">
+                {{ guardandoConfig ? 'Guardando...' : '💾 Guardar Cambios' }}
+              </button>
+              @if (successConfig) {
+                <span class="success-alert">✓ Cambios guardados con éxito</span>
+              }
+            </div>
+          </form>
+        </section>
+      }
+
+      <!-- CONTENIDO DE PESTAÑA: CUPONES -->
+      @if (pestanaActiva === 'cupones') {
+        <section class="tab-content-panel">
+          <div class="cupones-split-layout">
+            <!-- LADO IZQUIERDO: FORMULARIO -->
+            <div class="cupones-form-card">
+              <h3>Nuevo Cupón de Descuento</h3>
+              <p>Agrega cupones para aplicar rebajas porcentuales dinámicas en la tienda.</p>
+              
+              <form (ngSubmit)="crearCupon()" class="new-cupon-form">
+                <div class="form-group">
+                  <label for="codigo">Código del Cupón</label>
+                  <input 
+                    type="text" 
+                    id="codigo" 
+                    name="codigo" 
+                    [(ngModel)]="nuevoCupon.codigo" 
+                    placeholder="Ej. DESCUENTO20" 
+                    required />
+                </div>
+
+                <div class="form-group">
+                  <label for="porcentaje">Porcentaje de Descuento (%)</label>
+                  <input 
+                    type="number" 
+                    id="porcentaje" 
+                    name="porcentaje" 
+                    [(ngModel)]="nuevoCupon.porcentajeDescuento" 
+                    min="1" 
+                    max="100" 
+                    required />
+                </div>
+
+                <div class="form-group-checkbox">
+                  <label class="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      name="activo" 
+                      [(ngModel)]="nuevoCupon.activo" />
+                    <span class="slider round"></span>
+                  </label>
+                  <span class="label-text">Activar cupón de inmediato</span>
+                </div>
+
+                <button type="submit" class="btn-create" [disabled]="guardandoCupon">
+                  {{ guardandoCupon ? 'Guardando...' : '🎟️ Crear Cupón' }}
+                </button>
+
+                @if (errorCupon) {
+                  <div class="error-alert">{{ errorCupon }}</div>
+                }
+              </form>
+            </div>
+
+            <!-- LADO DERECHO: LISTADO -->
+            <div class="cupones-list-card">
+              <h3>Cupones Registrados</h3>
+              <p>Listado general de códigos promocionales creados.</p>
+
+              <div class="table-responsive-container">
+                <table class="cupones-table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Descuento</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (cupon of cupones; track cupon.id) {
+                      <tr>
+                        <td class="coupon-code-cell">{{ cupon.codigo }}</td>
+                        <td><strong>{{ cupon.porcentajeDescuento }}%</strong></td>
+                        <td>
+                          <label class="toggle-switch">
+                            <input 
+                              type="checkbox" 
+                              [checked]="cupon.activo" 
+                              (change)="toggleCuponActivo(cupon)" />
+                            <span class="slider round"></span>
+                          </label>
+                        </td>
+                        <td>
+                          <button 
+                            class="btn-delete-icon" 
+                            (click)="eliminarCupon(cupon)" 
+                            title="Eliminar cupón" 
+                            type="button">
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="4" class="empty-table-msg">No se encontraron cupones registrados.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  </div>
+</app-admin-layout>

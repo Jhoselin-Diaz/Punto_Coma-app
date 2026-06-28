@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { CartService, CartItem } from '../../service/cart.service';
+import { AdminCarritoService, ConfiguracionCarrito } from '../../service/admin-carrito.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -14,24 +15,42 @@ import { Subscription } from 'rxjs';
   styleUrl: './carrito.component.css'
 })
 export class CarritoComponent implements OnInit, OnDestroy {
-  items: CartItem[] = [];
+  itemsCarrito: CartItem[] = [];
   couponCode = '';
   couponError = '';
   couponSuccess = false;
+
+  // Dynamic configuration object
+  configuracion: ConfiguracionCarrito | null = null;
+
   private sub = new Subscription();
 
-  constructor(public cartService: CartService, private router: Router) {}
+  constructor(
+    public cartService: CartService,
+    private adminCarritoService: AdminCarritoService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.sub.add(
       this.cartService.items$.subscribe(items => {
-        this.items = items;
+        this.itemsCarrito = items;
       })
     );
     this.couponCode = this.cartService.coupon;
     if (this.couponCode) {
       this.couponSuccess = true;
     }
+    this.cargarConfiguracionCarrito();
+  }
+
+  cargarConfiguracionCarrito() {
+    this.adminCarritoService.obtenerConfiguracion().subscribe({
+      next: (config) => {
+        this.configuracion = config;
+      },
+      error: (err) => console.error('Error al obtener configuracion del carrito:', err)
+    });
   }
 
   ngOnDestroy() {
@@ -64,17 +83,59 @@ export class CarritoComponent implements OnInit, OnDestroy {
   aplicarCupon() {
     this.couponError = '';
     this.couponSuccess = false;
-    if (this.cartService.applyCoupon(this.couponCode)) {
-      this.couponSuccess = true;
-    } else {
-      this.couponError = 'Cupón inválido. Intente con DESC20 o PUNTOYCOMA.';
-      this.cartService.removeCoupon();
+    const code = this.couponCode.trim().toUpperCase();
+    if (!code) {
+      this.couponError = 'Por favor, ingrese un código de cupón.';
+      return;
     }
+
+    this.adminCarritoService.validarCupon(code).subscribe({
+      next: (cupon) => {
+        if (cupon && cupon.activo) {
+          this.cartService.applyDynamicCoupon(cupon.codigo, cupon.porcentajeDescuento);
+          this.couponSuccess = true;
+        } else {
+          this.couponError = 'Cupón inválido o inactivo.';
+          this.cartService.removeCoupon();
+        }
+      },
+      error: (err) => {
+        // Fallback to local coupon rules
+        const success = this.cartService.applyCoupon(code);
+        if (success) {
+          this.couponSuccess = true;
+        } else {
+          this.couponError = 'Cupón inválido o vencido.';
+          this.cartService.removeCoupon();
+        }
+      }
+    });
   }
 
-  finalizarPedido() {
-    if (this.items.length === 0) return;
+  finalizarPedido(event: MouseEvent) {
+    if (this.itemsCarrito.length === 0) {
+      event.preventDefault();
+      return;
+    }
     this.cartService.finalizarPedido();
     this.router.navigate(['/admin/chats']);
+  }
+
+  obtenerEnlaceWhatsapp(): string {
+    let waUrl = this.configuracion?.whatsappUrl || 'https://wa.me/51933526011';
+    if (!waUrl.includes('text=')) {
+      if (waUrl.includes('?')) {
+        waUrl += '&text=';
+      } else {
+        waUrl += '?text=';
+      }
+    }
+    const textMsg = `Hola! Me gustaría confirmar mi pedido:\n` + 
+                    this.itemsCarrito.map(i => `- ${i.nombre} (Cantidad: ${i.cantidad})`).join('\n') +
+                    `\nSubtotal: S/ ${this.cartService.subtotal}` +
+                    `\nDescuento: S/ ${this.cartService.discount}` +
+                    `\nTotal: S/ ${this.cartService.total}`;
+    
+    return waUrl + encodeURIComponent(textMsg);
   }
 }

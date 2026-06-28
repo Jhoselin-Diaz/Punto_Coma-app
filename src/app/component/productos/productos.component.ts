@@ -3,6 +3,7 @@ import { RouterLink, Router } from '@angular/router';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { ProductosService } from '../../service/productos.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
+import { CartService } from '../../service/cart.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 @Component({
@@ -18,10 +19,15 @@ export class ProductosComponent implements OnInit {
   constructor(
     private productosService: ProductosService,
     public configService: ConfiguracionService,
+    private cartService: CartService,
     private sanitizer: DomSanitizer,
     private router: Router
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+  }
+
+  agregarAlCarrito(producto: any) {
+    this.cartService.addItem(producto);
   }
 
   ngOnInit() {
