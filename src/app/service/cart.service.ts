@@ -53,7 +53,7 @@ export class CartService {
   items$ = this.itemsSubject.asObservable();
 
   private discountValue = 0;
-  private couponApplied  = '';
+  private couponApplied = '';
   private couponPercentage = 0;
   private pendingOrder: PlacedOrder | null = null;
   private allOrders: PlacedOrder[] = [];
@@ -75,7 +75,7 @@ export class CartService {
   get persistedSelectedId(): string | null { return this._persistedSelectedId; }
 
   saveChats(chats: any[], selectedId: string | null) {
-    this._persistedChats   = chats;
+    this._persistedChats = chats;
     this._persistedSelectedId = selectedId;
   }
 
@@ -120,8 +120,8 @@ export class CartService {
         totalPedidos: 3,
         historialPedidos: [
           { id: '#ORD-0001', fecha: 'Hoy, 11:40 a.m.', subtotal: 'S/ 39.00', estado: 'Pendiente' },
-          { id: '#ORD-0003', fecha: '23 Dic 2024',     subtotal: 'S/ 45.00', estado: 'Completado' },
-          { id: '#ORD-0004', fecha: '12 Nov 2024',     subtotal: 'S/ 39.00', estado: 'Completado' }
+          { id: '#ORD-0003', fecha: '23 Dic 2024', subtotal: 'S/ 45.00', estado: 'Completado' },
+          { id: '#ORD-0004', fecha: '12 Nov 2024', subtotal: 'S/ 39.00', estado: 'Completado' }
         ],
         mensajes: [
           { texto: 'Hola 😄\nQuiero realizar el siguiente pedido:\n\n🛍️ Productos:\n• Taza aesthetic "Moon" x1\n\n💰 Subtotal: S/ 39.00', tipo: 'entrada', hora: '11:40 a. m.' },
@@ -190,7 +190,7 @@ export class CartService {
     }
     return this.discountValue;
   }
-  get coupon(): string    { return this.couponApplied; }
+  get coupon(): string { return this.couponApplied; }
 
   get subtotal(): number {
     return this.items.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
@@ -213,12 +213,12 @@ export class CartService {
   applyCoupon(code: string): boolean {
     const c = code.trim().toUpperCase();
     if (c === 'DESC20') {
-      this.couponApplied  = c;
+      this.couponApplied = c;
       this.couponPercentage = 20;
       return true;
     }
     if (c === 'PUNTOYCOMA') {
-      this.couponApplied  = c;
+      this.couponApplied = c;
       this.couponPercentage = 10;
       return true;
     }
@@ -258,6 +258,10 @@ export class CartService {
 
   getPendingOrder(): PlacedOrder | null { return this.pendingOrder; }
   clearPendingOrder() { this.pendingOrder = null; }
+  clearCart() {
+    this.itemsSubject.next([]);
+    this.removeCoupon();
+  }
   getAllOrders(): PlacedOrder[] { return this.allOrders; }
 
   addItem(product: any) {
