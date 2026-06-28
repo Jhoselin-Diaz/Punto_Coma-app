@@ -1,8 +1,7 @@
 <div class="productos-cms">
   <div class="prod-header-controls">
-    <!-- Buscador -->
     <div class="search-bar-cms">
-      <input type="text" placeholder="Buscar producto por nombre..." [(ngModel)]="searchTerm" />
+      <input type="text" placeholder="Buscar producto por nombre..." [(ngModel)]="searchTerm" (input)="filtrarProductos(filtroActivo)" />
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -11,15 +10,17 @@
 
     <!-- Filtros de categoría -->
     <div class="filter-chips">
-      <button [class.active]="filtroActivo === 'todos'" (click)="filtroActivo = 'todos'" type="button">Todos</button>
-      <button [class.active]="filtroActivo === 'visibles'" (click)="filtroActivo = 'visibles'" type="button">Visibles</button>
-      <button [class.active]="filtroActivo === 'ocultos'" (click)="filtroActivo = 'ocultos'" type="button">Ocultos</button>
-      <button [class.active]="filtroActivo === 'oferta'" (click)="filtroActivo = 'oferta'" type="button">En Oferta</button>
-      <button [class.active]="filtroActivo === 'nuevos'" (click)="filtroActivo = 'nuevos'" type="button">Nuevos</button>
+      <button [class.active]="filtroActivo === 'todos'" (click)="filtrarProductos('todos')" type="button">Todos</button>
+      <button [class.active]="filtroActivo === 'visibles'" (click)="filtrarProductos('visibles')" type="button">Visibles</button>
+      <button [class.active]="filtroActivo === 'ocultos'" (click)="filtrarProductos('ocultos')" type="button">Ocultos</button>
+      <button [class.active]="filtroActivo === 'en-oferta'" (click)="filtrarProductos('en-oferta')" type="button">En Oferta</button>
     </div>
 
     <!-- Agregar producto button -->
-    <button class="btn-add-product" (click)="openAddProduct()" type="button">+ Agregar producto</button>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn-cancel" (click)="showGlobalShippingModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px;" type="button">⚙️ Configurar Envíos y Devoluciones</button>
+      <button class="btn-add-product" (click)="openAddProduct()" type="button">+ Agregar producto</button>
+    </div>
   </div>
 
   <div class="table-card mt-20">
@@ -36,39 +37,58 @@
         </tr>
       </thead>
       <tbody>
-        @for (prod of productosAdmin; track prod.id; let idx = $index) {
-          <tr>
-            <td>
-              <div class="prod-thumb-small">
-                <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-' + (prod.nombre.toLowerCase().includes('verde') ? 'verde' : prod.nombre.toLowerCase().includes('rosa') ? 'rosa-grande' : prod.nombre.toLowerCase().includes('ondulado') ? 'ondulado' : prod.nombre.toLowerCase().includes('iridiscente') ? 'iridiscente' : 'jaspeada') + '.png'" [alt]="prod.nombre" />
-              </div>
-            </td>
-            <td><strong>{{ prod.nombre }}</strong></td>
-            <td>S/ {{ prod.precio }}</td>
-            <td><span class="stock-badge" [class.low]="prod.stock < 15">{{ prod.stock }} unidades</span></td>
-            <td>
-              <button type="button" class="switch-btn small-switch" [class.on]="prod.visible" (click)="toggleVisible(prod)">
-                <span></span>
-              </button>
-            </td>
-            <td>
-              <button type="button" class="switch-btn small-switch" [class.on]="prod.destacado" (click)="toggleDestacado(prod)">
-                <span></span>
-              </button>
-            </td>
-            <td>
-              <div class="row-actions">
-                <button class="btn-row-edit" (click)="openEditProduct(prod)" type="button">Editar</button>
-                <button class="btn-row-delete" (click)="eliminarProducto(prod.id)" type="button">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="7" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
-              No hay productos registrados en el catálogo.
-            </td>
-          </tr>
+        @if (isLoading) {
+          @for (i of [1, 2, 3]; track i) {
+            <tr class="skeleton-row">
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+              <td class="skeleton-cell"></td>
+            </tr>
+          }
+        } @else {
+          @for (prod of productosFiltrados; track prod.id; let idx = $index) {
+            <tr>
+              <td>
+                <div class="prod-thumb-small">
+                  <img [src]="prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || 'images/prod-jaspeada.png'" [alt]="prod.nombre" />
+                </div>
+              </td>
+              <td><strong>{{ prod.nombre }}</strong></td>
+              <td>S/ {{ prod.precio }}</td>
+              <td><span class="stock-badge" [class.low]="prod.stock < 15">{{ prod.stock }} unidades</span></td>
+              <td>
+                <button
+                  type="button"
+                  class="switch-btn small-switch"
+                  [class.on]="prod.visible"
+                  (click)="prod.visible = !prod.visible; cambiarVisibilidadProducto(prod)"
+                >
+                  <span></span>
+                </button>
+              </td>
+              <td>
+                <button type="button" class="switch-btn small-switch" [class.on]="prod.destacado" (click)="toggleDestacado(prod)">
+                  <span></span>
+                </button>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn-row-edit" (click)="openEditProduct(prod)" type="button">Editar</button>
+                  <button class="btn-row-delete" (click)="eliminarProducto(prod.id)" type="button">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="txt-center txt-muted" style="padding: 32px; font-style: italic;">
+                No hay productos registrados en el catálogo.
+              </td>
+            </tr>
+          }
         }
       </tbody>
     </table>
@@ -156,13 +176,13 @@
             <div class="main-image-preview">
               <p class="section-sub">Imagen Principal</p>
               <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none" />
-
-              <div class="big-preview-box"
-                   [class.empty-state]="!imagenTemporalUrl"
+              
+              <div class="big-preview-box" 
+                   [class.empty-state]="!newProduct.imagenPrincipal || (!newProduct.imagenPrincipal.startsWith('http') && !newProduct.imagenPrincipal.startsWith('blob:'))"
                    (dragover)="onDragOver($event)"
                    (drop)="onDrop($event)">
-
-                @if (imagenTemporalUrl) {
+                   
+                @if (newProduct.imagenPrincipal && (newProduct.imagenPrincipal.startsWith('http') || newProduct.imagenPrincipal.startsWith('blob:'))) {
                   <img [src]="imagenTemporalUrl" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;" />
                   <button class="btn-del-img" (click)="removeImage($event)" type="button">Eliminar</button>
                 } @else {
@@ -176,6 +196,7 @@
                     <div class="origin-buttons-row">
                       <button type="button" class="btn-picker-choice" (click)="fileInput.click()">Desde PC</button>
                       <button type="button" class="btn-picker-choice-primary" (click)="abrirPicker('principal')">Google Drive</button>
+                      <button type="button" class="btn-picker-choice-secondary" (click)="fallbackUrlPrompt('principal')">Pegar URL</button>
                     </div>
                   </div>
                 }
@@ -186,37 +207,58 @@
               <p class="section-sub">Miniaturas adicionales</p>
               <div class="thumbs-grid">
                 <!-- Miniatura 1 -->
-                @if (miniaturasTemp[0]) {
-                  <div class="thumb-preview-box">
-                    <img [src]="miniaturasTemp[0]" alt="Miniatura 1" />
+                @if (miniaturasUrls[0] && miniaturasUrls[0].startsWith('http')) {
+                  <div class="thumb-preview-box" [class.has-error]="miniaturaError[0]">
+                    @if (miniaturaError[0]) {
+                      <div class="thumb-error-placeholder">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-text">No pública</span>
+                      </div>
+                    } @else {
+                      <img [src]="miniaturasTemp[0]" (error)="handleThumbnailError(0)" alt="Miniatura 1" />
+                    }
                     <button class="btn-del-thumb" (click)="removeMiniatura(0, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="abrirPicker('miniatura1')">
+                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura1')">
                     <span>+ Añadir</span>
                   </div>
                 }
 
                 <!-- Miniatura 2 -->
-                @if (miniaturasTemp[1]) {
-                  <div class="thumb-preview-box">
-                    <img [src]="miniaturasTemp[1]" alt="Miniatura 2" />
+                @if (miniaturasUrls[1] && miniaturasUrls[1].startsWith('http')) {
+                  <div class="thumb-preview-box" [class.has-error]="miniaturaError[1]">
+                    @if (miniaturaError[1]) {
+                      <div class="thumb-error-placeholder">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-text">No pública</span>
+                      </div>
+                    } @else {
+                      <img [src]="miniaturasTemp[1]" (error)="handleThumbnailError(1)" alt="Miniatura 2" />
+                    }
                     <button class="btn-del-thumb" (click)="removeMiniatura(1, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="abrirPicker('miniatura2')">
+                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura2')">
                     <span>+ Añadir</span>
                   </div>
                 }
 
                 <!-- Miniatura 3 -->
-                @if (miniaturasTemp[2]) {
-                  <div class="thumb-preview-box">
-                    <img [src]="miniaturasTemp[2]" alt="Miniatura 3" />
+                @if (miniaturasUrls[2] && miniaturasUrls[2].startsWith('http')) {
+                  <div class="thumb-preview-box" [class.has-error]="miniaturaError[2]">
+                    @if (miniaturaError[2]) {
+                      <div class="thumb-error-placeholder">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-text">No pública</span>
+                      </div>
+                    } @else {
+                      <img [src]="miniaturasTemp[2]" (error)="handleThumbnailError(2)" alt="Miniatura 3" />
+                    }
                     <button class="btn-del-thumb" (click)="removeMiniatura(2, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="abrirPicker('miniatura3')">
+                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura3')">
                     <span>+ Añadir</span>
                   </div>
                 }
@@ -228,6 +270,8 @@
         <!-- TAB 3: DESCRIPCIÓN -->
         @if (addProductModalTab === 'descripcion') {
           <div class="description-tab-layout">
+            <!-- BLOQUE 1 -->
+            <div class="specs-title" style="margin-top: 0;">BLOQUE 1: DETALLES DEL PRODUCTO</div>
             <div class="form-group">
               <label>Descripción Corta (Lista de productos)</label>
               <input type="text" placeholder="Ej: Vaso elegante con relieves ondulados y textura suave..." [(ngModel)]="newProduct.descripcionCorta" />
@@ -241,6 +285,129 @@
             <div class="form-group">
               <label>Características destacadas (Separadas por puntos)</label>
               <textarea rows="3" placeholder="Ej: Resistente a lavavajillas. Capacidad de 350ml. Cocido a 1200 grados." [(ngModel)]="newProduct.caracteristicas"></textarea>
+            </div>
+
+            <div class="specs-title">ESPECIFICACIONES DE FICHA TÉCNICA</div>
+            <div class="specs-form-grid">
+              <div class="form-group">
+                <label>Capacidad</label>
+                <input type="text" placeholder="Ej: 320 ml" [(ngModel)]="newProduct.capacidad" />
+              </div>
+              <div class="form-group">
+                <label>Material</label>
+                <input type="text" placeholder="Ej: Cerámica de alta calidad" [(ngModel)]="newProduct.material" />
+              </div>
+              <div class="form-group">
+                <label>Apto para</label>
+                <input type="text" placeholder="Ej: Microondas y lavavajillas" [(ngModel)]="newProduct.aptoPara" />
+              </div>
+              <div class="form-group">
+                <label>Acabado</label>
+                <input type="text" placeholder="Ej: Marmoleado artesanal" [(ngModel)]="newProduct.acabado" />
+              </div>
+              <div class="form-group">
+                <label>Diseño</label>
+                <input type="text" placeholder="Ej: Ergonómico y resistente" [(ngModel)]="newProduct.diseno" />
+              </div>
+              <div class="form-group">
+                <label>Incluye</label>
+                <input type="text" placeholder="Ej: 1x Taza Ondas" [(ngModel)]="newProduct.incluye" />
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Garantía</label>
+                <input type="text" placeholder="Ej: Garantía de 7 días por defectos" [(ngModel)]="newProduct.garantia" />
+              </div>
+            </div>
+
+            <!-- BLOQUE 2 -->
+            <div class="specs-title">BLOQUE 2: MATERIAL Y CUIDADOS</div>
+            <div class="specs-form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <!-- Columna Izquierda: Material -->
+              <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label>Introducción del Material (Ej: Cerámica Gres de alta calidad)</label>
+                  <input type="text" placeholder="Ej: Cerámica de alta calidad" [(ngModel)]="newProduct.material_intro" />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label>Características del Material (Separadas por puntos)</label>
+                  <textarea rows="3" placeholder="Ej: Cocido a 1200°C. Libre de plomo. Apto para alimentos." [(ngModel)]="newProduct.material_caracteristicas"></textarea>
+                </div>
+              </div>
+
+              <!-- Columna Derecha: Cuidados y Uso (Switches) -->
+              <div style="display: flex; flex-direction: column; gap: 12px; justify-content: center; padding-left: 20px; border-left: 1px solid #f3ebe3;">
+                <label style="font-weight: 700; color: #352a25; margin-bottom: 5px;">Cuidados y Uso (Activar si aplica)</label>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Apto para microondas</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.apto_microondas" (click)="newProduct.apto_microondas = !newProduct.apto_microondas">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Apto para lavavajillas</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.apto_lavavajillas" (click)="newProduct.apto_lavavajillas = !newProduct.apto_lavavajillas">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Resiste choque térmico</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.resiste_choque_termico" (click)="newProduct.resiste_choque_termico = !newProduct.resiste_choque_termico">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Requiere limpieza suave</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.limpieza_suave" (click)="newProduct.limpieza_suave = !newProduct.limpieza_suave">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Prohibido fuego directo</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.prohibido_fuego_directo" (click)="newProduct.prohibido_fuego_directo = !newProduct.prohibido_fuego_directo">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Apto para temperaturas extremas</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.apto_temperaturas" (click)="newProduct.apto_temperaturas = !newProduct.apto_temperaturas">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Certificación de grado alimentario</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.grado_alimentario" (click)="newProduct.grado_alimentario = !newProduct.grado_alimentario">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Evitar esponjas abrasivas</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.evitar_abrasivos" (click)="newProduct.evitar_abrasivos = !newProduct.evitar_abrasivos">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Evitar humedad prolongada (Madera)</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.control_humedad" (click)="newProduct.control_humedad = !newProduct.control_humedad">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Lavado a mano recomendado</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="newProduct.lavado_mano" (click)="newProduct.lavado_mano = !newProduct.lavado_mano">
+                    <span></span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         }
@@ -256,7 +423,7 @@
               @for (prod of productosAdmin; track prod.id) {
                 <div class="rel-product-row" [class.selected]="newProduct.sugeridosIds.includes(prod.id)" (click)="toggleSugerido(prod.id)">
                   <span class="chk-indicator"></span>
-                  <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-' + (prod.nombre.toLowerCase().includes('verde') ? 'verde' : prod.nombre.toLowerCase().includes('rosa') ? 'rosa-grande' : prod.nombre.toLowerCase().includes('ondulado') ? 'ondulado' : prod.nombre.toLowerCase().includes('iridiscente') ? 'iridiscente' : 'jaspeada') + '.png'" [alt]="prod.nombre" />
+                  <img [src]="prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || 'images/prod-jaspeada.png'" [alt]="prod.nombre" />
                   <span><strong>{{ prod.nombre }}</strong> - S/ {{ prod.precio }}</span>
                 </div>
               } @empty {
@@ -357,25 +524,93 @@
           <div class="uploader-tab-layout">
             <div class="main-image-preview">
               <p class="section-sub">Imagen Principal</p>
-              <div class="big-preview-box">
-                <img [src]="editingProduct.imagenPrincipal" alt="Vista previa principal" />
-                <button class="btn-del-img" type="button">Eliminar</button>
+              <input type="file" #fileInputEdit (change)="onFileSelected($event)" accept="image/*" style="display: none" />
+              
+              <div class="big-preview-box" 
+                   [class.empty-state]="!editingProduct.imagenPrincipal || (!editingProduct.imagenPrincipal.startsWith('http') && !editingProduct.imagenPrincipal.startsWith('blob:'))"
+                   (dragover)="onDragOver($event)"
+                   (drop)="onDrop($event)">
+                   
+                @if (editingProduct.imagenPrincipal && (editingProduct.imagenPrincipal.startsWith('http') || editingProduct.imagenPrincipal.startsWith('blob:'))) {
+                  <img [src]="imagenTemporalUrl" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <button class="btn-del-img" (click)="removeImage($event)" type="button">Eliminar</button>
+                } @else {
+                  <div class="placeholder-drag-drop">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="16 16 12 12 8 16"></polyline>
+                      <line x1="12" y1="12" x2="12" y2="21"></line>
+                      <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
+                    </svg>
+                    <span style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">Arrastra una imagen o selecciona el origen</span>
+                    <div class="origin-buttons-row">
+                      <button type="button" class="btn-picker-choice" (click)="fileInputEdit.click()">Desde PC</button>
+                      <button type="button" class="btn-picker-choice-primary" (click)="abrirPicker('principal')">Google Drive</button>
+                      <button type="button" class="btn-picker-choice-secondary" (click)="fallbackUrlPrompt('principal')">Pegar URL</button>
+                    </div>
+                  </div>
+                }
               </div>
             </div>
 
             <div class="gallery-thumbs-layout">
-              <p class="section-sub">Galería del Producto</p>
+              <p class="section-sub">Miniaturas adicionales</p>
               <div class="thumbs-grid">
-                <div class="thumb-preview-box selected">
-                  <img [src]="editingProduct.imagenPrincipal" alt="Miniatura" />
-                  <span class="main-tag">PRINCIPAL</span>
-                </div>
-                <div class="thumb-preview-box">
-                  <img src="images/prod-verde.png" alt="Miniatura 2" />
-                </div>
-                <div class="thumb-uploader-box">
-                  <span>+ Sube</span>
-                </div>
+                <!-- Miniatura 1 -->
+                @if (miniaturasUrls[0] && miniaturasUrls[0].startsWith('http')) {
+                  <div class="thumb-preview-box" [class.has-error]="miniaturaError[0]">
+                    @if (miniaturaError[0]) {
+                      <div class="thumb-error-placeholder">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-text">No pública</span>
+                      </div>
+                    } @else {
+                      <img [src]="miniaturasTemp[0]" (error)="handleThumbnailError(0)" alt="Miniatura 1" />
+                    }
+                    <button class="btn-del-thumb" (click)="removeMiniatura(0, $event)" type="button">×</button>
+                  </div>
+                } @else {
+                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura1')">
+                    <span>+ Añadir</span>
+                  </div>
+                }
+
+                <!-- Miniatura 2 -->
+                @if (miniaturasUrls[1] && miniaturasUrls[1].startsWith('http')) {
+                  <div class="thumb-preview-box" [class.has-error]="miniaturaError[1]">
+                    @if (miniaturaError[1]) {
+                      <div class="thumb-error-placeholder">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-text">No pública</span>
+                      </div>
+                    } @else {
+                      <img [src]="miniaturasTemp[1]" (error)="handleThumbnailError(1)" alt="Miniatura 2" />
+                    }
+                    <button class="btn-del-thumb" (click)="removeMiniatura(1, $event)" type="button">×</button>
+                  </div>
+                } @else {
+                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura2')">
+                    <span>+ Añadir</span>
+                  </div>
+                }
+
+                <!-- Miniatura 3 -->
+                @if (miniaturasUrls[2] && miniaturasUrls[2].startsWith('http')) {
+                  <div class="thumb-preview-box" [class.has-error]="miniaturaError[2]">
+                    @if (miniaturaError[2]) {
+                      <div class="thumb-error-placeholder">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-text">No pública</span>
+                      </div>
+                    } @else {
+                      <img [src]="miniaturasTemp[2]" (error)="handleThumbnailError(2)" alt="Miniatura 3" />
+                    }
+                    <button class="btn-del-thumb" (click)="removeMiniatura(2, $event)" type="button">×</button>
+                  </div>
+                } @else {
+                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura3')">
+                    <span>+ Añadir</span>
+                  </div>
+                }
               </div>
             </div>
           </div>
@@ -384,6 +619,8 @@
         <!-- TAB 3: DESCRIPCIÓN -->
         @if (editProductModalTab === 'descripcion') {
           <div class="description-tab-layout">
+            <!-- BLOQUE 1 -->
+            <div class="specs-title" style="margin-top: 0;">BLOQUE 1: DETALLES DEL PRODUCTO</div>
             <div class="form-group">
               <label>Descripción Corta (Lista de productos)</label>
               <input type="text" [(ngModel)]="editingProduct.descripcionCorta" />
@@ -398,6 +635,129 @@
               <label>Características destacadas (Separadas por puntos)</label>
               <textarea rows="3" [(ngModel)]="editingProduct.caracteristicas"></textarea>
             </div>
+
+            <div class="specs-title">ESPECIFICACIONES DE FICHA TÉCNICA</div>
+            <div class="specs-form-grid">
+              <div class="form-group">
+                <label>Capacidad</label>
+                <input type="text" placeholder="Ej: 320 ml" [(ngModel)]="editingProduct.capacidad" />
+              </div>
+              <div class="form-group">
+                <label>Material</label>
+                <input type="text" placeholder="Ej: Cerámica de alta calidad" [(ngModel)]="editingProduct.material" />
+              </div>
+              <div class="form-group">
+                <label>Apto para</label>
+                <input type="text" placeholder="Ej: Microondas y lavavajillas" [(ngModel)]="editingProduct.aptoPara" />
+              </div>
+              <div class="form-group">
+                <label>Acabado</label>
+                <input type="text" placeholder="Ej: Marmoleado artesanal" [(ngModel)]="editingProduct.acabado" />
+              </div>
+              <div class="form-group">
+                <label>Diseño</label>
+                <input type="text" placeholder="Ej: Ergonómico y resistente" [(ngModel)]="editingProduct.diseno" />
+              </div>
+              <div class="form-group">
+                <label>Incluye</label>
+                <input type="text" placeholder="Ej: 1x Taza Ondas" [(ngModel)]="editingProduct.incluye" />
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Garantía</label>
+                <input type="text" placeholder="Ej: Garantía de 7 días por defectos" [(ngModel)]="editingProduct.garantia" />
+              </div>
+            </div>
+
+            <!-- BLOQUE 2 -->
+            <div class="specs-title">BLOQUE 2: MATERIAL Y CUIDADOS</div>
+            <div class="specs-form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <!-- Columna Izquierda: Material -->
+              <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label>Introducción del Material (Ej: Cerámica Gres de alta calidad)</label>
+                  <input type="text" placeholder="Ej: Cerámica de alta calidad" [(ngModel)]="editingProduct.material_intro" />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label>Características del Material (Separadas por puntos)</label>
+                  <textarea rows="3" placeholder="Ej: Cocido a 1200°C. Libre de plomo. Apto para alimentos." [(ngModel)]="editingProduct.material_caracteristicas"></textarea>
+                </div>
+              </div>
+
+              <!-- Columna Derecha: Cuidados y Uso (Switches) -->
+              <div style="display: flex; flex-direction: column; gap: 12px; justify-content: center; padding-left: 20px; border-left: 1px solid #f3ebe3;">
+                <label style="font-weight: 700; color: #352a25; margin-bottom: 5px;">Cuidados y Uso (Activar si aplica)</label>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Apto para microondas</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.apto_microondas" (click)="editingProduct.apto_microondas = !editingProduct.apto_microondas">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Apto para lavavajillas</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.apto_lavavajillas" (click)="editingProduct.apto_lavavajillas = !editingProduct.apto_lavavajillas">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Resiste choque térmico</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.resiste_choque_termico" (click)="editingProduct.resiste_choque_termico = !editingProduct.resiste_choque_termico">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Requiere limpieza suave</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.limpieza_suave" (click)="editingProduct.limpieza_suave = !editingProduct.limpieza_suave">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Prohibido fuego directo</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.prohibido_fuego_directo" (click)="editingProduct.prohibido_fuego_directo = !editingProduct.prohibido_fuego_directo">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Apto para temperaturas extremas</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.apto_temperaturas" (click)="editingProduct.apto_temperaturas = !editingProduct.apto_temperaturas">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Certificación de grado alimentario</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.grado_alimentario" (click)="editingProduct.grado_alimentario = !editingProduct.grado_alimentario">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Evitar esponjas abrasivas</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.evitar_abrasivos" (click)="editingProduct.evitar_abrasivos = !editingProduct.evitar_abrasivos">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Evitar humedad prolongada (Madera)</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.control_humedad" (click)="editingProduct.control_humedad = !editingProduct.control_humedad">
+                    <span></span>
+                  </button>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3ebe3;">
+                  <span style="font-size: 14px; color: #4d443f;">Lavado a mano recomendado</span>
+                  <button type="button" class="switch-btn small-switch" [class.on]="editingProduct.lavado_mano" (click)="editingProduct.lavado_mano = !editingProduct.lavado_mano">
+                    <span></span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         }
 
@@ -408,21 +768,21 @@
             <span class="bar-divider"></span>
 
             <div class="relacionados-grid">
-              <div class="rel-product-row selected">
-                <span class="chk-indicator">✓</span>
-                <img src="images/prod-verde.png" alt="..." />
-                <span><strong>Taza de vidrio verde</strong> - S/ 45</span>
-              </div>
-              <div class="rel-product-row">
-                <span class="chk-indicator"></span>
-                <img src="images/prod-rosa-grande.png" alt="..." />
-                <span><strong>Taza de cerámica rosa</strong> - S/ 45</span>
-              </div>
-              <div class="rel-product-row selected">
-                <span class="chk-indicator">✓</span>
-                <img src="images/prod-ondulado.png" alt="..." />
-                <span><strong>Vaso ondulado transparente</strong> - S/ 32</span>
-              </div>
+              @for (p of productosDisponiblesRelacionados; track p.id) {
+                @if (p.id !== editingProduct.id) {
+                  <div class="rel-product-row" 
+                       [class.selected]="esSugeridoSeleccionado(p.id)"
+                       (click)="toggleSugeridoEdicion(p.id)">
+                    <span class="chk-indicator">
+                      {{ esSugeridoSeleccionado(p.id) ? '✓' : '' }}
+                    </span>
+                    <img [src]="p.imagenPrincipal || p.imageUrl || p.imagen_principal || 'images/prod-jaspeada.png'" alt="..." />
+                    <span><strong>{{ p.nombre }}</strong> - S/ {{ p.precio }}</span>
+                  </div>
+                }
+              } @empty {
+                <p style="font-style: italic; color: var(--muted); padding: 15px 0;">No hay otros productos públicos registrados para vincular.</p>
+              }
             </div>
           </div>
         }
@@ -431,7 +791,98 @@
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showEditProductModal = false" type="button">Cancelar</button>
         <button class="btn-del-img" (click)="eliminarProducto(editingProduct.id); showEditProductModal = false" style="position: static;" type="button">Eliminar producto</button>
-        <button class="btn-save" (click)="showEditProductModal = false" type="button">Guardar cambios</button>
+        <button class="btn-save" (click)="guardarCambiosProducto()" type="button">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL CONFIGURACIÓN GLOBAL ENVÍOS Y DEVOLUCIONES -->
+@if (showGlobalShippingModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card-large" style="max-width: 900px;">
+      <div class="modal-header">
+        <h3>⚙️ Configurar Envíos y Devoluciones Globales</h3>
+        <button class="btn-close-modal" (click)="showGlobalShippingModal = false" type="button">×</button>
+      </div>
+
+      <div class="modal-body-content" style="max-height: 70vh; overflow-y: auto;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+          <!-- COLUMNA 1: GESTIÓN DE ENVÍOS -->
+          <div style="display: flex; flex-direction: column; gap: 15px;">
+            <h4 style="font-weight: 700; color: var(--orange); border-bottom: 2px solid var(--orange); padding-bottom: 6px; margin: 0 0 10px;">📦 GESTIÓN DE ENVÍOS</h4>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Cobertura de Envíos</label>
+              <input type="text" placeholder="Ej: Lima Metropolitana y Todo el Perú" [(ngModel)]="globalConfig.envio_cobertura" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Tiempo de entrega (Lima)</label>
+              <input type="text" placeholder="Ej: 24 a 48 horas hábiles" [(ngModel)]="globalConfig.envio_tiempo_lima" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Tiempo de entrega (Provincias)</label>
+              <input type="text" placeholder="Ej: 2 a 5 días hábiles vía Olva Courier o Shalom" [(ngModel)]="globalConfig.envio_tiempo_provincia" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Costo de Envío</label>
+              <input type="text" placeholder="Ej: S/ 10.00 en Lima, calculado en provincias" [(ngModel)]="globalConfig.envio_costo" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Proceso de Envío / Empacado</label>
+              <textarea rows="2" placeholder="Ej: Paquetes viajan con doble protección contra impactos" [(ngModel)]="globalConfig.envio_proceso"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Seguimiento / Tracking</label>
+              <textarea rows="2" placeholder="Ej: Enviamos el código de seguimiento por correo y WhatsApp" [(ngModel)]="globalConfig.envio_seguimiento"></textarea>
+            </div>
+          </div>
+
+          <!-- COLUMNA 2: POLÍTICAS DE DEVOLUCIÓN -->
+          <div style="display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #f3ebe3; padding-left: 20px;">
+            <h4 style="font-weight: 700; color: var(--orange); border-bottom: 2px solid var(--orange); padding-bottom: 6px; margin: 0 0 10px;">🔄 POLÍTICAS DE DEVOLUCIÓN</h4>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Plazo de Cambios y Devoluciones</label>
+              <input type="text" placeholder="Ej: Hasta 7 días calendario posteriores a la entrega" [(ngModel)]="globalConfig.devolucion_plazo" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Condiciones del Producto</label>
+              <textarea rows="2" placeholder="Ej: Sin usar, en perfectas condiciones y en embalaje original" [(ngModel)]="globalConfig.devolucion_condiciones"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Casos Válidos (Ej: Defectos)</label>
+              <textarea rows="2" placeholder="Ej: Defectos de fábrica, daños en transporte o error en modelo" [(ngModel)]="globalConfig.devolucion_casos"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Proceso de Devolución</label>
+              <textarea rows="2" placeholder="Ej: Escríbenos por WhatsApp para coordinar el recojo o cambio" [(ngModel)]="globalConfig.devolucion_proceso"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Reembolso y Costos de Retorno</label>
+              <input type="text" placeholder="Ej: Reembolso 100% de la pieza, retorno asumido por la tienda" [(ngModel)]="globalConfig.devolucion_reembolso" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Información Importante / Notas</label>
+              <textarea rows="2" placeholder="Ej: No se aceptan devoluciones en productos con descuento" [(ngModel)]="globalConfig.devolucion_importante"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showGlobalShippingModal = false" type="button">Cancelar</button>
+        <button class="btn-save" (click)="guardarConfiguracionGlobal()" type="button">Guardar cambios</button>
       </div>
     </div>
   </div>

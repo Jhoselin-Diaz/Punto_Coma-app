@@ -71,7 +71,7 @@
       </section>
     } @else {
       <!-- INTERFAZ REAL -->
-      <!-- CANALES SOCIALES (DOS COLUMNAS) -->
+        <!-- CANALES SOCIALES (DOS COLUMNAS) -->
       <section class="social-channels" aria-label="Canales de contacto principal">
         <!-- TARJETA WHATSAPP -->
         @if (blockWa.visible) {
@@ -87,9 +87,9 @@
             <div class="social-info">
               <h2>{{ blockWa.title }}</h2>
               <p>{{ blockWa.description }}</p>
-              <button type="button" class="btn-wa-action" (click)="irAlEnlace(blockWa.btnLink)">
+              <a class="btn-wa-action" [href]="blockWa.btnLink" target="_blank">
                 {{ blockWa.btnText }}
-              </button>
+              </a>
             </div>
           </div>
         }
@@ -105,9 +105,9 @@
             <div class="social-info">
               <h2>{{ blockIg.title }}</h2>
               <p>{{ blockIg.description }}</p>
-              <button type="button" class="btn-ig-action" (click)="irAlEnlace(blockIg.btnLink)">
+              <a class="btn-ig-action" [href]="blockIg.btnLink" target="_blank">
                 {{ blockIg.btnText }}
-              </button>
+              </a>
             </div>
           </div>
         }
@@ -126,7 +126,11 @@
             </div>
             <h3>{{ blockSupport.title }}</h3>
             <span class="card-divider"></span>
-            <p class="highlight-info">{{ blockSupport.btnText }}</p>
+            @if (blockSupport.btnLink) {
+              <a class="highlight-info mail-link" [href]="blockSupport.btnLink" target="_blank">{{ blockSupport.btnText }}</a>
+            } @else {
+              <p class="highlight-info">{{ blockSupport.btnText }}</p>
+            }
             <p class="desc-info">{{ blockSupport.description }}</p>
           </div>
         }
@@ -142,7 +146,7 @@
             </div>
             <h3>{{ blockEmail.title }}</h3>
             <span class="card-divider"></span>
-            <p class="highlight-info mail-link" (click)="irAlEnlace(blockEmail.btnLink)">{{ blockEmail.btnText }}</p>
+            <p class="highlight-info">{{ blockEmail.btnText }}</p>
             <p class="desc-info">{{ blockEmail.description }}</p>
           </div>
         }
@@ -179,13 +183,13 @@
             </div>
             <div class="dudas-text">
               <h2>{{ contactoWaBottom.btnText }}</h2>
-              <p>Escríbenos por WhatsApp y con gusto te ayudamos.</p>
+              <p>{{ contactoWaBottom.message }}</p>
             </div>
           </div>
 
-          <button type="button" class="btn-whatsapp-dudas" (click)="irAWhatsApp(contactoWaBottom.number, contactoWaBottom.message)">
+          <a class="btn-whatsapp-dudas" [href]="contactoWaBottom.number" target="_blank">
             Chatea ahora
-          </button>
+          </a>
         </section>
       }
     }

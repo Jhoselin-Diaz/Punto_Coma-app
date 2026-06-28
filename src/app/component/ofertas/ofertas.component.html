@@ -1,43 +1,61 @@
 <app-cliente-layout>
   <main class="products-page">
-    <section class="ofertas-hero">
-      <div class="hero-content">
-        <h1>Ofertas Especiales</h1>
-        <p>Aprovecha estas promociones exclusivas y<br>consigue nuestras tazas y vasos más trendy al mejor precio.</p>
-        <a [href]="configService.obtenerWhatsappUrl('Hola, me interesan las ofertas de la tienda.')" class="btn-whatsapp" style="text-decoration: none;">
-          <span class="w-icon">W</span> Pedir por WhatsApp
-        </a>
-      </div>
-      <div class="hero-ribbon">
-        <div class="ribbon-tail"></div>
-        <span>OFERTA</span>
-      </div>
-    </section>
+    @if (isLoading) {
+      <div class="skeleton-banner" aria-label="Cargando ofertas..."></div>
+    }
 
-    <section class="products-grid" aria-label="Lista de productos en oferta">
-      @for (oferta of ofertas; track oferta.id) {
-        <article class="product-card">
-          <div class="image-wrap">
-            <img [src]="oferta.imagen" [alt]="oferta.nombre" />
-            <span class="offer-tag">OFERTA</span>
-          </div>
-          <div class="product-info">
-            <h2>{{ oferta.nombre }}</h2>
-            <p><strong>S/ {{ oferta.precio }}</strong> <s>S/{{ oferta.precioAnterior }}</s></p>
-            <div class="buttons">
-              <a class="detail-link" [routerLink]="['/productos', oferta.id]">Ver detalles</a>
-              <a [href]="configService.obtenerWhatsappUrl('Hola! Me interesa comprar el producto en oferta: ' + oferta.nombre)" class="btn-buy-wa" style="text-decoration: none; text-align: center; display: inline-block;">W Comprar por WhatsApp</a>
-            </div>
-          </div>
-        </article>
-      } @empty {
-        <div class="empty-client-placeholder large-placeholder">
-          <span class="placeholder-icon">🎁</span>
-          <h3>Próximamente más ofertas</h3>
-          <p>Estamos preparando nuevos descuentos especiales para ti. ¡No te los pierdas!</p>
+    @if (!isLoading) {
+      <section class="ofertas-hero" [style.background-image]="bannerStyle">
+        <div class="hero-content">
+          <h1>{{ bannerTitulo }}</h1>
+          <p>{{ bannerSubtitulo }}</p>
+          <a [href]="configService.obtenerWhatsappUrl('Hola, me interesan las ofertas de la tienda.')" class="btn-whatsapp" style="text-decoration: none;">
+            <span class="w-icon">W</span> Pedir por WhatsApp
+          </a>
         </div>
-      }
-    </section>
+        <div class="hero-ribbon">
+          <div class="ribbon-tail"></div>
+          <span>OFERTA</span>
+        </div>
+      </section>
+    }
+
+    @defer (when !isLoading) {
+      <section class="products-grid" aria-label="Lista de productos en oferta">
+        @for (oferta of productosEnOferta; track oferta.id) {
+          <article class="product-card">
+            <div class="image-wrap">
+              <img [src]="obtenerImagenUrl(oferta.imagenPrincipal || oferta.imageUrl || oferta.imagenUrl || '')" [alt]="oferta.nombre" />
+              <span class="offer-tag">{{ obtenerPorcentajeDescuento(oferta.precioAnterior || oferta.precioOriginal || oferta.precio, oferta.precioOferta) }}% OFF</span>
+            </div>
+            <div class="product-info">
+              <h2>{{ oferta.nombre }}</h2>
+              <p>
+                <strong>S/ {{ oferta.precioOferta }}</strong>
+                <s>S/ {{ oferta.precioAnterior || oferta.precioOriginal || oferta.precio }}</s>
+              </p>
+              <div class="buttons">
+                <a class="detail-link" [routerLink]="['/productos', oferta.id]">Ver detalles</a>
+                <a (click)="agregarAlCarrito(oferta)" class="btn-buy-wa" style="text-decoration: none; text-align: center; display: inline-block; cursor: pointer;">Agregar al carrito</a>
+              </div>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-client-placeholder large-placeholder">
+            <span class="placeholder-icon">🎁</span>
+            <h3>Próximamente más ofertas</h3>
+            <p>Estamos preparando nuevos descuentos especiales para ti. ¡No te los pierdas!</p>
+          </div>
+        }
+      </section>
+    } @placeholder {
+      <div class="products-grid" aria-label="Cargando productos en oferta...">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+    }
+
 
     <!-- Copied directly from productos.component.html -->
     <section class="steps-banner" aria-label="Ordena fácilmente por WhatsApp">

@@ -2,6 +2,8 @@ import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ContactoService, ContactoBlock, ContactoCierre } from '../../../service/contacto.service';
+import { ConfiguracionService } from '../../../service/configuracion.service';
+import { ProductosService } from '../../../service/productos.service';
 
 @Component({
   selector: 'app-admin-contacto',
@@ -23,7 +25,6 @@ export class AdminContactoComponent implements OnInit {
 
   // Modals state
   showBlockModal = false;
-  showWaBottomModal = false;
 
   editingBlock: ContactoBlock = {
     id: '',
@@ -35,15 +36,14 @@ export class AdminContactoComponent implements OnInit {
     visible: true
   };
 
-  editingWaBottom: ContactoCierre = {
-    btnText: '',
-    number: '',
-    message: '',
-    visible: true
-  };
+  public inputCierreTitulo: string = '';
+  public inputCierreSubtitulo: string = '';
+  public inputCierreLink: string = '';
 
   constructor(
     private contactoService: ContactoService,
+    private configService: ConfiguracionService,
+    private productosService: ProductosService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
   ) {}
@@ -76,6 +76,9 @@ export class AdminContactoComponent implements OnInit {
     this.contactoService.getCierre().subscribe({
       next: (cierre) => {
         this.contactoWaBottom = cierre;
+        this.inputCierreTitulo = cierre.btnText || '';
+        this.inputCierreSubtitulo = cierre.message || '';
+        this.inputCierreLink = cierre.number || '';
         this.isContactLoading = false;
         this.cdr.detectChanges();
       },
@@ -97,7 +100,7 @@ export class AdminContactoComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error al actualizar visibilidad del bloque', err);
+        console.error('Error al actualizar visibilidad del block', err);
         block.visible = !block.visible; // revert on error
         this.cdr.detectChanges();
       }
@@ -126,18 +129,27 @@ export class AdminContactoComponent implements OnInit {
     });
   }
 
-  openEditWaBottom() {
-    this.editingWaBottom = { ...this.contactoWaBottom };
-    this.showWaBottomModal = true;
-  }
-
-  saveWaBottom() {
-    this.contactoService.updateCierre(this.editingWaBottom).subscribe({
+  guardarCierreDirecto() {
+    const payload: ContactoCierre = {
+      id: this.contactoWaBottom.id,
+      btnText: this.inputCierreTitulo,
+      message: this.inputCierreSubtitulo,
+      number: this.inputCierreLink,
+      visible: this.contactoWaBottom.visible
+    };
+    this.contactoService.updateCierre(payload).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           this.contactoWaBottom = res;
+          this.inputCierreTitulo = res.btnText || '';
+          this.inputCierreSubtitulo = res.message || '';
+          this.inputCierreLink = res.number || '';
         });
-        this.showWaBottomModal = false;
+        // Forzar actualización inteligente y destrucción de cachés viejas para el cliente en segundo plano
+        this.configService.cargarDesdeBackend(true).subscribe();
+        this.productosService.obtenerProductosPublicos(true).subscribe();
+
+        alert('Cambios del banner de cierre guardados correctamente.');
         this.cdr.detectChanges();
       },
       error: (err) => {

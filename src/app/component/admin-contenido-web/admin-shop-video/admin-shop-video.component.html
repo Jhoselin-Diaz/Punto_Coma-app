@@ -5,9 +5,20 @@
   </div>
 
   <div class="videos-grid-admin">
-    @for (vid of videosAdmin; track vid.id; let idx = $index) {
+    @if (isLoading) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="video-card-admin skeleton-video-card-admin" style="min-height: 310px;">
+          <div class="vid-thumb-large skeleton-cell" style="height: 180px; border-radius: 8px 8px 0 0; background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+          <div class="vid-info-admin" style="padding: 16px;">
+            <div class="skeleton-cell" style="height: 18px; width: 80%; margin-bottom: 12px; background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;"></div>
+            <div class="skeleton-cell" style="height: 14px; width: 60%; background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;"></div>
+          </div>
+        </div>
+      }
+    } @else {
+      @for (vid of videosAdmin; track vid.id; let idx = $index) {
       <div class="video-card-admin">
-        <div class="vid-thumb-large" [style.background-image]="'url(' + vid.thumbnail + ')'">
+        <div class="vid-thumb-large" [style.background-image]="'url(' + obtenerPortadaVideo(vid) + ')'">
           <div class="platform-badge" [class]="vid.platform.toLowerCase().replace(' ', '-')">{{ vid.platform }}</div>
           <div class="play-btn-circle">▶</div>
         </div>
@@ -23,216 +34,244 @@
             </div>
             <div class="row-actions">
               <button class="btn-row-edit" (click)="openEditVideo(vid)" type="button">Editar</button>
-              <button class="btn-row-delete" (click)="eliminarFila(videosAdmin, idx)" type="button">Eliminar</button>
+              <button class="btn-row-delete" (click)="eliminarVideo(vid.id)" type="button">Eliminar</button>
             </div>
           </div>
         </div>
       </div>
+      } @empty {
+      <div class="empty-cms-placeholder"
+        style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--gray); font-style: italic; border: 1px dashed var(--border); border-radius: 8px; width: 100%;">
+        No hay videos de tienda registrados.
+      </div>
+      }
     }
   </div>
 </div>
 
 <!-- MODAL 5: AGREGAR SHOP VIDEO (Vacio) -->
 @if (showAddVideoModal) {
-  <div class="modal-backdrop">
-    <div class="modal-card-ultra-large">
-      <div class="modal-header">
-        <h3>Agregar Shop Video</h3>
-        <button class="btn-close-modal" (click)="showAddVideoModal = false" type="button">×</button>
-      </div>
+<div class="modal-backdrop">
+  <div class="modal-card-ultra-large">
+    <div class="modal-header">
+      <h3>Agregar Shop Video</h3>
+      <button class="btn-close-modal" (click)="showAddVideoModal = false" type="button">×</button>
+    </div>
 
-      <div class="modal-body-content">
-        <div class="modal-grid-two-cols">
-          <div class="video-form-fields">
+    <div class="modal-body-content">
+      <div class="modal-grid-two-cols">
+        <div class="video-form-fields">
+          <div class="form-group">
+            <label>Título del Video</label>
+            <input type="text" placeholder="Ej: Nueva colección de vasos satinados" [(ngModel)]="newVideo.title" />
+          </div>
+
+          <div class="form-group">
+            <label>Descripción corta</label>
+            <input type="text" placeholder="Ej: Mostramos cómo refractan la luz del sol..."
+              [(ngModel)]="newVideo.description" />
+          </div>
+
+          <div class="form-grid-2">
             <div class="form-group">
-              <label>Título del Video</label>
-              <input type="text" placeholder="Ej: Nueva colección de vasos satinados" [(ngModel)]="newVideo.title" />
+              <label>URL del Video (Reel/TikTok Link)</label>
+              <input type="text" placeholder="https://tiktok.com/@..." [ngModel]="newVideo.url"
+                (ngModelChange)="newVideo.url = $event; actualizarSafePreview($event)" />
             </div>
-
             <div class="form-group">
-              <label>Descripción corta</label>
-              <input type="text" placeholder="Ej: Mostramos cómo refractan la luz del sol..." [(ngModel)]="newVideo.description" />
-            </div>
-
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label>URL del Video (Reel/TikTok Link)</label>
-                <input type="text" placeholder="https://tiktok.com/@..." [(ngModel)]="newVideo.url" />
-              </div>
-              <div class="form-group">
-                <label>Plataforma</label>
-                <select [(ngModel)]="newVideo.platform">
-                  <option>TikTok</option>
-                  <option>Instagram</option>
-                  <option>YouTube Shorts</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Picker de Productos -->
-            <div class="product-picker-container mt-15">
-              <p class="section-sub">Productos vinculados al video</p>
-              <div class="picker-scroll-box">
-                <div class="picker-prod-item">
-                  <span class="chk-box-picked"></span>
-                  <img src="images/prod-jaspeada.png" alt="..." />
-                  <div>
-                    <h6>Taza de cerámica jaspeada</h6>
-                    <span>S/ 39</span>
-                  </div>
-                </div>
-                <div class="picker-prod-item">
-                  <span class="chk-box-picked"></span>
-                  <img src="images/prod-verde.png" alt="..." />
-                  <div>
-                    <h6>Taza de vidrio verde</h6>
-                    <span>S/ 45</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="switch-row">
-              <label>Visible desde el primer momento</label>
-              <button type="button" class="switch-btn small-switch" [class.on]="newVideo.visible" (click)="newVideo.visible = !newVideo.visible">
-                <span></span>
-              </button>
+              <label>Plataforma</label>
+              <select [(ngModel)]="newVideo.platform">
+                <option>TikTok</option>
+                <option>Instagram</option>
+                <option>YouTube Shorts</option>
+              </select>
             </div>
           </div>
 
-          <!-- Fake video embed preview a la derecha -->
-          <div class="video-preview-sidebar">
-            <p class="section-sub">Vista Previa Reproductor (Cliente)</p>
-            <div class="fake-player-wrapper" [style.background-image]="'url(' + newVideo.thumbnail + ')'">
-              <div class="fake-overlay-glow">
-                <span class="live-tag">NUEVO VIDEO</span>
-                <div class="fake-play-btn-big">▶</div>
-
-                <div class="fake-caption-box">
-                  <h5>{{ newVideo.title || 'Título del video...' }}</h5>
-                  <p>🔗 0 productos enlazados</p>
+          <!-- Picker de Productos -->
+          <div class="product-picker-container mt-15">
+            <p class="section-sub">Productos vinculados al video</p>
+            <div class="picker-scroll-box">
+              @for (prod of productosDisponibles; track prod.id) {
+              <label class="picker-prod-item"
+                style="cursor: pointer; display: flex; align-items: center; width: 100%; gap: 10px; padding: 8px; border-bottom: 1px solid #eee;">
+                <input type="checkbox" [checked]="isProductSelected(prod.id)" (change)="toggleProductSelection(prod.id)"
+                  style="width: 18px; height: 18px; cursor: pointer;" />
+                <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-jaspeada.png'" alt="..."
+                  style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
+                <div style="flex: 1;">
+                  <h6 style="margin: 0; font-size: 13.5px; color: #333;">{{ prod.nombre }}</h6>
+                  <span style="font-size: 12px; color: var(--muted);">S/ {{ prod.precio }}</span>
                 </div>
+              </label>
+              } @empty {
+              <div class="txt-center txt-muted" style="padding: 15px;">No hay productos disponibles en el catálogo.
               </div>
+              }
             </div>
+          </div>
+
+          <div class="switch-row">
+            <label>Visible desde el primer momento</label>
+            <button type="button" class="switch-btn small-switch" [class.on]="newVideo.visible"
+              (click)="newVideo.visible = !newVideo.visible">
+              <span></span>
+            </button>
           </div>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button class="btn-cancel" (click)="showAddVideoModal = false" type="button">Cancelar</button>
-        <button class="btn-save" (click)="showAddVideoModal = false" type="button">Publicar video</button>
+        <!-- Video embed preview a la derecha -->
+        <div class="video-preview-sidebar">
+          <p class="section-sub">Vista Previa Reproductor (Cliente)</p>
+          @if (safeVideoPreviewUrl) {
+          <div class="fake-player-wrapper"
+            style="background: #000; display: flex; align-items: center; justify-content: center; min-height: 380px; padding: 0;">
+            <iframe [src]="safeVideoPreviewUrl" frameborder="0" allowfullscreen
+              style="width: 100%; height: 380px; border-radius: 8px;"></iframe>
+          </div>
+          } @else {
+          <div class="fake-player-wrapper" [style.background-image]="'url(' + obtenerPortadaVideo(newVideo) + ')'">
+            <div class="fake-overlay-glow">
+              <span class="live-tag">NUEVO VIDEO</span>
+              <div class="fake-play-btn-big">▶</div>
+
+              <div class="fake-caption-box">
+                <h5>{{ newVideo.title || 'Título del video...' }}</h5>
+                <p>🔗 {{ selectedProductsIds.length }} productos enlazados</p>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
       </div>
     </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="showAddVideoModal = false" type="button">Cancelar</button>
+      <button class="btn-save" (click)="guardarNuevoVideo()" type="button">Publicar video</button>
+    </div>
   </div>
+</div>
 }
 
 <!-- MODAL 6: EDITAR SHOP VIDEO (Precargado con estadísticas) -->
 @if (showEditVideoModal) {
-  <div class="modal-backdrop">
-    <div class="modal-card-ultra-large">
-      <div class="modal-header">
-        <h3>Editar Shop Video</h3>
-        <button class="btn-close-modal" (click)="showEditVideoModal = false" type="button">×</button>
-      </div>
+<div class="modal-backdrop">
+  <div class="modal-card-ultra-large">
+    <div class="modal-header">
+      <h3>Editar Shop Video</h3>
+      <button class="btn-close-modal" (click)="showEditVideoModal = false" type="button">×</button>
+    </div>
 
-      <div class="modal-body-content">
-        <div class="modal-grid-two-cols">
-          <div class="video-form-fields">
-            <!-- Panel de estadísticas falsas avanzadas tipo TikTok Shop -->
-            <div class="stats-metric-strip">
-              <div class="sub-stat-badge">
-                <span class="val-metric">{{ editingVideo.views }}</span>
-                <span class="lbl-metric">Visualizaciones</span>
-              </div>
-              <div class="sub-stat-badge">
-                <span class="val-metric">{{ editingVideo.likes }}</span>
-                <span class="lbl-metric">Me Gusta</span>
-              </div>
-              <div class="sub-stat-badge highlight-glow-badge">
-                <span class="val-metric">{{ editingVideo.clicks }}</span>
-                <span class="lbl-metric">Clicks Producto</span>
-              </div>
+    <div class="modal-body-content">
+      <div class="modal-grid-two-cols">
+        <div class="video-form-fields">
+          <!-- Panel de estadísticas falsas avanzadas tipo TikTok Shop -->
+          <div class="stats-metric-strip">
+            <div class="sub-stat-badge">
+              <span class="val-metric">{{ editingVideo.views }}</span>
+              <span class="lbl-metric">Visualizaciones</span>
             </div>
-
-            <div class="form-group">
-              <label>Título del Video</label>
-              <input type="text" [(ngModel)]="editingVideo.title" />
+            <div class="sub-stat-badge">
+              <span class="val-metric">{{ editingVideo.likes }}</span>
+              <span class="lbl-metric">Me Gusta</span>
             </div>
-
-            <div class="form-group">
-              <label>Descripción corta</label>
-              <input type="text" [(ngModel)]="editingVideo.description" />
-            </div>
-
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label>URL del Video</label>
-                <input type="text" [(ngModel)]="editingVideo.url" />
-              </div>
-              <div class="form-group">
-                <label>Plataforma</label>
-                <select [(ngModel)]="editingVideo.platform">
-                  <option>TikTok</option>
-                  <option>Instagram</option>
-                  <option>YouTube Shorts</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Picker de Productos -->
-            <div class="product-picker-container mt-15">
-              <p class="section-sub">Productos vinculados</p>
-              <div class="picker-scroll-box">
-                <div class="picker-prod-item selected">
-                  <span class="chk-box-picked">✓</span>
-                  <img src="images/prod-jaspeada.png" alt="..." />
-                  <div>
-                    <h6>Taza de cerámica jaspeada</h6>
-                    <span>S/ 39</span>
-                  </div>
-                </div>
-                <div class="picker-prod-item">
-                  <span class="chk-box-picked"></span>
-                  <img src="images/prod-verde.png" alt="..." />
-                  <div>
-                    <h6>Taza de vidrio verde</h6>
-                    <span>S/ 45</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="switch-row">
-              <label>Habilitado / Visible</label>
-              <button type="button" class="switch-btn small-switch" [class.on]="editingVideo.visible" (click)="editingVideo.visible = !editingVideo.visible">
-                <span></span>
-              </button>
+            <div class="sub-stat-badge highlight-glow-badge">
+              <span class="val-metric">{{ editingVideo.clicks }}</span>
+              <span class="lbl-metric">Clicks Producto</span>
             </div>
           </div>
 
-          <!-- Fake video embed preview a la derecha -->
-          <div class="video-preview-sidebar">
-            <p class="section-sub">Vista Previa Reproductor (Cliente)</p>
-            <div class="fake-player-wrapper" [style.background-image]="'url(' + editingVideo.thumbnail + ')'">
-              <div class="fake-overlay-glow">
-                <span class="live-tag">LIVE PREVIEW</span>
-                <div class="fake-play-btn-big">▶</div>
+          <div class="form-group">
+            <label>Título del Video</label>
+            <input type="text" [(ngModel)]="editingVideo.title" />
+          </div>
 
-                <div class="fake-caption-box">
-                  <h5>{{ editingVideo.title }}</h5>
-                  <p>🔗 Contiene: Taza jaspeada</p>
-                </div>
-              </div>
+          <div class="form-group">
+            <label>Descripción corta</label>
+            <input type="text" [(ngModel)]="editingVideo.description" />
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>URL del Video</label>
+              <input type="text" [ngModel]="editingVideo.url"
+                (ngModelChange)="editingVideo.url = $event; actualizarSafePreview($event)" />
             </div>
+            <div class="form-group">
+              <label>Plataforma</label>
+              <select [(ngModel)]="editingVideo.platform">
+                <option>TikTok</option>
+                <option>Instagram</option>
+                <option>YouTube Shorts</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Picker de Productos -->
+          <div class="product-picker-container mt-15">
+            <p class="section-sub">Productos vinculados</p>
+            <div class="picker-scroll-box">
+              @for (prod of productosDisponibles; track prod.id) {
+              <label class="picker-prod-item"
+                style="cursor: pointer; display: flex; align-items: center; width: 100%; gap: 10px; padding: 8px; border-bottom: 1px solid #eee;">
+                <input type="checkbox" [checked]="isProductSelected(prod.id)" (change)="toggleProductSelection(prod.id)"
+                  style="width: 18px; height: 18px; cursor: pointer;" />
+                <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-jaspeada.png'" alt="..."
+                  style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
+                <div style="flex: 1;">
+                  <h6 style="margin: 0; font-size: 13.5px; color: #333;">{{ prod.nombre }}</h6>
+                  <span style="font-size: 12px; color: var(--muted);">S/ {{ prod.precio }}</span>
+                </div>
+              </label>
+              } @empty {
+              <div class="txt-center txt-muted" style="padding: 15px;">No hay productos disponibles en el catálogo.
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="switch-row">
+            <label>Habilitado / Visible</label>
+            <button type="button" class="switch-btn small-switch" [class.on]="editingVideo.visible"
+              (click)="editingVideo.visible = !editingVideo.visible">
+              <span></span>
+            </button>
           </div>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button class="btn-cancel" (click)="showEditVideoModal = false" type="button">Cancelar</button>
-        <button class="btn-del-img" (click)="showEditVideoModal = false" style="position: static;" type="button">Ocultar video</button>
-        <button class="btn-save" (click)="showEditVideoModal = false" type="button">Guardar cambios</button>
+        <!-- Video embed preview a la derecha -->
+        <div class="video-preview-sidebar">
+          <p class="section-sub">Vista Previa Reproductor (Cliente)</p>
+          @if (safeVideoPreviewUrl) {
+          <div class="fake-player-wrapper"
+            style="background: #000; display: flex; align-items: center; justify-content: center; min-height: 380px; padding: 0;">
+            <iframe [src]="safeVideoPreviewUrl" frameborder="0" allowfullscreen
+              style="width: 100%; height: 380px; border-radius: 8px;"></iframe>
+          </div>
+          } @else {
+          <div class="fake-player-wrapper" [style.background-image]="'url(' + obtenerPortadaVideo(editingVideo) + ')'">
+            <div class="fake-overlay-glow">
+              <span class="live-tag">LIVE PREVIEW</span>
+              <div class="fake-play-btn-big">▶</div>
+
+              <div class="fake-caption-box">
+                <h5>{{ editingVideo.title }}</h5>
+                <p>🔗 {{ selectedProductsIds.length }} productos enlazados</p>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
       </div>
     </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="showEditVideoModal = false" type="button">Cancelar</button>
+      <button class="btn-del-img" (click)="eliminarVideo(editingVideo.id); showEditVideoModal = false"
+        style="position: static;" type="button">Eliminar video</button>
+      <button class="btn-save" (click)="guardarCambiosVideo()" type="button">Guardar cambios</button>
+    </div>
   </div>
+</div>
 }

@@ -15,6 +15,7 @@ import { AdminDashboardComponent } from './component/admin-dashboard/admin-dashb
 import { AdminReportesComponent } from './component/admin-reportes/admin-reportes.component';
 import { AdminConfiguracionComponent } from './component/admin-configuracion/admin-configuracion.component';
 import { CarritoComponent } from './component/carrito/carrito.component';
+import { AdminCarritoComponent } from './component/admin-contenido-web/admin-carrito/admin-carrito.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'inicio', pathMatch: 'full' },
@@ -33,7 +34,8 @@ export const routes: Routes = [
   { path: 'admin/dashboard', component: AdminDashboardComponent },
   { path: 'admin/reportes', component: AdminReportesComponent },
   { path: 'admin/configuracion', component: AdminConfiguracionComponent },
-  { path: 'carrito', component: CarritoComponent }
+  { path: 'carrito', component: CarritoComponent },
+  { path: 'admin/carrito', component: AdminCarritoComponent }
 ];
 
 

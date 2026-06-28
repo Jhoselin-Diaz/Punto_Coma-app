@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { ProductosService } from '../../service/productos.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
+import { CartService } from '../../service/cart.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 @Component({
@@ -13,20 +14,33 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 })
 export class ProductosComponent implements OnInit {
   productos: any[] = [];
+  isLoading = true;
 
   constructor(
     private productosService: ProductosService,
     public configService: ConfiguracionService,
-    private sanitizer: DomSanitizer
-  ) {}
+    private cartService: CartService,
+    private sanitizer: DomSanitizer,
+    private router: Router
+  ) {
+    this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+  }
+
+  agregarAlCarrito(producto: any) {
+    this.cartService.addItem(producto);
+  }
 
   ngOnInit() {
+    this.isLoading = true;
     this.productosService.obtenerProductosPublicos().subscribe({
-      next: (data) => {
-        this.productos = data;
+      next: (res: any) => {
+        const data = Array.isArray(res) ? res : (res && Array.isArray(res.content) ? res.content : []);
+        this.productos = data.filter((p: any) => p.visible !== false && p.activo !== false);
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Error al obtener productos públicos:', err);
+        this.isLoading = false;
       }
     });
   }

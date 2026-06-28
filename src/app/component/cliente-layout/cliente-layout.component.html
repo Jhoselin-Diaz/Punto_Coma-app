@@ -29,10 +29,13 @@
           <path d="M12 12.5A4.25 4.25 0 1 1 12 4a4.25 4.25 0 0 1 0 8.5Zm0-7A2.75 2.75 0 1 0 12 11a2.75 2.75 0 0 0 0-5.5ZM19 21a.75.75 0 0 1-.75-.75 6.25 6.25 0 0 0-12.5 0 .75.75 0 0 1-1.5 0 7.75 7.75 0 0 1 15.5 0A.75.75 0 0 1 19 21Z" />
         </svg>
       </button>
-      <button type="button" aria-label="Carrito" routerLink="/carrito">
+      <button type="button" aria-label="Carrito" routerLink="/carrito" style="position: relative;">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7.5 8.25V8a4.5 4.5 0 0 1 9 0v.25h1.13a1.75 1.75 0 0 1 1.74 1.58l.83 8.5A2.5 2.5 0 0 1 17.71 21H6.29a2.5 2.5 0 0 1-2.49-2.67l.83-8.5a1.75 1.75 0 0 1 1.74-1.58H7.5Zm1.5 0h6V8a3 3 0 0 0-6 0v.25Zm-2.63 1.5a.25.25 0 0 0-.25.23l-.83 8.5a1 1 0 0 0 1 1.02h11.42a1 1 0 0 0 1-1.02l-.83-8.5a.25.25 0 0 0-.25-.23H16.5V12a.75.75 0 0 1-1.5 0V9.75H9V12a.75.75 0 0 1-1.5 0V9.75H6.37Z" />
         </svg>
+        @if (cantidadTotal > 0) {
+          <span class="cart-badge">{{ cantidadTotal }}</span>
+        }
       </button>
       <a class="whatsapp-mini" [href]="configService.obtenerWhatsappUrl('Hola, me gustaría realizar un pedido.')" aria-label="Comprar por WhatsApp">
         <span class="wa-circle">W</span>

@@ -9,6 +9,14 @@
   display: block;
 }
 
+/* --- ESTRUCTURA GENERAL DE PESTAÑAS INTERNAS DE INICIO --- */
+.visual-config-cms,
+.categorias-cms {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .grid-two-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -144,6 +152,7 @@
   opacity: 0.95;
 }
 
+/* --- LOGICA DE SWITCHES ACTIVOS --- */
 .switch-row {
   display: flex;
   justify-content: space-between;
@@ -190,6 +199,23 @@
   transform: translateX(22px);
 }
 
+.switch-btn.small-switch {
+  width: 40px;
+  height: 22px;
+}
+
+.switch-btn.small-switch span {
+  width: 16px;
+  height: 16px;
+  top: 2px;
+  left: 2px;
+}
+
+.switch-btn.small-switch.on span {
+  transform: translateX(18px);
+}
+
+/* --- PREVISUALIZACIÓN DE BANNER PRINCIPAL --- */
 .preview-panel-container {
   display: flex;
   flex-direction: column;
@@ -298,6 +324,426 @@
   opacity: 0.95;
 }
 
+/* --- ESTILOS DE SUB-PESTANA: CATEGORÍAS (COMPAÑERO) --- */
+.sub-header-cms {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sub-header-cms h4 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14.5px;
+}
+
+.btn-add-item {
+  background-color: #fff;
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-add-item:hover {
+  background-color: var(--soft);
+}
+
+.categorias-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.cat-aesthetic-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background-color: var(--bg-card);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(136, 107, 85, 0.02);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+}
+
+.cat-aesthetic-card:hover {
+  transform: translateY(-2px);
+}
+
+.cat-aesthetic-card.invisible-state {
+  opacity: 0.55;
+}
+
+.cat-card-img-wrap {
+  height: 160px;
+  position: relative;
+  background-color: #f5ebe0;
+}
+
+.cat-card-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cat-card-order-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background-color: var(--orange);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.cat-card-info {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.cat-card-info h5 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 18px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.cat-card-count {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.cat-card-switch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--ink);
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.cat-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.cat-card-actions button {
+  flex: 1;
+}
+
+.btn-row-edit,
+.btn-row-delete {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-row-edit {
+  background-color: #f0f0ef;
+  color: #555;
+}
+
+.btn-row-edit:hover {
+  background-color: #e5e5e3;
+}
+
+.btn-row-delete {
+  background-color: #fdf2f0;
+  color: #c0392b;
+}
+
+.btn-row-delete:hover {
+  background-color: #fbdcd6;
+}
+
+/* --- ESTILOS DE SUB-PESTANA: PRODUCTOS DESTACADOS --- */
+.prod-dest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.selectable-prod-card {
+  position: relative;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background-color: #fff;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.selectable-prod-card.selected {
+  border-color: var(--orange);
+  box-shadow: 0 4px 15px rgba(239, 103, 55, 0.05);
+}
+
+.card-selection-indicator {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 2px solid var(--line);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.selectable-prod-card.selected .card-selection-indicator {
+  background-color: var(--orange);
+  border-color: var(--orange);
+}
+
+.chk-box::after {
+  content: "";
+  width: 6px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  display: none;
+}
+
+.selectable-prod-card.selected .chk-box::after {
+  display: block;
+}
+
+.prod-img-wrap {
+  height: 150px;
+  background-color: #fbf6f3;
+}
+
+.prod-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.prod-meta {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prod-meta h5 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.price-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--orange);
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag-chip {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.tag-chip.oferta {
+  background-color: #fff2e6;
+  color: #df6c1b;
+}
+
+.tag-chip.nuevo {
+  background-color: #e6f7ff;
+  color: #0050b3;
+}
+
+.tag-chip.destacado {
+  background-color: #f6ffed;
+  color: #389e0d;
+}
+
+/* --- SUB-PESTANA: CONFIGURACIÓN VISUAL SWITCH PANEL --- */
+.config-switches-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background-color: #fdfbf9;
+  display: flex;
+  flex-direction: column;
+}
+
+.config-row-switch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.config-row-switch:last-child {
+  border-bottom: none;
+}
+
+.config-label-area h5 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.config-label-area p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .mt-15 {
   margin-top: 15px;
+}
+
+@media (max-width: 900px) {
+  .grid-two-cols {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .categorias-cards-grid,
+  .prod-dest-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* --- ESTADÍSTICAS Y TABLAS (UNIFICADOS DE INVENTARIO) --- */
+.table-responsive-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  box-sizing: border-box;
+}
+
+.luxury-stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+.luxury-stock-table th {
+  background-color: #faf8f6;
+  padding: 14px 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--line);
+}
+
+.luxury-stock-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.tbl-prod-img-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background-color: #faf8f6;
+}
+
+.tbl-prod-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tbl-prod-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tbl-prod-name strong {
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.sku-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sku-code {
+  font-family: monospace;
+  background-color: #faf8f6;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: #555;
+  font-size: 11.5px;
+  border: 1px solid var(--line);
+}
+
+.category-pill {
+  background-color: #faf8f6;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+/* --- ESTILOS ADICIONALES PARA EL MODAL --- */
+.modal-overlay {
+  transition: opacity 0.25s ease-out;
+}
+.modal-card {
+  animation: modalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
