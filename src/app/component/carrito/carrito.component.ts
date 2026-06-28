@@ -117,8 +117,15 @@ export class CarritoComponent implements OnInit, OnDestroy {
       event.preventDefault();
       return;
     }
-    this.cartService.finalizarPedido();
-    this.router.navigate(['/admin/chats']);
+    // El enlace nativo abre WhatsApp en target="_blank"
+    console.log("Checkout iniciado. Manteniendo productos en pantalla para respaldo del cliente...");
+
+    // Retrasar el vaciado de la bolsa por 3 minutos para que el usuario
+    // pueda consultar su resumen de compra al volver a la pestaña.
+    setTimeout(() => {
+      this.cartService.clearCart();
+      console.log("Carrito vaciado automáticamente tras cumplir el tiempo de respaldo de 3 minutos.");
+    }, 180000);
   }
 
   obtenerEnlaceWhatsapp(): string {
