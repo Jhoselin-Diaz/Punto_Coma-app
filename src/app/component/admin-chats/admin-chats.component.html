@@ -34,7 +34,7 @@
                 <span class="chat-time">{{ chat.ultimaVez }}</span>
               </div>
               <div class="chat-bottom">
-                <p class="chat-preview">{{ chat.mensajes[chat.mensajes.length - 1].texto.startsWith('[YAPE_') ? '💸 [Voucher de Pago]' : chat.mensajes[chat.mensajes.length - 1].texto }}</p>
+                <p class="chat-preview">{{ chat.ultimoMensaje?.startsWith('[YAPE_') ? '💸 [Voucher de Pago]' : chat.ultimoMensaje }}</p>
                 @if (chat.noLeidos > 0) {
                   <span class="unread-badge">{{ chat.noLeidos }}</span>
                 }

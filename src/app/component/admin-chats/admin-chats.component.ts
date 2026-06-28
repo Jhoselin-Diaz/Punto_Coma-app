@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminLayoutComponent } from '../admin-layout/admin-layout.component';
 import { CartService } from '../../service/cart.service';
+import { AdminChatService, ChatDTO, MensajeDTO } from '../../service/admin-chat.service';
 
 interface Mensaje {
   texto: string;
@@ -16,7 +17,7 @@ interface Mensaje {
 }
 
 interface Chat {
-  id: string;
+  id: number;
   nombre: string;
   telefono: string;
   avatar: string;
@@ -29,6 +30,7 @@ interface Chat {
   borrador?: string;
   mensajeGenerado?: string;
   estado?: 'Normal' | 'En revision';
+  ultimoMensaje?: string;
 }
 
 @Component({
@@ -59,7 +61,10 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
 
   chats: Chat[] = [];
 
-  constructor(private cartService: CartService) { }
+  constructor(
+    private cartService: CartService,
+    private adminChatService: AdminChatService
+  ) { }
 
   get chatsOrdenados(): Chat[] {
     return [...this.chats].sort((a, b) => {
@@ -81,84 +86,103 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // ── RESTAURAR chats persistidos (si el usuario ya visitó esta vista antes) ──
-    const saved = this.cartService.persistedChats;
-    if (saved) {
-      // Ya existían chats guardados: restaurarlos para no perder mensajes ni vouchers
-      this.chats = saved;
-      const savedId = this.cartService.persistedSelectedId;
-      this.chatSeleccionado = savedId
-        ? this.chats.find(c => c.id === savedId) ?? this.chats[0]
-        : this.chats[0];
-
-      // ── Aún puede haber un pedido nuevo del carrito que llegó mientras navegabas ──
-      const pendingOrder = this.cartService.getPendingOrder();
-      if (pendingOrder) {
-        this._inyectarPedidoComoChat(pendingOrder);
-      }
-    } else {
-      // Primera visita
-      const pendingOrder = this.cartService.getPendingOrder();
-      if (pendingOrder) {
-        this._inyectarPedidoComoChat(pendingOrder);
-      } else {
-        this.chatSeleccionado = this.chats[0] ?? null;
-      }
-
-      // Persistir el array inicial para futuras navegaciones
-      this.cartService.saveChats(this.chats, this.chatSeleccionado?.id ?? null);
-    }
-
-    if (this.chatSeleccionado) {
-      this.actualizarEstadosAsistente(this.chatSeleccionado);
-    }
-    this.scrollToBottom();
+    this.cargarChatsReales();
   }
 
   ngOnDestroy() {
-    // Guardar estado actual antes de que el componente sea destruido
-    this.cartService.saveChats(this.chats, this.chatSeleccionado?.id ?? null);
+    // No-op - chats persist in database
   }
 
-  /** Crea un nuevo chat a partir de un pedido del carrito y lo coloca al frente */
-  private _inyectarPedidoComoChat(pendingOrder: any) {
-    const productosText = pendingOrder.productos
-      .map((p: any) => `• ${p.nombre} x${p.cantidad}`)
-      .join('\n');
-    const subtotalFormatted  = pendingOrder.subtotal.toFixed(2);
-    const descuentoFormatted = pendingOrder.descuento.toFixed(2);
-    const totalFormatted     = pendingOrder.total.toFixed(2);
+  cargarChatsReales(seleccionarId?: number) {
+    this.adminChatService.getChats().subscribe({
+      next: (dtos) => {
+        this.chats = dtos.map(dto => this.mapChatDtoToChat(dto));
+        if (this.chats.length > 0) {
+          if (seleccionarId) {
+            const found = this.chats.find(c => c.id === seleccionarId);
+            if (found) {
+              this.seleccionarChat(found);
+              return;
+            }
+          }
+          this.seleccionarChat(this.chats[0]);
+        } else {
+          this.chatSeleccionado = null;
+        }
+      },
+      error: (err) => console.error('Error al cargar chats reales:', err)
+    });
+  }
 
-    const mensajeTexto = `Hola 😄\nQuiero realizar el siguiente pedido:\n\n🛍️ Productos:\n${productosText}\n\n💰 Subtotal: S/ ${subtotalFormatted}\nDescuento: - S/ ${descuentoFormatted}\nTotal final: S/ ${totalFormatted}`;
-
-    const nuevoChat: Chat = {
-      id: pendingOrder.id,
-      nombre: 'Juan Pérez (Pedido)',
-      telefono: '+51 987 111 222',
-      avatar: '🛍️',
-      ultimaVez: pendingOrder.fecha.split(', ')[1] || 'Justo ahora',
-      noLeidos: 1,
-      primeraCompra: new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }),
-      totalPedidos: 1,
-      historialPedidos: [{ id: pendingOrder.id, fecha: pendingOrder.fecha, subtotal: `S/ ${totalFormatted}`, estado: 'Pendiente' }],
-      mensajes: [{ texto: mensajeTexto, tipo: 'entrada', hora: pendingOrder.fecha.split(', ')[1] || 'Justo ahora' }],
-      mensajeGenerado: `¡Hola Juan! Recibimos tu pedido con éxito 🎉\n\nTu total final es S/ ${totalFormatted}.\nPor favor, confírmanos tu método de pago preferido para continuar 🚚.`,
-      estado: 'Normal'
+  mapChatDtoToChat(dto: ChatDTO): Chat {
+    const formattedTime = this.formatFecha(dto.fechaUltimaActualizacion);
+    return {
+      id: dto.id,
+      nombre: dto.nombreCliente || 'Cliente Nuevo',
+      telefono: dto.telefonoCliente || '',
+      avatar: dto.nombreCliente ? dto.nombreCliente.charAt(0).toUpperCase() : '👤',
+      ultimaVez: formattedTime,
+      noLeidos: dto.unreadCount || 0,
+      mensajes: [],
+      primeraCompra: 'No registrada',
+      totalPedidos: 0,
+      historialPedidos: [],
+      borrador: '',
+      mensajeGenerado: '',
+      estado: 'Normal',
+      ultimoMensaje: dto.ultimoMensaje
     };
+  }
 
-    this.chats = [nuevoChat, ...this.chats];
-    this.chatSeleccionado = nuevoChat;
-    this.cartService.clearPendingOrder();
-    this.cartService.saveChats(this.chats, nuevoChat.id);
+  mapMensajeDtoToMensaje(dto: MensajeDTO): Mensaje {
+    const isVoucher = dto.contenido.includes('[YAPE_VOUCHER]') || dto.contenido.startsWith('[YAPE_VOUCHER]');
+    let voucherData: any = undefined;
+    if (isVoucher) {
+      const cleaned = dto.contenido.replace('[YAPE_VOUCHER]', '').trim();
+      voucherData = {
+        monto: cleaned || 'S/ 0.00',
+        fecha: this.formatFecha(dto.fechaEnvio)
+      };
+    }
+
+    return {
+      texto: isVoucher ? '[YAPE_VOUCHER]' : dto.contenido,
+      tipo: dto.remitente === 'CLIENTE' ? 'entrada' : 'salida',
+      hora: this.formatFecha(dto.fechaEnvio),
+      leido: true,
+      isVoucher,
+      voucherData
+    };
+  }
+
+  formatFecha(dateStr: string): string {
+    if (!dateStr) return 'Justo ahora';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'Justo ahora';
+    }
   }
 
   seleccionarChat(chat: Chat) {
     this.chatSeleccionado = chat;
     chat.noLeidos = 0;
     this.editandoMensajeGenerado = false;
-    this.cartService.saveChats(this.chats, chat.id); // persistir selección
-    this.scrollToBottom();
-    this.actualizarEstadosAsistente(chat);
+    
+    this.adminChatService.getMensajes(chat.id).subscribe({
+      next: (mensajeDtos) => {
+        chat.mensajes = mensajeDtos.map(dto => this.mapMensajeDtoToMensaje(dto));
+        this.scrollToBottom();
+        this.actualizarEstadosAsistente(chat);
+      },
+      error: (err) => console.error('Error al cargar mensajes del chat:', err)
+    });
+  }
+
+  obtenerEstadoOrden(ordenId: string, estadoOriginal: string): string {
+    return this.cartService.getOrderStatus(ordenId, estadoOriginal as any);
   }
 
   iniciarEdicionMensaje() {
@@ -177,91 +201,47 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     this.editandoMensajeGenerado = false;
   }
 
-  // ─── MÉTODOS DE LA SIMULACIÓN FLUIDA ──────────────────────────────────
-
-  obtenerEstadoOrden(ordenId: string, estadoOriginal: string): string {
-    return this.cartService.getOrderStatus(ordenId, estadoOriginal as any);
-  }
-
   enviarMensajeGenerado() {
     if (!this.chatSeleccionado || !this.chatSeleccionado.mensajeGenerado) return;
 
     const texto = this.chatSeleccionado.mensajeGenerado;
-    this.chatSeleccionado.mensajeGenerado = ''; // Limpiar mensaje generado
+    const chatId = this.chatSeleccionado.id;
+    this.chatSeleccionado.mensajeGenerado = ''; 
     this.editandoMensajeGenerado = false;
 
-    this.agregarMensajeAlChat(texto, 'salida');
+    this.adminChatService.enviarMensaje(chatId, texto).subscribe({
+      next: (creadoDto) => {
+        if (this.chatSeleccionado && this.chatSeleccionado.id === chatId) {
+          const nuevoMsg = this.mapMensajeDtoToMensaje(creadoDto);
+          this.chatSeleccionado.mensajes.push(nuevoMsg);
+          this.chatSeleccionado.ultimoMensaje = texto;
+          this.chatSeleccionado.ultimaVez = nuevoMsg.hora;
+          this.scrollToBottom();
+        }
+      },
+      error: (err) => console.error('Error al enviar mensaje generado:', err)
+    });
   }
 
   enviarMensajeManual() {
     if (!this.chatSeleccionado || !this.chatSeleccionado.borrador || !this.chatSeleccionado.borrador.trim()) return;
 
     const texto = this.chatSeleccionado.borrador;
-    this.chatSeleccionado.borrador = ''; // Limpiar borrador
+    const chatId = this.chatSeleccionado.id;
+    this.chatSeleccionado.borrador = ''; 
 
-    this.agregarMensajeAlChat(texto, 'salida');
-  }
-
-  private agregarMensajeAlChat(texto: string, tipo: 'entrada' | 'salida', isVoucher = false, voucherData?: any) {
-    if (!this.chatSeleccionado) return;
-
-    const fechaAhora = new Date();
-    const hora = fechaAhora.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-
-    const nuevoMensaje: Mensaje = {
-      texto,
-      tipo,
-      hora,
-      leido: tipo === 'salida' ? true : undefined,
-      isVoucher,
-      voucherData
-    };
-
-    // Registrar mensaje en la lista local
-    this.chatSeleccionado.mensajes.push(nuevoMensaje);
-
-    // Sincronizar info de última interacción en la lista
-    this.chatSeleccionado.ultimaVez = hora;
-
-    // ← Persistir inmediatamente para que los mensajes sobrevivan a la navegación
-    this.cartService.saveChats(this.chats, this.chatSeleccionado.id);
-
-    this.scrollToBottom();
-
-    // Si el mensaje es de salida, simular respuesta automática del cliente
-    if (tipo === 'salida') {
-      const ordenActiva = this.chatSeleccionado.historialPedidos[0];
-      const yaTieneVoucher = this.chatSeleccionado.mensajes.some(m => m.isVoucher);
-
-      // Si hay una orden pendiente y no ha enviado el voucher, simular Yape tras 1.5s
-      if (ordenActiva && this.obtenerEstadoOrden(ordenActiva.id, ordenActiva.estado) === 'Pendiente' && !yaTieneVoucher) {
-        setTimeout(() => {
-          this.simularPagoYape(ordenActiva);
-        }, 1500);
-      }
-    }
-  }
-
-  private simularPagoYape(orden: any) {
-    if (!this.chatSeleccionado) return;
-
-    const now = new Date();
-    const hora = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-    const fechaText = now.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) + ' - ' + hora;
-
-    // Obtener monto real del pedido o S/ 39.00 como fallback
-    const monto = orden.subtotal || 'S/ 39.00';
-
-    // 1. Añadir el Voucher de Yape
-    this.agregarMensajeAlChat('[YAPE_VOUCHER]', 'entrada', true, {
-      monto: monto,
-      fecha: fechaText
+    this.adminChatService.enviarMensaje(chatId, texto).subscribe({
+      next: (creadoDto) => {
+        if (this.chatSeleccionado && this.chatSeleccionado.id === chatId) {
+          const nuevoMsg = this.mapMensajeDtoToMensaje(creadoDto);
+          this.chatSeleccionado.mensajes.push(nuevoMsg);
+          this.chatSeleccionado.ultimoMensaje = texto;
+          this.chatSeleccionado.ultimaVez = nuevoMsg.hora;
+          this.scrollToBottom();
+        }
+      },
+      error: (err) => console.error('Error al enviar mensaje manual:', err)
     });
-
-    // 2. Añadir el texto "Listo 😊" 1 segundo después
-    setTimeout(() => {
-      this.agregarMensajeAlChat('Listo 😊', 'entrada');
-    }, 1000);
   }
 
   generarRespuestaAI() {
@@ -270,7 +250,6 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     this.isGenerating = true;
     this.generatingStatus = 'Analizando contexto...';
 
-    // Pequeño skeleton loader con spinner minimalista
     setTimeout(() => {
       this.generatingStatus = 'Generando respuesta...';
     }, 700);
@@ -278,32 +257,19 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.isGenerating = false;
 
-      const ordenActiva  = this.chatSeleccionado!.historialPedidos[0];
-      const estadoActual = ordenActiva
-        ? this.obtenerEstadoOrden(ordenActiva.id, ordenActiva.estado)
-        : 'Pendiente';
+      // Generar una respuesta estándar según las palabras clave en la conversación
+      const ultimosMensajes = this.chatSeleccionado!.mensajes;
+      const tieneVoucher = ultimosMensajes.some(m => m.isVoucher);
 
-      // ── Respuesta inteligente según estado de conciliación ──────────────────
-      if (estadoActual === 'Validado') {
-        this.chatSeleccionado!.mensajeGenerado =
-          `Pedido confirmado ✅\nTu pedido será preparado y enviado pronto.\nGracias por confiar en Punto y Coma 💖`;
-
-      } else if (estadoActual === 'Rechazado') {
-        this.chatSeleccionado!.mensajeGenerado =
-          `❌ Pago no procede\n\nHemos revisado tu comprobante, pero el pago no ha sido validado.\n\nEsto puede deberse a:\n• Monto incorrecto\n• Comprobante incompleto\n• Pago pendiente de procesarse\n\nPor favor, verifica y envía un nuevo comprobante válido.\n\nSi necesitas ayuda, estoy aquí 😊`;
-
-      } else if (estadoActual === 'En revision') {
+      if (tieneVoucher) {
         this.chatSeleccionado!.mensajeGenerado =
           `Hemos recibido tu comprobante y lo estamos revisando 🔎\nTe notificaremos en breve. ¡Gracias por tu paciencia! 😊`;
-
       } else {
-        // Pendiente: primer mensaje tras recibir el voucher
         this.chatSeleccionado!.mensajeGenerado =
-          `Un momento por favor, validaremos su pago 😊`;
+          `¡Hola! Recibimos tu solicitud. Por favor, confírmanos tu método de pago preferido para continuar con tu pedido 🚚.`;
       }
 
       this.editandoMensajeGenerado = false;
-      this.cartService.saveChats(this.chats, this.chatSeleccionado?.id ?? null); // persistir
       this.scrollToBottom();
     }, 1600);
   }
