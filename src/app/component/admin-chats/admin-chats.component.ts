@@ -44,6 +44,10 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   chatSeleccionado: Chat | null = null;
   filtroActivo: 'Todas' | 'No leídas' | 'Pendientes' = 'Todas';
   tabInfoActiva: 'Información' | 'Historial' = 'Información';
+  private pollingInterval: any = null;
+  mostrarMenuOpciones = false;
+  mostrarPanelEmojis = false;
+  listaEmojis: string[] = ['😊', '👍', '🙌', '🙏', '☕', '📦', '✅', '❌', '🛒', '🛍️', '🧾', '✨', '📝', '📍', '🚗', '📞'];
 
   editandoMensajeGenerado = false;
   mensajeGeneradoTemp = '';
@@ -90,7 +94,10 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // No-op - chats persist in database
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
   }
 
   cargarChatsReales(seleccionarId?: number) {
@@ -170,6 +177,16 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     this.chatSeleccionado = chat;
     chat.noLeidos = 0;
     this.editandoMensajeGenerado = false;
+    this.mostrarMenuOpciones = false;
+    this.mostrarPanelEmojis = false;
+
+    // Configurar polling en segundo plano para refrescar mensajes en tiempo real
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
+    this.pollingInterval = setInterval(() => {
+      this.refrescarMensajesSilencioso();
+    }, 2000);
     
     this.adminChatService.getMensajes(chat.id).subscribe({
       next: (mensajeDtos) => {
@@ -217,6 +234,8 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
           this.chatSeleccionado.ultimoMensaje = texto;
           this.chatSeleccionado.ultimaVez = nuevoMsg.hora;
           this.scrollToBottom();
+          // Forzar refresco silencioso inmediato
+          this.refrescarMensajesSilencioso();
         }
       },
       error: (err) => console.error('Error al enviar mensaje generado:', err)
@@ -238,10 +257,66 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
           this.chatSeleccionado.ultimoMensaje = texto;
           this.chatSeleccionado.ultimaVez = nuevoMsg.hora;
           this.scrollToBottom();
+          // Forzar refresco silencioso inmediato
+          this.refrescarMensajesSilencioso();
         }
       },
       error: (err) => console.error('Error al enviar mensaje manual:', err)
     });
+  }
+
+  insertarEmoji(emoji: string) {
+    if (this.chatSeleccionado) {
+      this.chatSeleccionado.borrador = (this.chatSeleccionado.borrador || '') + emoji;
+    }
+    this.mostrarPanelEmojis = false;
+    // Devolver el foco al input
+    setTimeout(() => {
+      const inputEl = document.querySelector('.input-wrapper input') as HTMLInputElement;
+      if (inputEl) {
+        inputEl.focus();
+      }
+    }, 50);
+  }
+
+  insertarMensajeRapido() {
+    if (this.chatSeleccionado) {
+      this.chatSeleccionado.borrador = (this.chatSeleccionado.borrador || '') + ' ⚡ ¡Hola! Gracias por comunicarte con Punto y Coma. ¿En qué podemos ayudarte hoy?';
+    }
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file && this.chatSeleccionado) {
+      this.chatSeleccionado.borrador = (this.chatSeleccionado.borrador || '') + ` [Archivo: ${file.name}]`;
+    }
+  }
+
+  confirmarEliminarChat(chatId: number) {
+    const confirmar = confirm('¿Estás seguro de que deseas eliminar esta conversación?');
+    if (confirmar) {
+      this.adminChatService.deleteChat(chatId).subscribe({
+        next: () => {
+          // Remover el chat de la lista local
+          this.chats = this.chats.filter(c => c.id !== chatId);
+          // Seleccionar otro chat si hay disponibles, o setear a null
+          if (this.chats.length > 0) {
+            this.seleccionarChat(this.chats[0]);
+          } else {
+            this.chatSeleccionado = null;
+          }
+        },
+        error: (err) => {
+          console.error('Error al eliminar chat:', err);
+          alert('Hubo un error al eliminar el chat de la base de datos.');
+        }
+      });
+    }
+  }
+
+  anclarChatPrueba() {
+    alert('¡Conversación anclada con éxito! (Simulación)');
+    this.mostrarMenuOpciones = false;
   }
 
   generarRespuestaAI() {
@@ -281,5 +356,54 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
         container.scrollTop = container.scrollHeight;
       }
     }, 80);
+  }
+
+  refrescarMensajesSilencioso() {
+    if (!this.chatSeleccionado) return;
+    const chatId = this.chatSeleccionado.id;
+    
+    this.adminChatService.getMensajes(chatId).subscribe({
+      next: (mensajeDtos) => {
+        if (this.chatSeleccionado && this.chatSeleccionado.id === chatId) {
+          const nuevosMensajes = mensajeDtos.map(dto => this.mapMensajeDtoToMensaje(dto));
+          const cantActual = this.chatSeleccionado.mensajes.length;
+          const cantNueva = nuevosMensajes.length;
+          
+          if (cantActual !== cantNueva || (cantNueva > 0 && this.chatSeleccionado.mensajes[cantActual - 1].texto !== nuevosMensajes[cantNueva - 1].texto)) {
+            this.chatSeleccionado.mensajes = nuevosMensajes;
+            this.scrollToBottom();
+            this.actualizarEstadosAsistente(this.chatSeleccionado);
+            this.cargarChatsListaSilencioso();
+          }
+        }
+      },
+      error: (err) => console.error('Error en refresco silencioso:', err)
+    });
+  }
+
+  cargarChatsListaSilencioso() {
+    this.adminChatService.getChats().subscribe({
+      next: (dtos) => {
+        const nuevosChats = dtos.map(dto => this.mapChatDtoToChat(dto));
+        
+        // Preservar borradores y estados locales de cada chat para evitar sobrescribir
+        nuevosChats.forEach(nuevo => {
+          const actual = this.chats.find(c => c.id === nuevo.id);
+          if (actual) {
+            nuevo.borrador = actual.borrador;
+            nuevo.mensajeGenerado = actual.mensajeGenerado;
+            nuevo.estado = actual.estado;
+            
+            if (this.chatSeleccionado && this.chatSeleccionado.id === nuevo.id) {
+              nuevo.mensajes = this.chatSeleccionado.mensajes;
+              this.chatSeleccionado = nuevo;
+            }
+          }
+        });
+        
+        this.chats = nuevosChats;
+      },
+      error: (err) => console.error('Error al recargar lista silenciosa:', err)
+    });
   }
 }

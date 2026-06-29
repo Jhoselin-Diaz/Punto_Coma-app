@@ -60,7 +60,19 @@
           <h4>{{ chatSeleccionado.nombre }} <span class="tag-cliente">Cliente</span></h4>
           <span>{{ chatSeleccionado.telefono }}</span>
         </div>
-        <button class="btn-options">⋮</button>
+        <div class="chat-actions" style="position: relative; display: flex; align-items: center;">
+          <button class="btn-options" (click)="mostrarMenuOpciones = !mostrarMenuOpciones" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #5d6b78; padding: 4px 8px; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='none'">⋮</button>
+          
+          <!-- Dropdown Menú Flotante -->
+          <div class="options-dropdown" *ngIf="mostrarMenuOpciones" style="position: absolute; right: 0; top: 100%; margin-top: 6px; background: #ffffff; border: 1px solid #e1e8ed; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 180px; z-index: 100; overflow: hidden; padding: 4px 0;">
+            <button (click)="anclarChatPrueba()" style="width: 100%; border: none; background: none; text-align: left; padding: 10px 16px; font-size: 13.5px; color: #1f1c1a; cursor: pointer; display: flex; gap: 8px; align-items: center;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='none'">
+              <span>📌</span> Anclar chat
+            </button>
+            <button (click)="confirmarEliminarChat(chatSeleccionado.id); mostrarMenuOpciones = false" style="width: 100%; border: none; background: none; text-align: left; padding: 10px 16px; font-size: 13.5px; color: #dc3545; cursor: pointer; display: flex; gap: 8px; align-items: center; border-top: 1px solid #f1f3f5;" onmouseover="this.style.background='#fff0f1'" onmouseout="this.style.background='none'">
+              <span>🗑️</span> Eliminar conversación
+            </button>
+          </div>
+        </div>
       </header>
 
       <div class="chat-messages">
@@ -115,9 +127,21 @@
 
       <div class="chat-input-area">
         <div class="input-wrapper">
-          <button class="btn-icon">😊</button>
-          <button class="btn-icon">📎</button>
-          <button class="btn-icon">⚡</button>
+          <div style="position: relative; display: flex; align-items: center;">
+            <button type="button" class="btn-icon" (click)="mostrarPanelEmojis = !mostrarPanelEmojis">😊</button>
+            
+            <!-- Panel Flotante de Emojis -->
+            <div class="emoji-picker-panel" *ngIf="mostrarPanelEmojis" style="position: absolute; bottom: 100%; left: 0; margin-bottom: 12px; background: #ffffff; border: 1px solid #e1e8ed; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); width: 220px; padding: 10px; z-index: 100;">
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center;">
+                <button type="button" *ngFor="let emoji of listaEmojis" (click)="insertarEmoji(emoji)" style="background: none; border: none; font-size: 20px; padding: 6px; cursor: pointer; border-radius: 6px; transition: background 0.1s;" onmouseover="this.style.background='#f0f2f5'" onmouseout="this.style.background='none'">
+                  {{ emoji }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-icon" (click)="fileInput.click()">📎</button>
+          <input type="file" #fileInput style="display:none" (change)="onFileSelected($event)" />
+          <button type="button" class="btn-icon" (click)="insertarMensajeRapido()">⚡</button>
           <input type="text" [value]="chatSeleccionado.borrador || ''" (input)="chatSeleccionado.borrador = $any($event.target).value" (keyup.enter)="enviarMensajeManual()" placeholder="Escribe un mensaje..." />
           <button class="btn-send" (click)="enviarMensajeManual()">Enviar</button>
           <button class="btn-send-options">⌄</button>

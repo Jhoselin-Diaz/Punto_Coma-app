@@ -40,4 +40,8 @@ export class AdminChatService {
   enviarMensaje(chatId: number, texto: string): Observable<MensajeDTO> {
     return this.http.post<MensajeDTO>(`${this.baseUrl}/${chatId}/enviar`, { mensaje: texto });
   }
+
+  deleteChat(chatId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${chatId}`);
+  }
 }
