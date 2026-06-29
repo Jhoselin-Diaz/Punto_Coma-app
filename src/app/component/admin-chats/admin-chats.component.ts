@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AdminLayoutComponent } from '../admin-layout/admin-layout.component';
 import { CartService } from '../../service/cart.service';
 import { AdminChatService, ChatDTO, MensajeDTO } from '../../service/admin-chat.service';
+import { AdminPedidoService } from '../../service/admin-pedido.service';
 
 interface Mensaje {
   texto: string;
@@ -10,6 +11,8 @@ interface Mensaje {
   hora: string;
   leido?: boolean;
   isVoucher?: boolean;
+  isImage?: boolean;
+  imageUrl?: string;
   voucherData?: {
     monto: string;
     fecha: string;
@@ -31,6 +34,13 @@ interface Chat {
   mensajeGenerado?: string;
   estado?: 'Normal' | 'En revision';
   ultimoMensaje?: string;
+  prioridad?: string;
+  sugerenciaIa?: string;
+  pedidoReferenciadoId?: number;
+  pedidoIdentificado?: boolean;
+  direccionDetectada?: boolean;
+  datosCompletos?: boolean;
+  fasePedido?: string;
 }
 
 @Component({
@@ -45,6 +55,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   filtroActivo: 'Todas' | 'No leídas' | 'Pendientes' = 'Todas';
   tabInfoActiva: 'Información' | 'Historial' = 'Información';
   private pollingInterval: any = null;
+  private generalPollingInterval: any = null;
   mostrarMenuOpciones = false;
   mostrarPanelEmojis = false;
   listaEmojis: string[] = ['😊', '👍', '🙌', '🙏', '☕', '📦', '✅', '❌', '🛒', '🛍️', '🧾', '✨', '📝', '📍', '🚗', '📞'];
@@ -67,36 +78,55 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
 
   constructor(
     private cartService: CartService,
-    private adminChatService: AdminChatService
+    private adminChatService: AdminChatService,
+    private adminPedidoService: AdminPedidoService
   ) { }
 
   get chatsOrdenados(): Chat[] {
     return [...this.chats].sort((a, b) => {
-      const aRevision = a.estado === 'En revision';
-      const bRevision = b.estado === 'En revision';
-      if (aRevision && !bRevision) return -1;
-      if (!aRevision && bRevision) return 1;
-      return 0;
+      const pesoPrioridad = (p?: string) => {
+        if (p === 'ALTA') return 1;
+        if (p === 'INTERMEDIA') return 2;
+        if (p === 'BAJA') return 3;
+        return 4;
+      };
+
+      const pesoA = pesoPrioridad(a.prioridad);
+      const pesoB = pesoPrioridad(b.prioridad);
+
+      if (pesoA !== pesoB) {
+        return pesoA - pesoB;
+      }
+
+      return b.id - a.id;
     });
   }
 
   actualizarEstadosAsistente(chat: Chat) {
     if (!chat) return;
-    const tieneVoucher = chat.mensajes.some(m => m.isVoucher);
-    this.aiStatus.pedidoIdentificado = chat.mensajes.length > 0;
-    this.aiStatus.direccionDetectada = chat.mensajes.some(m => m.texto.includes('📍') || m.texto.includes('Dirección'));
-    this.aiStatus.datosCompletos = tieneVoucher;
-    this.aiStatus.contextoAnalizado = chat.mensajes.length > 0;
+    this.aiStatus.pedidoIdentificado = !!chat.pedidoIdentificado;
+    this.aiStatus.direccionDetectada = !!chat.direccionDetectada;
+    this.aiStatus.datosCompletos = !!chat.datosCompletos;
+    this.aiStatus.contextoAnalizado = !!chat.prioridad || !!chat.fasePedido;
   }
 
   ngOnInit() {
     this.cargarChatsReales();
+
+    // Iniciar polling silencioso de la lista general cada 2 segundos
+    this.generalPollingInterval = setInterval(() => {
+      this.cargarChatsListaSilencioso();
+    }, 2000);
   }
 
   ngOnDestroy() {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
+    }
+    if (this.generalPollingInterval) {
+      clearInterval(this.generalPollingInterval);
+      this.generalPollingInterval = null;
     }
   }
 
@@ -135,9 +165,16 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
       totalPedidos: 0,
       historialPedidos: [],
       borrador: '',
-      mensajeGenerado: '',
+      mensajeGenerado: dto.sugerenciaIa || '',
       estado: 'Normal',
-      ultimoMensaje: dto.ultimoMensaje
+      ultimoMensaje: dto.ultimoMensaje,
+      prioridad: dto.prioridad,
+      sugerenciaIa: dto.sugerenciaIa,
+      pedidoReferenciadoId: dto.pedidoReferenciadoId,
+      pedidoIdentificado: dto.pedidoIdentificado,
+      direccionDetectada: dto.direccionDetectada,
+      datosCompletos: dto.datosCompletos,
+      fasePedido: dto.fasePedido
     };
   }
 
@@ -152,13 +189,36 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
       };
     }
 
+    const rawContenido = dto.contenido;
+    let isImage = false;
+    let imageUrl = '';
+    let textoMostrar = rawContenido;
+
+    if (rawContenido.startsWith('data:image/') || rawContenido.startsWith('[VOUCHER]')) {
+      isImage = true;
+      let cleanContent = rawContenido;
+      if (rawContenido.startsWith('[VOUCHER]')) {
+        cleanContent = rawContenido.substring('[VOUCHER]'.length).trim();
+      }
+
+      const parts = cleanContent.split('|');
+      imageUrl = parts[0].trim();
+      if (parts.length > 1) {
+        textoMostrar = parts[1].trim();
+      } else {
+        textoMostrar = '';
+      }
+    }
+
     return {
-      texto: isVoucher ? '[YAPE_VOUCHER]' : dto.contenido,
+      texto: isVoucher ? '[YAPE_VOUCHER]' : (isImage ? textoMostrar : dto.contenido),
       tipo: dto.remitente === 'CLIENTE' ? 'entrada' : 'salida',
       hora: this.formatFecha(dto.fechaEnvio),
       leido: true,
       isVoucher,
-      voucherData
+      voucherData,
+      isImage,
+      imageUrl
     };
   }
 
@@ -187,7 +247,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     this.pollingInterval = setInterval(() => {
       this.refrescarMensajesSilencioso();
     }, 2000);
-    
+
     this.adminChatService.getMensajes(chat.id).subscribe({
       next: (mensajeDtos) => {
         chat.mensajes = mensajeDtos.map(dto => this.mapMensajeDtoToMensaje(dto));
@@ -195,6 +255,20 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
         this.actualizarEstadosAsistente(chat);
       },
       error: (err) => console.error('Error al cargar mensajes del chat:', err)
+    });
+
+    // Cargar historial de pedidos reales de este cliente desde Supabase
+    this.adminPedidoService.getPedidosDeCliente(chat.telefono).subscribe({
+      next: (pedidos) => {
+        chat.historialPedidos = pedidos.map(p => ({
+          id: p.id,
+          fecha: p.fecha + ', ' + p.hora,
+          subtotal: p.total,
+          estado: p.estado
+        }));
+        chat.totalPedidos = pedidos.length;
+      },
+      error: (err) => console.error('Error al cargar historial de pedidos del cliente:', err)
     });
   }
 
@@ -221,25 +295,10 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   enviarMensajeGenerado() {
     if (!this.chatSeleccionado || !this.chatSeleccionado.mensajeGenerado) return;
 
-    const texto = this.chatSeleccionado.mensajeGenerado;
-    const chatId = this.chatSeleccionado.id;
-    this.chatSeleccionado.mensajeGenerado = ''; 
+    // Cargar el mensaje en el input-area/borrador para revisión y envío
+    this.chatSeleccionado.borrador = this.chatSeleccionado.mensajeGenerado;
+    this.chatSeleccionado.mensajeGenerado = '';
     this.editandoMensajeGenerado = false;
-
-    this.adminChatService.enviarMensaje(chatId, texto).subscribe({
-      next: (creadoDto) => {
-        if (this.chatSeleccionado && this.chatSeleccionado.id === chatId) {
-          const nuevoMsg = this.mapMensajeDtoToMensaje(creadoDto);
-          this.chatSeleccionado.mensajes.push(nuevoMsg);
-          this.chatSeleccionado.ultimoMensaje = texto;
-          this.chatSeleccionado.ultimaVez = nuevoMsg.hora;
-          this.scrollToBottom();
-          // Forzar refresco silencioso inmediato
-          this.refrescarMensajesSilencioso();
-        }
-      },
-      error: (err) => console.error('Error al enviar mensaje generado:', err)
-    });
   }
 
   enviarMensajeManual() {
@@ -247,7 +306,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
 
     const texto = this.chatSeleccionado.borrador;
     const chatId = this.chatSeleccionado.id;
-    this.chatSeleccionado.borrador = ''; 
+    this.chatSeleccionado.borrador = '';
 
     this.adminChatService.enviarMensaje(chatId, texto).subscribe({
       next: (creadoDto) => {
@@ -257,7 +316,6 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
           this.chatSeleccionado.ultimoMensaje = texto;
           this.chatSeleccionado.ultimaVez = nuevoMsg.hora;
           this.scrollToBottom();
-          // Forzar refresco silencioso inmediato
           this.refrescarMensajesSilencioso();
         }
       },
@@ -270,7 +328,6 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
       this.chatSeleccionado.borrador = (this.chatSeleccionado.borrador || '') + emoji;
     }
     this.mostrarPanelEmojis = false;
-    // Devolver el foco al input
     setTimeout(() => {
       const inputEl = document.querySelector('.input-wrapper input') as HTMLInputElement;
       if (inputEl) {
@@ -297,9 +354,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     if (confirmar) {
       this.adminChatService.deleteChat(chatId).subscribe({
         next: () => {
-          // Remover el chat de la lista local
           this.chats = this.chats.filter(c => c.id !== chatId);
-          // Seleccionar otro chat si hay disponibles, o setear a null
           if (this.chats.length > 0) {
             this.seleccionarChat(this.chats[0]);
           } else {
@@ -323,30 +378,24 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     if (!this.chatSeleccionado) return;
 
     this.isGenerating = true;
-    this.generatingStatus = 'Analizando contexto...';
+    this.generatingStatus = 'Enviando petición a OpenAI...';
 
-    setTimeout(() => {
-      this.generatingStatus = 'Generando respuesta...';
-    }, 700);
-
-    setTimeout(() => {
-      this.isGenerating = false;
-
-      // Generar una respuesta estándar según las palabras clave en la conversación
-      const ultimosMensajes = this.chatSeleccionado!.mensajes;
-      const tieneVoucher = ultimosMensajes.some(m => m.isVoucher);
-
-      if (tieneVoucher) {
-        this.chatSeleccionado!.mensajeGenerado =
-          `Hemos recibido tu comprobante y lo estamos revisando 🔎\nTe notificaremos en breve. ¡Gracias por tu paciencia! 😊`;
-      } else {
-        this.chatSeleccionado!.mensajeGenerado =
-          `¡Hola! Recibimos tu solicitud. Por favor, confírmanos tu método de pago preferido para continuar con tu pedido 🚚.`;
+    // Gatillar la petición HTTP real hacia el endpoint del backend
+    this.adminChatService.regenerarIa(this.chatSeleccionado.id).subscribe({
+      next: () => {
+        this.generatingStatus = 'Procesando respuesta en OpenAI...';
+        setTimeout(() => {
+          this.isGenerating = false;
+          this.refrescarMensajesSilencioso();
+          this.cargarChatsListaSilencioso();
+        }, 2000);
+      },
+      error: (err) => {
+        console.error('Error al forzar regeneración de respuesta:', err);
+        this.isGenerating = false;
+        alert('Hubo un error al comunicarse con la IA del backend.');
       }
-
-      this.editandoMensajeGenerado = false;
-      this.scrollToBottom();
-    }, 1600);
+    });
   }
 
   scrollToBottom() {
@@ -361,19 +410,35 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   refrescarMensajesSilencioso() {
     if (!this.chatSeleccionado) return;
     const chatId = this.chatSeleccionado.id;
-    
+    const telefono = this.chatSeleccionado.telefono;
+
     this.adminChatService.getMensajes(chatId).subscribe({
       next: (mensajeDtos) => {
         if (this.chatSeleccionado && this.chatSeleccionado.id === chatId) {
           const nuevosMensajes = mensajeDtos.map(dto => this.mapMensajeDtoToMensaje(dto));
           const cantActual = this.chatSeleccionado.mensajes.length;
           const cantNueva = nuevosMensajes.length;
-          
+
           if (cantActual !== cantNueva || (cantNueva > 0 && this.chatSeleccionado.mensajes[cantActual - 1].texto !== nuevosMensajes[cantNueva - 1].texto)) {
             this.chatSeleccionado.mensajes = nuevosMensajes;
             this.scrollToBottom();
             this.actualizarEstadosAsistente(this.chatSeleccionado);
             this.cargarChatsListaSilencioso();
+
+            // Refrescar el historial de pedidos del cliente silenciosamente al recibir nuevos mensajes
+            this.adminPedidoService.getPedidosDeCliente(telefono).subscribe({
+              next: (pedidos) => {
+                if (this.chatSeleccionado && this.chatSeleccionado.id === chatId) {
+                  this.chatSeleccionado.historialPedidos = pedidos.map(p => ({
+                    id: p.id,
+                    fecha: p.fecha + ', ' + p.hora,
+                    subtotal: p.total,
+                    estado: p.estado
+                  }));
+                  this.chatSeleccionado.totalPedidos = pedidos.length;
+                }
+              }
+            });
           }
         }
       },
@@ -385,25 +450,42 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     this.adminChatService.getChats().subscribe({
       next: (dtos) => {
         const nuevosChats = dtos.map(dto => this.mapChatDtoToChat(dto));
-        
-        // Preservar borradores y estados locales de cada chat para evitar sobrescribir
+
         nuevosChats.forEach(nuevo => {
           const actual = this.chats.find(c => c.id === nuevo.id);
           if (actual) {
             nuevo.borrador = actual.borrador;
-            nuevo.mensajeGenerado = actual.mensajeGenerado;
+            if (this.editandoMensajeGenerado && this.chatSeleccionado && this.chatSeleccionado.id === nuevo.id) {
+              nuevo.mensajeGenerado = actual.mensajeGenerado;
+            }
             nuevo.estado = actual.estado;
-            
+
             if (this.chatSeleccionado && this.chatSeleccionado.id === nuevo.id) {
               nuevo.mensajes = this.chatSeleccionado.mensajes;
-              this.chatSeleccionado = nuevo;
+
+              if (!this.editandoMensajeGenerado && actual.mensajeGenerado !== nuevo.mensajeGenerado) {
+                this.chatSeleccionado.mensajeGenerado = nuevo.mensajeGenerado;
+              }
+
+              this.chatSeleccionado.prioridad = nuevo.prioridad;
+              this.chatSeleccionado.sugerenciaIa = nuevo.sugerenciaIa;
+              this.chatSeleccionado.pedidoReferenciadoId = nuevo.pedidoReferenciadoId;
+              this.chatSeleccionado.pedidoIdentificado = nuevo.pedidoIdentificado;
+              this.chatSeleccionado.direccionDetectada = nuevo.direccionDetectada;
+              this.chatSeleccionado.datosCompletos = nuevo.datosCompletos;
+              this.chatSeleccionado.fasePedido = nuevo.fasePedido;
+              this.chatSeleccionado.ultimoMensaje = nuevo.ultimoMensaje;
+              this.chatSeleccionado.ultimaVez = nuevo.ultimaVez;
+              this.chatSeleccionado.noLeidos = nuevo.noLeidos;
+
+              this.actualizarEstadosAsistente(this.chatSeleccionado);
             }
           }
         });
-        
+
         this.chats = nuevosChats;
       },
-      error: (err) => console.error('Error al recargar lista silenciosa:', err)
+      error: (err) => console.error('Error al cargar chats lista silencioso:', err)
     });
   }
 }

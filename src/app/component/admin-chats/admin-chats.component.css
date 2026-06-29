@@ -727,3 +727,12 @@
   scroll-behavior: smooth;
 }
 
+/* Styling for base64 / URL voucher image inside chat bubbles */
+.chat-voucher-img {
+  max-width: 250px;
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+

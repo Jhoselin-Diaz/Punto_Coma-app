@@ -19,6 +19,13 @@ export interface ChatDTO {
   ultimoMensaje: string;
   fechaUltimaActualizacion: string; // LocalDateTime ISO format
   unreadCount: number;
+  prioridad?: string;
+  sugerenciaIa?: string;
+  pedidoReferenciadoId?: number;
+  pedidoIdentificado?: boolean;
+  direccionDetectada?: boolean;
+  datosCompletos?: boolean;
+  fasePedido?: string;
 }
 
 @Injectable({
@@ -43,5 +50,9 @@ export class AdminChatService {
 
   deleteChat(chatId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${chatId}`);
+  }
+
+  regenerarIa(chatId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${chatId}/regenerar-ia`, {});
   }
 }
