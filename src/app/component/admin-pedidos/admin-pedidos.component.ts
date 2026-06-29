@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminLayoutComponent } from '../admin-layout/admin-layout.component';
 import { CartService } from '../../service/cart.service';
+import { AdminPedidoService } from '../../service/admin-pedido.service';
 
 interface PedidoAdmin {
   id: string;
@@ -15,11 +16,17 @@ interface PedidoAdmin {
   total: string;
   telefono?: string;
   direccion?: string;
+  direccionEnvio?: string;
+  direccionEntrega?: string;
   montoDetectado?: string;
+  montoOcr?: string;
   diferencia?: string;
   productosDetalle?: { nombre: string, cantidad: number, precio: number }[];
   metodoPago?: string;
   referenciaPago?: string;
+  voucherUrl?: string;
+  dbId?: number;
+  fechaPago?: string;
 }
 
 interface LineaNuevoPedido {
@@ -44,47 +51,124 @@ interface ClienteConocido {
   templateUrl: './admin-pedidos.component.html',
   styleUrl: './admin-pedidos.component.css'
 })
-export class AdminPedidosComponent implements OnInit {
-  constructor(public cartService: CartService) {}
+export class AdminPedidosComponent implements OnInit, OnDestroy {
+  private pollingInterval: any = null;
+
+  constructor(
+    public cartService: CartService,
+    private adminPedidoService: AdminPedidoService
+  ) {}
 
   ngOnInit() {
-    // Sincronizar estados de pedidos desde el servicio global
-    this.pedidos.forEach(p => {
-      p.estado = this.cartService.getOrderStatus(p.id, p.estado);
-    });
+    this.cargarPedidosReal();
 
-    // Cargar pedidos dinámicos desde el servicio de forma reactiva
-    const pedidosGlobales = this.cartService.getAllOrders();
-    pedidosGlobales.forEach(po => {
-      const existe = this.pedidos.some(p => p.id === po.id);
-      if (!existe) {
-        const nuevoPed: PedidoAdmin = {
-          id: po.id,
-          cliente: 'Juan Pérez',
-          telefono: '+51 987 111 222',
-          direccion: 'Av. Primavera 123, Surco',
-          producto: po.productos.map(p => `${p.nombre} x${p.cantidad}`).join(', '),
-          estado: this.cartService.getOrderStatus(po.id, 'Pendiente'),
-          validacion: 'Esperando validación',
-          fecha: po.fecha.split(', ')[0] || 'Hoy',
-          hora: po.fecha.split(', ')[1] || 'Justo ahora',
-          total: 'S/ ' + po.total.toFixed(2),
-          productosDetalle: po.productos.map(p => ({ nombre: p.nombre, cantidad: p.cantidad, precio: po.total / po.productos.reduce((acc, curr) => acc + curr.cantidad, 0) })),
-          metodoPago: 'Yape',
-          referenciaPago: 'Yape - ****' + po.id.slice(-4)
-        };
-        this.pedidos.unshift(nuevoPed);
-      }
+    // Polling reactivo cada 2 segundos para sincronizar base de datos Supabase
+    this.pollingInterval = setInterval(() => {
+      this.cargarPedidosReal();
+    }, 2000);
+  }
+
+  ngOnDestroy() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
+  }
+
+  cargarPedidosReal() {
+    this.adminPedidoService.getPedidos().subscribe({
+      next: (data) => {
+        const dbPedidos: PedidoAdmin[] = data.map(p => ({
+          id: p.id,
+          cliente: p.cliente,
+          telefono: p.telefono,
+          direccion: p.direccion,
+          direccionEnvio: p.direccionEnvio,
+          direccionEntrega: p.direccionEntrega,
+          producto: p.producto,
+          estado: p.estado,
+          validacion: p.validacion,
+          fecha: p.fecha,
+          hora: p.hora,
+          total: p.total,
+          productosDetalle: p.productosDetalle,
+          metodoPago: p.metodoPago,
+          referenciaPago: p.referenciaPago,
+          montoDetectado: p.montoDetectado || p.montoOcr || p.monto_detectado || p.monto_ocr,
+          montoOcr: p.montoOcr || p.montoDetectado || p.monto_ocr || p.monto_detectado,
+          diferencia: p.diferencia,
+          voucherUrl: p.voucherUrl,
+          dbId: p.dbId,
+          fechaPago: p.fechaPago || p.fecha_pago
+        }));
+
+        // Sincronizar estados locales y pedidos de checkout local que aún no se hayan subido
+        const manualOrders = this.pedidos.filter(p => p.id.startsWith('#ORD-') && !p.id.startsWith('WSP-'));
+        const merged = [...dbPedidos];
+
+        manualOrders.forEach(m => {
+          if (!merged.some(d => d.id === m.id)) {
+            merged.push(m);
+          }
+        });
+
+        // Ordenar cronológicamente (los nuevos arriba)
+        this.pedidos = merged;
+      },
+      error: (err) => console.error('Error al cargar pedidos del backend:', err)
     });
   }
 
+  eliminarPedido(id: string, dbId?: number) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este pedido?')) return;
+
+    const targetId = dbId ? dbId : (isNaN(Number(id.replace(/[^\d]/g, ''))) ? null : Number(id.replace(/[^\d]/g, '')));
+
+    if (targetId) {
+      this.adminPedidoService.deletePedido(targetId).subscribe({
+        next: () => {
+          this.pedidos = this.pedidos.filter(p => p.id !== id);
+          this.mostrarToast('✓ Pedido eliminado de Supabase.');
+        },
+        error: (err) => {
+          console.error('Error al eliminar pedido:', err);
+          alert('Hubo un error al eliminar el pedido del servidor.');
+        }
+      });
+    } else {
+      this.pedidos = this.pedidos.filter(p => p.id !== id);
+      this.mostrarToast('✓ Pedido manual eliminado.');
+    }
+  }
+
+  calcularCantidadTotal(pedido: PedidoAdmin): number {
+    if (!pedido.productosDetalle || pedido.productosDetalle.length === 0) return 1;
+    return pedido.productosDetalle.reduce((acc, curr) => acc + curr.cantidad, 0);
+  }
+
   validarPagoPedido(pedido: PedidoAdmin) {
-    pedido.estado = 'Validado';
-    pedido.validacion = 'Pago verificado (Manual)';
-    
-    // Sincronizar en el servicio global
-    this.cartService.setOrderStatus(pedido.id, 'Validado');
-    this.mostrarToast(`✓ Pago del pedido ${pedido.id} validado correctamente.`);
+    if (pedido.dbId) {
+      const data = {
+        estado: 'Validado',
+        validacion: 'Pago verificado (Manual)'
+      };
+      this.adminPedidoService.updatePedido(pedido.dbId, data).subscribe({
+        next: () => {
+          pedido.estado = 'Validado';
+          pedido.validacion = 'Pago verificado (Manual)';
+          this.cartService.setOrderStatus(pedido.id, 'Validado');
+          this.mostrarToast(`✓ Pago del pedido ${pedido.id} validado correctamente.`);
+        },
+        error: (err) => {
+          console.error('Error al validar el pago:', err);
+          alert('Hubo un error al validar el pago en el servidor.');
+        }
+      });
+    } else {
+      pedido.estado = 'Validado';
+      pedido.validacion = 'Pago verificado (Manual)';
+      this.cartService.setOrderStatus(pedido.id, 'Validado');
+      this.mostrarToast(`✓ Pago del pedido ${pedido.id} validado localmente.`);
+    }
   }
 
   // ─── ESTADO GENERAL ──────────────────────────────────────────────
@@ -136,7 +220,6 @@ export class AdminPedidosComponent implements OnInit {
   }
 
   private parseFechaPedido(fechaStr: string): Date | null {
-    // Soporta '12 May 2025', '19 May 2026', etc.
     const meses: Record<string, number> = {
       ene:0, jan:0, feb:1, mar:2, abr:3, apr:3, may:4,
       jun:5, jul:6, ago:7, aug:7, sep:8, oct:9, nov:10, dic:11, dec:11
@@ -187,16 +270,13 @@ export class AdminPedidosComponent implements OnInit {
   toastMensaje = '';
 
   nuevoPedido = {
-    // Sección 1: Cliente
     clienteNombre: '',
     clienteTelefono: '',
     clienteCorreo: '',
     clienteDireccion: '',
-    // Sección 3: Pago
     metodoPago: 'Yape',
     estadoPago: 'Pendiente',
     referenciaPago: '',
-    // Sección 4: Operativo
     estadoPedido: 'Pendiente' as 'Validado' | 'Pendiente' | 'En revision' | 'Rechazado',
     notas: '',
     observaciones: ''
@@ -206,7 +286,6 @@ export class AdminPedidosComponent implements OnInit {
     { productoId: '', nombre: '', precio: 0, cantidad: 1, subtotal: 0 }
   ];
 
-  // ─── CATÁLOGO SIMULADO PARA EL DROPDOWN ───────────────────────────
   productosDisponibles = [
     { id: 'taza-ceramica-jaspeada', nombre: 'Taza de cerámica jaspeada', precio: 39 },
     { id: 'taza-vidrio-verde',      nombre: 'Taza de vidrio verde',       precio: 45 },
@@ -218,7 +297,6 @@ export class AdminPedidosComponent implements OnInit {
     { id: 'set-tazas-pastel',       nombre: 'Set de tazas pastel (3 uds.)',precio: 79 }
   ];
 
-  // ─── CLIENTES CONOCIDOS (AUTOCOMPLETAR) ───────────────────────────
   clientesConocidos: ClienteConocido[] = [
     { telefono: '+51 987 654 321', nombre: 'Maria Lopez',   correo: 'maria@gmail.com', direccion: 'Av. Primavera 123, Surco' },
     { telefono: '+51 912 345 678', nombre: 'Ana Torres',    correo: 'ana@gmail.com',   direccion: 'Jr. Lima 456, Miraflores' },
@@ -227,12 +305,10 @@ export class AdminPedidosComponent implements OnInit {
     { telefono: '+51 945 678 901', nombre: 'Carlos Nuñez',  correo: '',                direccion: '' }
   ];
 
-  // ─── PEDIDOS ──────────────────────────────────────────────────────
   pedidos: PedidoAdmin[] = [];
 
   private ordenCounter = 6;
 
-  // ─── MODAL NUEVO PEDIDO ───────────────────────────────────────────
   abrirModalNuevo() {
     this.nuevoPedido = { clienteNombre: '', clienteTelefono: '', clienteCorreo: '', clienteDireccion: '', metodoPago: 'Yape', estadoPago: 'Pendiente', referenciaPago: '', estadoPedido: 'Pendiente', notas: '', observaciones: '' };
     this.lineasProducto = [{ productoId: '', nombre: '', precio: 0, cantidad: 1, subtotal: 0 }];
@@ -308,7 +384,7 @@ export class AdminPedidosComponent implements OnInit {
       telefono: this.nuevoPedido.clienteTelefono,
       direccion: this.nuevoPedido.clienteDireccion,
       producto: primerNombre + extra,
-      estado: 'Pendiente',   // siempre Pendiente hasta validar pago
+      estado: 'Pendiente',
       validacion: 'Pedido manual',
       fecha,
       hora,
@@ -327,8 +403,11 @@ export class AdminPedidosComponent implements OnInit {
     setTimeout(() => this.toastVisible = false, 3500);
   }
 
-  // ─── DETALLE EXISTENTE ────────────────────────────────────────────
-  verDetalle(pedido: PedidoAdmin) { this.pedidoSeleccionado = pedido; this.accionSeleccionada = null; }
+  verDetalle(pedido: PedidoAdmin) {
+    this.pedidoSeleccionado = pedido;
+    console.log("Pedido seleccionado en TS:", this.pedidoSeleccionado);
+    this.accionSeleccionada = null;
+  }
   cerrarDetalle()                 { this.pedidoSeleccionado = null;   this.accionSeleccionada = null; }
 
   seleccionarAccion(accion: string) {
@@ -354,7 +433,56 @@ export class AdminPedidosComponent implements OnInit {
     }
   }
 
-  guardarDecision() { this.cerrarDetalle(); }
+  guardarDecision() {
+    if (this.pedidoSeleccionado && this.pedidoSeleccionado.dbId) {
+      const data = {
+        estado: this.pedidoSeleccionado.estado,
+        validacion: this.accionSeleccionada === 'Solicitar monto faltante' ? 'Solicitado saldo faltante al cliente' : (this.pedidoSeleccionado.estado === 'Validado' ? 'Pago verificado (Manual)' : this.pedidoSeleccionado.validacion),
+        montoDetectado: this.pedidoSeleccionado.montoDetectado ? parseFloat(this.pedidoSeleccionado.montoDetectado.replace(/[^\d.-]/g, '')) : null,
+        metodoPago: this.pedidoSeleccionado.metodoPago,
+        referenciaPago: this.pedidoSeleccionado.referenciaPago
+      };
+
+      this.adminPedidoService.updatePedido(this.pedidoSeleccionado.dbId, data).subscribe({
+        next: () => {
+          this.mostrarToast(`✓ Decisión guardada correctamente para el pedido ${this.pedidoSeleccionado?.id}.`);
+          
+          if (this.accionSeleccionada === 'Solicitar monto faltante') {
+            this.mostrarToast(`⚡ Generando mensaje sugerido para saldo faltante...`);
+            this.adminPedidoService.solicitarMontoFaltante(this.pedidoSeleccionado!.dbId!).subscribe({
+              next: () => {
+                this.mostrarToast(`✓ Mensaje sugerido generado con éxito en el chat.`);
+                this.cargarPedidosReal();
+                this.cerrarDetalle();
+              },
+              error: (err) => {
+                console.error('Error generando mensaje de saldo faltante:', err);
+                this.cargarPedidosReal();
+                this.cerrarDetalle();
+              }
+            });
+          } else {
+            this.cargarPedidosReal();
+            this.cerrarDetalle();
+          }
+        },
+        error: (err) => {
+          console.error('Error al guardar la decisión del pedido:', err);
+          alert('Hubo un error al guardar la decisión en el servidor.');
+        }
+      });
+    } else {
+      this.cerrarDetalle();
+    }
+  }
+
+  verComprobanteCompleto() {
+    if (this.pedidoSeleccionado?.voucherUrl) {
+      window.open(this.pedidoSeleccionado.voucherUrl, '_blank');
+    } else {
+      alert('No hay un comprobante registrado para este pedido.');
+    }
+  }
 
   abrirModalEditar() {
     this.mostrarModalEditar = true;
@@ -376,7 +504,6 @@ export class AdminPedidosComponent implements OnInit {
   }
 
   onEditarProductoCambio() {
-    // Al modificar productos, el pedido vuelve a Pendiente para nueva validación
     if (this.pedidoSeleccionado) {
       this.pedidoSeleccionado.estado = 'Pendiente';
     }
@@ -393,14 +520,12 @@ export class AdminPedidosComponent implements OnInit {
       this.pedidoSeleccionado.telefono  = this.pedidoEditando.telefono;
       this.pedidoSeleccionado.direccion = this.pedidoEditando.direccion;
       this.pedidoSeleccionado.productosDetalle = this.pedidoEditando.productosDetalle;
-      // Recalcular total y nombre del producto
       const total = this.calcularTotalEdicion();
       this.pedidoSeleccionado.total = 'S/ ' + total.toFixed(2);
       if (this.pedidoEditando.productosDetalle.length > 0) {
         const extra = this.pedidoEditando.productosDetalle.length > 1 ? ` (+${this.pedidoEditando.productosDetalle.length - 1})` : '';
         this.pedidoSeleccionado.producto = this.pedidoEditando.productosDetalle[0].nombre + extra;
       }
-      // Al editar productos el estado siempre vuelve a Pendiente
       this.pedidoSeleccionado.estado = 'Pendiente';
       this.pedidoSeleccionado.validacion = 'Pendiente de revisión';
     }

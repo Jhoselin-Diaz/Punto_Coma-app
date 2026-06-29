@@ -21,20 +21,38 @@
 
       <div class="chat-list">
         @for (chat of chatsOrdenados; track chat.id) {
-          <div class="chat-item" [class.active]="chatSeleccionado?.id === chat.id" [class.en-revision]="chat.estado === 'En revision'" (click)="seleccionarChat(chat)">
+          <div class="chat-item" 
+               [class.active]="chatSeleccionado?.id === chat.id" 
+               [class.en-revision]="chat.estado === 'En revision'"
+               [style.border-left]="chat.prioridad === 'ALTA' ? '5px solid #ff4d4f' : (chat.prioridad === 'INTERMEDIA' ? '5px solid #ffa940' : '5px solid transparent')"
+               [style.background-color]="chat.prioridad === 'ALTA' ? '#fff1f0' : (chat.prioridad === 'INTERMEDIA' ? '#fff7e6' : (chatSeleccionado?.id === chat.id ? '#e6f7ff' : '#ffffff'))"
+               (click)="seleccionarChat(chat)">
             <div class="avatar">{{ chat.avatar }}</div>
             <div class="chat-info">
               <div class="chat-top">
-                <span class="chat-name">
+                <span class="chat-name" style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
                   {{ chat.nombre }}
+                  @if (chat.prioridad === 'ALTA') {
+                    <span class="priority-badge-red" title="Prioridad ALTA" style="display:inline-block; font-size: 9px; background:#ff4d4f; color: white; padding: 1px 5px; border-radius:3px; font-weight:800; text-transform: uppercase;">Alta</span>
+                  } @else if (chat.prioridad === 'INTERMEDIA') {
+                    <span class="priority-badge-orange" title="Prioridad INTERMEDIA" style="display:inline-block; font-size: 9px; background:#ffa940; color: white; padding: 1px 5px; border-radius:3px; font-weight:800; text-transform: uppercase;">Media</span>
+                  }
                   @if (chat.estado === 'En revision') {
-                    <span class="priority-badge-red" title="En revisión por queja" style="display:inline-block; width:8px; height:8px; background:red; border-radius:50%; margin-left:6px; vertical-align:middle;"></span>
+                    <span class="priority-badge-red" title="En revisión por queja" style="display:inline-block; width:8px; height:8px; background:red; border-radius:50%; vertical-align:middle;"></span>
                   }
                 </span>
                 <span class="chat-time">{{ chat.ultimaVez }}</span>
               </div>
               <div class="chat-bottom">
-                <p class="chat-preview">{{ chat.ultimoMensaje?.startsWith('[YAPE_') ? '💸 [Voucher de Pago]' : chat.ultimoMensaje }}</p>
+                <p class="chat-preview">
+                  @if (chat.ultimoMensaje?.includes('[VOUCHER]') || chat.ultimoMensaje?.startsWith('[VOUCHER]') || chat.ultimoMensaje?.startsWith('data:image/')) {
+                    <span>📷 Foto</span>
+                  } @else if (chat.ultimoMensaje?.startsWith('[YAPE_')) {
+                    <span>💸 [Voucher de Pago]</span>
+                  } @else {
+                    {{ chat.ultimoMensaje }}
+                  }
+                </p>
                 @if (chat.noLeidos > 0) {
                   <span class="unread-badge">{{ chat.noLeidos }}</span>
                 }
@@ -57,7 +75,15 @@
       <header class="chat-header">
         <div class="avatar">{{ chatSeleccionado.avatar }}</div>
         <div class="chat-contact">
-          <h4>{{ chatSeleccionado.nombre }} <span class="tag-cliente">Cliente</span></h4>
+          <h4 style="display: flex; align-items: center; gap: 8px;">
+            {{ chatSeleccionado.nombre }} 
+            <span class="tag-cliente">Cliente</span>
+            @if (chatSeleccionado.fasePedido) {
+              <span class="fase-badge" style="font-size: 10px; background: #e6f7ff; color: #1890ff; padding: 2px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase;">
+                {{ chatSeleccionado.fasePedido }}
+              </span>
+            }
+          </h4>
           <span>{{ chatSeleccionado.telefono }}</span>
         </div>
         <div class="chat-actions" style="position: relative; display: flex; align-items: center;">
@@ -108,7 +134,14 @@
             } @else {
               <!-- Burbuja normal -->
               <div class="message-bubble">
-                <p style="white-space: pre-wrap; margin: 0;">{{ msg.texto }}</p>
+                @if (msg.isImage) {
+                  <img [src]="msg.imageUrl" class="chat-voucher-img">
+                  @if (msg.texto) {
+                    <p style="white-space: pre-wrap; margin: 0; margin-top: 6px; font-size: 13.5px; color: var(--gray);">{{ msg.texto }}</p>
+                  }
+                } @else {
+                  <p style="white-space: pre-wrap; margin: 0;">{{ msg.texto }}</p>
+                }
                 <div class="message-meta">
                   <span class="time">{{ msg.hora }}</span>
                   @if (msg.tipo === 'salida') {
@@ -142,11 +175,18 @@
           <button type="button" class="btn-icon" (click)="fileInput.click()">📎</button>
           <input type="file" #fileInput style="display:none" (change)="onFileSelected($event)" />
           <button type="button" class="btn-icon" (click)="insertarMensajeRapido()">⚡</button>
-          <input type="text" [value]="chatSeleccionado.borrador || ''" (input)="chatSeleccionado.borrador = $any($event.target).value" (keyup.enter)="enviarMensajeManual()" placeholder="Escribe un mensaje..." />
-          <button class="btn-send" (click)="enviarMensajeManual()">Enviar</button>
-          <button class="btn-send-options">⌄</button>
+          
+          <!-- Cambio a textarea o input reactivo para manejar respuestas largas de IA -->
+          <textarea class="borrador-textarea" 
+                    [value]="chatSeleccionado.borrador || ''" 
+                    (input)="chatSeleccionado.borrador = $any($event.target).value" 
+                    (keyup.enter)="enviarMensajeManual()" 
+                    placeholder="Escribe un mensaje..."
+                    style="flex: 1; border: none; outline: none; background: transparent; padding: 8px; font-size: 13.5px; height: 38px; resize: none; font-family: inherit; line-height: 1.4;"></textarea>
+          
+          <button class="btn-send" (click)="enviarMensajeManual()" style="height: 34px;">Enviar</button>
         </div>
-        <p class="ai-helper-text">💡 Usa el asistente inteligente para generar respuestas basadas en el contexto del chat.</p>
+        <p class="ai-helper-text">💡 Usa el asistente inteligente para generar respuestas basadas en el contexto del chat y cargarlas en el borrador.</p>
       </div>
     </section>
 
@@ -193,12 +233,20 @@
                 {{ aiStatus.contextoAnalizado ? '✓' : '✗' }} Contexto analizado
               </li>
             </ul>
-            <button class="btn-ai-generate" (click)="generarRespuestaAI()">✨ Generar respuesta</button>
+            <button class="btn-ai-generate" (click)="generarRespuestaAI()">✨ Forzar Regeneración IA</button>
           </div>
 
-          <!-- MENSAJE GENERADO -->
+          <!-- MENSAJE GENERADO / SUGERIDO -->
           <div class="details-card generated-message-card">
-            <h4>Mensaje generado</h4>
+            <h4 style="display: flex; align-items: center; justify-content: space-between;">
+              Sugerencia de Respuesta
+              @if (chatSeleccionado.prioridad) {
+                <span [style.background]="chatSeleccionado.prioridad === 'ALTA' ? '#ff4d4f' : '#ffa940'" 
+                      style="font-size: 9px; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: bold;">
+                  {{ chatSeleccionado.prioridad }}
+                </span>
+              }
+            </h4>
             @if (isGenerating) {
               <!-- Cargador Visual con Skeleton -->
               <div class="ai-loading-status">
@@ -212,16 +260,18 @@
               </div>
             } @else {
               @if (!editandoMensajeGenerado) {
-                <div class="generated-box" style="white-space: pre-wrap;">{{ chatSeleccionado.mensajeGenerado || 'Presione "Generar respuesta" para iniciar el asistente.' }}</div>
-                <div class="generated-actions">
-                  <button class="btn-outline" (click)="iniciarEdicionMensaje()">✏️ Editar mensaje</button>
-                  <button class="btn-primary" [disabled]="!chatSeleccionado.mensajeGenerado" (click)="enviarMensajeGenerado()">✓ Usar mensaje</button>
+                <div class="generated-box" style="white-space: pre-wrap; background: #fafafa; border: 1px dashed #d9d9d9; padding: 12px; border-radius: 6px; font-size: 13px; color: #333; line-height: 1.5; max-height: 200px; overflow-y: auto;">
+                  {{ chatSeleccionado.mensajeGenerado || 'En espera de un nuevo mensaje del cliente para procesar sugerencia...' }}
+                </div>
+                <div class="generated-actions" style="margin-top: 12px; display: flex; gap: 8px;">
+                  <button class="btn-outline" (click)="iniciarEdicionMensaje()" style="flex: 1; padding: 8px; font-size: 12.5px;">✏️ Editar</button>
+                  <button class="btn-primary" [disabled]="!chatSeleccionado.mensajeGenerado" (click)="enviarMensajeGenerado()" style="flex: 1.5; padding: 8px; font-size: 12.5px;">✓ Usar mensaje</button>
                 </div>
               } @else {
-                <textarea class="generated-textarea" [value]="mensajeGeneradoTemp" (input)="mensajeGeneradoTemp = $any($event.target).value" rows="10"></textarea>
-                <div class="generated-actions mt-10">
-                  <button class="btn-outline" (click)="cancelarEdicionMensaje()">Cancelar</button>
-                  <button class="btn-primary" (click)="guardarEdicionMensaje()">Guardar</button>
+                <textarea class="generated-textarea" [value]="mensajeGeneradoTemp" (input)="mensajeGeneradoTemp = $any($event.target).value" rows="8" style="width: 100%; border: 1px solid #d9d9d9; border-radius: 6px; padding: 10px; font-size: 13px; font-family: inherit; line-height: 1.4; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
+                <div class="generated-actions mt-10" style="display: flex; gap: 8px; margin-top: 8px;">
+                  <button class="btn-outline" (click)="cancelarEdicionMensaje()" style="flex: 1; padding: 6px;">Cancelar</button>
+                  <button class="btn-primary" (click)="guardarEdicionMensaje()" style="flex: 1;">Guardar</button>
                 </div>
               }
             }

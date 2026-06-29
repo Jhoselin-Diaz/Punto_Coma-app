@@ -84,7 +84,7 @@
               <td>{{ pedido.telefono || 'N/A' }}</td>
               <td>
                 <strong>{{ pedido.producto }}</strong>
-                <small>1 unidad</small>
+                <small>{{ calcularCantidadTotal(pedido) }} {{ calcularCantidadTotal(pedido) === 1 ? 'unidad' : 'unidades' }}</small>
               </td>
               <td>
                 <span class="status" [class]="estadoClase(pedido.estado)">
@@ -99,9 +99,9 @@
               </td>
               <td>{{ pedido.fecha }}<small>{{ pedido.hora }}</small></td>
               <td>{{ pedido.total }}</td>
-              <td class="actions-cell">
-                <button type="button" (click)="verDetalle(pedido)">Ver detalle</button>
-                <span>⋮</span>
+              <td class="actions-cell" style="display: flex; gap: 8px; align-items: center; justify-content: center; border: none; height: 100%;">
+                <button type="button" (click)="verDetalle(pedido)" style="background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Ver detalle</button>
+                <button type="button" (click)="eliminarPedido(pedido.id, pedido.dbId)" style="background: #fff0f6; color: #ff4d4f; border: 1px solid #ffadd2; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Eliminar</button>
               </td>
             </tr>
             } @empty {
@@ -144,7 +144,10 @@
       </div>
       <div class="overview-item">
         <span>Dirección de envío</span>
-        <strong>{{ pedidoSeleccionado.direccion || 'No registrada' }}</strong>
+        <strong>
+          <span *ngIf="pedidoSeleccionado?.direccionEnvio">{{ pedidoSeleccionado.direccionEnvio }}</span>
+          <span *ngIf="!pedidoSeleccionado?.direccionEnvio">{{ pedidoSeleccionado.direccion || pedidoSeleccionado.direccionEntrega || 'No registrada - Bug de variable' }}</span>
+        </strong>
       </div>
       <div class="overview-item status-item">
         <span>Estado de conciliación</span>
@@ -249,9 +252,8 @@
       <article class="detail-card">
         <h3 class="card-title"><span class="icon-box">💳</span> 2. Pago detectado (OCR)</h3>
 
-        <div class="info-row"><span>Monto detectado (OCR)</span> <strong [class.red-text]="pedidoSeleccionado.estado === 'Rechazado'">{{ pedidoSeleccionado.montoDetectado || pedidoSeleccionado.total }}</strong></div>
-        <div class="info-row"><span>Fecha de pago</span> <strong>{{ pedidoSeleccionado.fecha }} - {{
-            pedidoSeleccionado.hora }}</strong></div>
+        <div class="info-row"><span>Monto detectado (OCR)</span> <strong [class.red-text]="pedidoSeleccionado.estado === 'Rechazado'">S/ {{ pedidoSeleccionado.montoOcr || pedidoSeleccionado.montoDetectado || '0.00' }}</strong></div>
+        <div class="info-row"><span>Fecha de pago</span> <strong>{{ pedidoSeleccionado.fechaPago || 'No registrada' }}</strong></div>
         <div class="info-row"><span>Método de pago</span> <strong>{{ pedidoSeleccionado.metodoPago || 'No registrado' }}</strong></div>
         <div class="info-row"><span>Referencia</span> <strong>{{ pedidoSeleccionado.referenciaPago || 'No registrada' }}</strong></div>
 
@@ -267,17 +269,17 @@
           <p class="voucher-status">Transferencia exitosa<br><small>Operación realizada con éxito</small></p>
           <div class="voucher-detail">
             <span>Monto</span>
-            <strong [class.red-text]="pedidoSeleccionado.estado === 'Rechazado'">{{ pedidoSeleccionado.montoDetectado || pedidoSeleccionado.total }}</strong>
+            <strong [class.red-text]="pedidoSeleccionado.estado === 'Rechazado'">S/ {{ pedidoSeleccionado.montoOcr || pedidoSeleccionado.montoDetectado || '0.00' }}</strong>
           </div>
           <div class="voucher-detail">
             <span>Fecha</span>
-            <strong>{{ pedidoSeleccionado.fecha }} - {{ pedidoSeleccionado.hora }}</strong>
+            <strong>{{ pedidoSeleccionado.fechaPago || 'No registrada' }}</strong>
           </div>
           <div class="voucher-detail">
             <span>Referencia</span>
             <strong>{{ pedidoSeleccionado.referenciaPago || 'No registrada' }}</strong>
           </div>
-          <button type="button" class="btn-outline full-width mt-15"><span class="icon">👁</span> Ver comprobante completo</button>
+          <button type="button" class="btn-outline full-width mt-15" (click)="verComprobanteCompleto()" [disabled]="!pedidoSeleccionado.voucherUrl"><span class="icon">👁</span> Ver comprobante completo</button>
         </div>
       </article>
 
@@ -330,7 +332,7 @@
         <h4 class="section-subtitle">Comparación de montos</h4>
         <div class="comparison-row"><span>Total esperado (pedido)</span> <strong>{{ pedidoSeleccionado.total }}</strong>
         </div>
-        <div class="comparison-row"><span>Monto detectado (OCR)</span> <strong>{{ pedidoSeleccionado.montoDetectado || pedidoSeleccionado.total }}</strong>
+        <div class="comparison-row"><span>Monto detectado (OCR)</span> <strong>S/ {{ pedidoSeleccionado.montoOcr || pedidoSeleccionado.montoDetectado || '0.00' }}</strong>
         </div>
         <div class="comparison-row diff-row"><span>Diferencia</span> <strong [class.red-text]="pedidoSeleccionado.estado === 'Rechazado'" [class.green-text]="pedidoSeleccionado.estado === 'Validado'">{{ pedidoSeleccionado.diferencia || 'S/ 0.00' }}</strong></div>
 
