@@ -20,7 +20,7 @@
       </div>
 
       <div class="chat-list">
-        @for (chat of chatsOrdenados; track chat.id) {
+        @for (chat of chatsOrdenados; track trackByChatId($index, chat)) {
           <div class="chat-item" 
                [class.active]="chatSeleccionado?.id === chat.id" 
                [class.en-revision]="chat.estado === 'En revision'"
@@ -102,7 +102,7 @@
       </header>
 
       <div class="chat-messages">
-        @for (msg of chatSeleccionado.mensajes; track $index) {
+        @for (msg of chatSeleccionado.mensajes; track trackByMensaje($index, msg)) {
           <div class="message-row" [class.outgoing]="msg.tipo === 'salida'" [class.incoming]="msg.tipo === 'entrada'">
             @if (msg.isVoucher) {
               <!-- Tarjeta de Yape Voucher -->
@@ -233,7 +233,14 @@
                 {{ aiStatus.contextoAnalizado ? '✓' : '✗' }} Contexto analizado
               </li>
             </ul>
-            <button class="btn-ai-generate" (click)="generarRespuestaAI()">✨ Forzar Regeneración IA</button>
+            <button class="btn-ai-generate" [disabled]="isGenerating" (click)="generarRespuestaAI()">
+              @if (isGenerating) {
+                <span class="spinner-mini" style="display: inline-block; vertical-align: middle; margin-right: 5px; width: 12px; height: 12px;"></span>
+                <span>Regenerando sugerencia...</span>
+              } @else {
+                <span>✨ Forzar Regeneración IA</span>
+              }
+            </button>
           </div>
 
           <!-- MENSAJE GENERADO / SUGERIDO -->
@@ -261,11 +268,11 @@
             } @else {
               @if (!editandoMensajeGenerado) {
                 <div class="generated-box" style="white-space: pre-wrap; background: #fafafa; border: 1px dashed #d9d9d9; padding: 12px; border-radius: 6px; font-size: 13px; color: #333; line-height: 1.5; max-height: 200px; overflow-y: auto;">
-                  {{ chatSeleccionado.mensajeGenerado || 'En espera de un nuevo mensaje del cliente para procesar sugerencia...' }}
+                  {{ chatSeleccionado?.mensajeGenerado || chatSeleccionado?.sugerenciaIa || 'En espera de un nuevo mensaje del cliente para procesar sugerencia...' }}
                 </div>
                 <div class="generated-actions" style="margin-top: 12px; display: flex; gap: 8px;">
                   <button class="btn-outline" (click)="iniciarEdicionMensaje()" style="flex: 1; padding: 8px; font-size: 12.5px;">✏️ Editar</button>
-                  <button class="btn-primary" [disabled]="!chatSeleccionado.mensajeGenerado" (click)="enviarMensajeGenerado()" style="flex: 1.5; padding: 8px; font-size: 12.5px;">✓ Usar mensaje</button>
+                  <button class="btn-primary" [disabled]="!(chatSeleccionado?.mensajeGenerado || chatSeleccionado?.sugerenciaIa)" (click)="enviarMensajeGenerado()" style="flex: 1.5; padding: 8px; font-size: 12.5px;">✓ Usar mensaje</button>
                 </div>
               } @else {
                 <textarea class="generated-textarea" [value]="mensajeGeneradoTemp" (input)="mensajeGeneradoTemp = $any($event.target).value" rows="8" style="width: 100%; border: 1px solid #d9d9d9; border-radius: 6px; padding: 10px; font-size: 13px; font-family: inherit; line-height: 1.4; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
