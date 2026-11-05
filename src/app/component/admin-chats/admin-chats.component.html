@@ -176,15 +176,21 @@
           <input type="file" #fileInput style="display:none" (change)="onFileSelected($event)" />
           <button type="button" class="btn-icon" (click)="insertarMensajeRapido()">⚡</button>
           
-          <!-- Cambio a textarea o input reactivo para manejar respuestas largas de IA -->
-          <textarea class="borrador-textarea" 
-                    [value]="chatSeleccionado.borrador || ''" 
-                    (input)="chatSeleccionado.borrador = $any($event.target).value" 
-                    (keyup.enter)="enviarMensajeManual()" 
-                    placeholder="Escribe un mensaje..."
-                    style="flex: 1; border: none; outline: none; background: transparent; padding: 8px; font-size: 13.5px; height: 38px; resize: none; font-family: inherit; line-height: 1.4;"></textarea>
+          <!-- Textarea con auto-expansión dinámica estilo WhatsApp Web -->
+          <textarea class="chat-input-textarea"
+                    rows="1"
+                    [(ngModel)]="nuevoMensaje"
+                    (input)="ajustarAlturaTextarea($event.target)"
+                    (keydown)="onTextareaKeydown($event)"
+                    placeholder="Escribe un mensaje..."></textarea>
           
-          <button class="btn-send" (click)="enviarMensajeManual()" style="height: 34px;">Enviar</button>
+          <button type="button"
+                  class="btn-send"
+                  [disabled]="!nuevoMensaje || !nuevoMensaje.trim() || enviandoMensaje"
+                  (click)="enviarMensajeManual()">
+            <span *ngIf="enviandoMensaje" class="spinner-mini" style="display: inline-block; width: 12px; height: 12px; border-width: 2px;"></span>
+            <span *ngIf="!enviandoMensaje">Enviar</span>
+          </button>
         </div>
         <p class="ai-helper-text">💡 Usa el asistente inteligente para generar respuestas basadas en el contexto del chat y cargarlas en el borrador.</p>
       </div>

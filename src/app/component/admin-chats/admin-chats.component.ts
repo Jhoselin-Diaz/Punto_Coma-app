@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AdminLayoutComponent } from '../admin-layout/admin-layout.component';
 import { CartService } from '../../service/cart.service';
 import { AdminChatService, ChatDTO, MensajeDTO } from '../../service/admin-chat.service';
@@ -46,7 +47,7 @@ interface Chat {
 @Component({
   selector: 'app-admin-chats',
   standalone: true,
-  imports: [CommonModule, AdminLayoutComponent],
+  imports: [CommonModule, FormsModule, AdminLayoutComponent],
   templateUrl: './admin-chats.component.html',
   styleUrl: './admin-chats.component.css'
 })
@@ -68,6 +69,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   generatingStatus = '';
   isFetchingChats = false;
   isFetchingMessages = false;
+  enviandoMensaje = false;
 
   aiStatus = {
     pedidoIdentificado: false,
@@ -313,6 +315,42 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  get nuevoMensaje(): string {
+    return this.chatSeleccionado?.borrador || '';
+  }
+
+  set nuevoMensaje(val: string) {
+    if (this.chatSeleccionado) {
+      this.chatSeleccionado.borrador = val;
+    }
+  }
+
+  ajustarAlturaTextarea(el?: any) {
+    setTimeout(() => {
+      const textarea = el || (document.querySelector('.chat-input-textarea') as HTMLTextAreaElement);
+      if (textarea) {
+        textarea.style.height = 'auto';
+        const nuevaAltura = Math.min(Math.max(textarea.scrollHeight, 42), 130);
+        textarea.style.height = `${nuevaAltura}px`;
+      }
+    }, 0);
+  }
+
+  onTextareaKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      if (event.shiftKey) {
+        // Shift + Enter: permite salto de línea y reajusta altura
+        setTimeout(() => this.ajustarAlturaTextarea(event.target), 0);
+      } else {
+        // Enter sin Shift: enviar si es válido
+        event.preventDefault();
+        if (this.nuevoMensaje && this.nuevoMensaje.trim() && !this.enviandoMensaje) {
+          this.enviarMensajeManual();
+        }
+      }
+    }
+  }
+
   enviarMensajeGenerado() {
     if (!this.chatSeleccionado) return;
     const textoAUsar = this.chatSeleccionado.mensajeGenerado || this.chatSeleccionado.sugerenciaIa;
@@ -324,17 +362,21 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     this.chatSeleccionado.sugerenciaIa = '';
     this.editandoMensajeGenerado = false;
     this.cdr.detectChanges();
+    this.ajustarAlturaTextarea();
   }
 
   enviarMensajeManual() {
-    if (!this.chatSeleccionado || !this.chatSeleccionado.borrador || !this.chatSeleccionado.borrador.trim()) return;
+    if (!this.chatSeleccionado || !this.nuevoMensaje || !this.nuevoMensaje.trim() || this.enviandoMensaje) return;
 
-    const texto = this.chatSeleccionado.borrador;
+    const texto = this.nuevoMensaje.trim();
     const chatId = this.chatSeleccionado.id;
+    this.enviandoMensaje = true;
     this.chatSeleccionado.borrador = '';
+    this.ajustarAlturaTextarea();
 
     this.adminChatService.enviarMensaje(chatId, texto).subscribe({
       next: (creadoDto) => {
+        this.enviandoMensaje = false;
         if (this.chatSeleccionado && this.chatSeleccionado.id === chatId) {
           const nuevoMsg = this.mapMensajeDtoToMensaje(creadoDto);
           this.chatSeleccionado.mensajes.push(nuevoMsg);
@@ -343,18 +385,25 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
           this.scrollToBottom();
           this.refrescarMensajesSilencioso();
         }
+        this.ajustarAlturaTextarea();
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error al enviar mensaje manual:', err)
+      error: (err) => {
+        this.enviandoMensaje = false;
+        console.error('Error al enviar mensaje manual:', err);
+        this.cdr.detectChanges();
+      }
     });
   }
 
   insertarEmoji(emoji: string) {
     if (this.chatSeleccionado) {
       this.chatSeleccionado.borrador = (this.chatSeleccionado.borrador || '') + emoji;
+      this.ajustarAlturaTextarea();
     }
     this.mostrarPanelEmojis = false;
     setTimeout(() => {
-      const inputEl = document.querySelector('.input-wrapper input') as HTMLInputElement;
+      const inputEl = document.querySelector('.chat-input-textarea') as HTMLTextAreaElement;
       if (inputEl) {
         inputEl.focus();
       }
@@ -364,6 +413,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   insertarMensajeRapido() {
     if (this.chatSeleccionado) {
       this.chatSeleccionado.borrador = (this.chatSeleccionado.borrador || '') + ' ⚡ ¡Hola! Gracias por comunicarte con Punto y Coma. ¿En qué podemos ayudarte hoy?';
+      this.ajustarAlturaTextarea();
     }
   }
 
@@ -371,6 +421,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     const file = event.target.files[0];
     if (file && this.chatSeleccionado) {
       this.chatSeleccionado.borrador = (this.chatSeleccionado.borrador || '') + ` [Archivo: ${file.name}]`;
+      this.ajustarAlturaTextarea();
     }
   }
 
