@@ -484,19 +484,26 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     this.adminChatService.regenerarIa(this.chatSeleccionado.id, sugerenciaPrevia).subscribe({
       next: (res: any) => {
         if (this.chatSeleccionado && res) {
-          let nuevaSugerencia = (res.sugerenciaIa || '').trim();
+          const nueva = (res.sugerenciaIa || res.mensajeGenerado || '').trim();
+          let nuevaSugerencia = nueva;
           if (!nuevaSugerencia || (sugerenciaPrevia && nuevaSugerencia.toLowerCase() === sugerenciaPrevia.toLowerCase())) {
             nuevaSugerencia = this.rotarSugerenciaAlternativa(sugerenciaPrevia);
           }
+
+          // Actualizar en el chat seleccionado
           this.chatSeleccionado.sugerenciaIa = nuevaSugerencia;
           this.chatSeleccionado.mensajeGenerado = nuevaSugerencia;
-          this.isGenerating = false;
-          
-          this.aiStatus.pedidoIdentificado = !!res.pedidoIdentificado;
-          this.aiStatus.direccionDetectada = !!res.direccionDetectada;
-          this.aiStatus.datosCompletos = !!res.datosCompletos;
-          this.aiStatus.contextoAnalizado = !!res.prioridad || !!res.fasePedido;
 
+          // Sincronizar en el arreglo this.chats
+          if (this.chats && this.chats.length > 0) {
+            const chatEnLista = this.chats.find(c => c.id === this.chatSeleccionado?.id);
+            if (chatEnLista) {
+              chatEnLista.sugerenciaIa = nuevaSugerencia;
+              chatEnLista.mensajeGenerado = nuevaSugerencia;
+            }
+          }
+
+          this.isGenerating = false;
           this.cdr.detectChanges();
         }
       },
@@ -506,6 +513,13 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
           const fallback = this.rotarSugerenciaAlternativa(sugerenciaPrevia);
           this.chatSeleccionado.sugerenciaIa = fallback;
           this.chatSeleccionado.mensajeGenerado = fallback;
+          if (this.chats && this.chats.length > 0) {
+            const chatEnLista = this.chats.find(c => c.id === this.chatSeleccionado?.id);
+            if (chatEnLista) {
+              chatEnLista.sugerenciaIa = fallback;
+              chatEnLista.mensajeGenerado = fallback;
+            }
+          }
         }
         this.isGenerating = false;
         this.cdr.detectChanges();
