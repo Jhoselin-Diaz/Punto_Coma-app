@@ -1,33 +1,145 @@
 <div class="store-page">
   <header class="topbar">
-    <a class="brand" routerLink="/inicio" aria-label="Punto y Coma">
+    <a class="brand" routerLink="/inicio" [attr.aria-label]="configService.negocio.nombreTienda || 'Punto y Coma'">
       <span class="brand-mark">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 20.5c-.4 0-.79-.13-1.11-.39C7.31 17.28 5 15.06 5 11.75 5 9.56 6.68 8 8.78 8c1.25 0 2.45.58 3.22 1.5A4.18 4.18 0 0 1 15.22 8C17.32 8 19 9.56 19 11.75c0 3.31-2.31 5.53-5.89 8.36-.32.26-.71.39-1.11.39Z" />
-        </svg>
+        @if (configService.negocio.logo_url && !logoError) {
+          <img 
+            [src]="obtenerImagenUrl(configService.negocio.logo_url)" 
+            [alt]="configService.negocio.nombreTienda || 'Punto y Coma'" 
+            class="brand-logo-img"
+            referrerpolicy="no-referrer"
+            (error)="onLogoError($event)" />
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 20.5c-.4 0-.79-.13-1.11-.39C7.31 17.28 5 15.06 5 11.75 5 9.56 6.68 8 8.78 8c1.25 0 2.45.58 3.22 1.5A4.18 4.18 0 0 1 15.22 8C17.32 8 19 9.56 19 11.75c0 3.31-2.31 5.53-5.89 8.36-.32.26-.71.39-1.11.39Z" />
+          </svg>
+        }
       </span>
-      <span>Punto y Coma</span>
+      <span>{{ configService.negocio.nombreTienda || 'Punto y Coma' }}</span>
     </a>
 
-    <form class="search" aria-label="Buscar productos">
-      <input type="search" placeholder="Buscar productos..." />
-      <button type="submit" aria-label="Buscar">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m20.53 19.47-4.1-4.1a7.4 7.4 0 1 0-1.06 1.06l4.1 4.1a.75.75 0 0 0 1.06-1.06ZM5.5 10.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Z" />
-        </svg>
-      </button>
-    </form>
+    <!-- Barra de búsqueda con Autocompletado y Sugerencias -->
+    <div class="search-wrapper">
+      <form class="search" aria-label="Buscar productos" (ngSubmit)="buscar()">
+        <div class="search-input-wrap">
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            [(ngModel)]="searchQuery"
+            name="searchQuery"
+            (input)="onSearchInput()"
+            (focus)="onSearchFocus()"
+            (keydown)="onKeyDown($event)"
+            autocomplete="off"
+          />
+          @if (searchQuery) {
+            <button type="button" class="btn-clear-input" (click)="limpiarInput()" aria-label="Limpiar búsqueda">
+              ×
+            </button>
+          }
+        </div>
+        <button type="submit" class="btn-search-submit" aria-label="Buscar">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m20.53 19.47-4.1-4.1a7.4 7.4 0 1 0-1.06 1.06l4.1 4.1a.75.75 0 0 0 1.06-1.06ZM5.5 10.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Z" />
+          </svg>
+        </button>
+      </form>
+
+      <!-- Menú flotante de sugerencias -->
+      @if (mostrarSugerencias) {
+        <div class="suggestions-dropdown" (mousedown)="$event.preventDefault()">
+          @if (sugerencias.length > 0) {
+            <div class="suggestions-header">
+              <span>Sugerencias de productos</span>
+            </div>
+            <ul class="suggestions-list" role="listbox">
+              @for (item of sugerencias; track item.id; let i = $index) {
+                <li
+                  class="suggestion-item"
+                  [class.active]="i === selectedIndex"
+                  (click)="seleccionarSugerencia(item)"
+                  (mouseenter)="selectedIndex = i"
+                >
+                  <div class="suggestion-thumb">
+                    <img [src]="obtenerImagenUrl(item.imagenPrincipal || item.imageUrl)" [alt]="item.nombre" />
+                  </div>
+                  <div class="suggestion-info">
+                    <span class="suggestion-name">{{ item.nombre }}</span>
+                    <span class="suggestion-meta">
+                      @if (item.categoria) {
+                        <span class="suggestion-cat">{{ item.categoria }}</span> •
+                      }
+                      <strong class="suggestion-price">S/ {{ item.precio }}</strong>
+                      @if (item.stock !== undefined && item.stock !== null && item.stock <= 0) {
+                        • <span class="badge-sug-agotado">Agotado</span>
+                      }
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-autocomplete"
+                    (click)="$event.stopPropagation(); autocompletar(item.nombre)"
+                    title="Autocompletar en el buscador"
+                    aria-label="Autocompletar"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <line x1="7" y1="17" x2="17" y2="7"></line>
+                      <polyline points="7 7 17 7 17 17"></polyline>
+                    </svg>
+                  </button>
+                </li>
+              }
+            </ul>
+            <div class="suggestions-footer" (click)="buscar()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <span>Ver todos los resultados para "<strong>{{ searchQuery }}</strong>"</span>
+            </div>
+          } @else {
+            <div class="suggestions-empty">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <div class="empty-texts">
+                <strong>No se encontraron productos coincidentes</strong>
+                <small>No hay productos visibles que coincidan con "{{ searchQuery }}"</small>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
 
     <div class="actions" aria-label="Acciones de usuario">
-      <button type="button" aria-label="Favoritos">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 20.7a.75.75 0 0 1-.47-.16C6.93 16.89 4 14.1 4 10.35 4 7.88 5.9 6 8.34 6c1.45 0 2.79.67 3.66 1.73A4.72 4.72 0 0 1 15.66 6C18.1 6 20 7.88 20 10.35c0 3.75-2.93 6.54-7.53 10.19a.75.75 0 0 1-.47.16Zm-3.66-13.2c-1.61 0-2.84 1.21-2.84 2.85 0 2.86 2.25 5.16 6.5 8.64 4.25-3.48 6.5-5.78 6.5-8.64 0-1.64-1.23-2.85-2.84-2.85-1.28 0-2.43.76-2.93 1.94a.78.78 0 0 1-1.46 0C10.77 8.26 9.62 7.5 8.34 7.5Z" />
+      <button type="button" aria-label="Favoritos" (click)="abrirFavoritos()" style="position: relative;" [title]="cantidadFavoritos > 0 ? cantidadFavoritos + ' favoritos' : 'Mis Favoritos'">
+        <svg viewBox="0 0 24 24" aria-hidden="true" [style.fill]="cantidadFavoritos > 0 ? '#FF69B4' : 'none'" [style.stroke]="cantidadFavoritos > 0 ? '#FF69B4' : 'currentColor'" stroke-width="1.8">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
         </svg>
+        @if (cantidadFavoritos > 0) {
+          <span class="fav-badge">{{ cantidadFavoritos }}</span>
+        }
       </button>
-      <button type="button" aria-label="Perfil">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 12.5A4.25 4.25 0 1 1 12 4a4.25 4.25 0 0 1 0 8.5Zm0-7A2.75 2.75 0 1 0 12 11a2.75 2.75 0 0 0 0-5.5ZM19 21a.75.75 0 0 1-.75-.75 6.25 6.25 0 0 0-12.5 0 .75.75 0 0 1-1.5 0 7.75 7.75 0 0 1 15.5 0A.75.75 0 0 1 19 21Z" />
-        </svg>
+      <button 
+        type="button" 
+        aria-label="Perfil" 
+        (click)="onIconoUsuarioClick()" 
+        class="btn-user-header"
+        [class.user-logged]="clienteAuthService.isLoggedIn"
+        [title]="clienteAuthService.isLoggedIn ? 'Mi Perfil (' + clienteAuthService.nombreParaMostrar + ')' : 'Iniciar sesión / Registrarse'"
+        style="position: relative;">
+        @if (clienteAuthService.isLoggedIn) {
+          <span class="user-avatar-initial">{{ clienteAuthService.nombreParaMostrar.charAt(0).toUpperCase() }}</span>
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 12.5A4.25 4.25 0 1 1 12 4a4.25 4.25 0 0 1 0 8.5Zm0-7A2.75 2.75 0 1 0 12 11a2.75 2.75 0 0 0 0-5.5ZM19 21a.75.75 0 0 1-.75-.75 6.25 6.25 0 0 0-12.5 0 .75.75 0 0 1-1.5 0 7.75 7.75 0 0 1 15.5 0A.75.75 0 0 1 19 21Z" />
+          </svg>
+        }
+        @if (clienteAuthService.isLoggedIn) {
+          <span class="logged-dot" title="Sesión activa"></span>
+        }
       </button>
       <button type="button" aria-label="Carrito" routerLink="/carrito" style="position: relative;">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -55,7 +167,394 @@
     <a routerLink="/ofertas" routerLinkActive="active">Ofertas</a>
     <a routerLink="/shop-video" routerLinkActive="active">Shop Video</a>
     <a routerLink="/contacto" routerLinkActive="active">Contacto</a>
+    <a routerLink="/rastreo" routerLinkActive="active">Rastreo</a>
   </nav>
 
   <ng-content></ng-content>
+
+  <!-- ========================================== -->
+  <!-- MODAL 1: AUTENTICACIÓN (LOGIN / REGISTRO)  -->
+  <!-- ========================================== -->
+  @if (clienteAuthService.modalAuthOpen$ | async) {
+    <div class="modal-backdrop-cliente" (click)="cerrarModalAuth()">
+      <div class="modal-card-cliente auth-modal-card" (click)="$event.stopPropagation()">
+        <button type="button" class="btn-close-cliente" (click)="cerrarModalAuth()" aria-label="Cerrar modal">×</button>
+
+        <!-- Pestañas intercambiables -->
+        <div class="auth-tabs-header">
+          <button 
+            type="button" 
+            class="tab-btn" 
+            [class.active]="(clienteAuthService.modalAuthTab$ | async) === 'login'"
+            (click)="cambiarTabAuth('login')">
+            Iniciar Sesión
+          </button>
+          <button 
+            type="button" 
+            class="tab-btn" 
+            [class.active]="(clienteAuthService.modalAuthTab$ | async) === 'register'"
+            (click)="cambiarTabAuth('register')">
+            Registrarse
+          </button>
+        </div>
+
+        <div class="auth-modal-body">
+          <!-- PESTAÑA: INICIAR SESIÓN -->
+          @if ((clienteAuthService.modalAuthTab$ | async) === 'login') {
+            <form (ngSubmit)="ejecutarLogin()" class="auth-form" autocomplete="on">
+              <div class="form-title-wrap">
+                <h3>¡Bienvenido de nuevo!</h3>
+                <p>Ingresa a tu cuenta para ver tus pedidos y guardar tus favoritos.</p>
+              </div>
+
+              @if (loginError) {
+                <div class="alert-auth-error">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
+                  <span>{{ loginError }}</span>
+                </div>
+              }
+
+              <div class="form-group-cliente">
+                <label for="login-email">Correo Electrónico</label>
+                <input 
+                  type="email" 
+                  id="login-email" 
+                  [(ngModel)]="loginEmail" 
+                  name="loginEmail" 
+                  placeholder="ejemplo@correo.com" 
+                  required 
+                  autocomplete="email" />
+              </div>
+
+              <div class="form-group-cliente">
+                <label for="login-password">Contraseña</label>
+                <input 
+                  type="password" 
+                  id="login-password" 
+                  [(ngModel)]="loginPassword" 
+                  name="loginPassword" 
+                  placeholder="Tu contraseña" 
+                  required 
+                  autocomplete="current-password" />
+              </div>
+
+              <button type="submit" class="btn-submit-cliente">Iniciar Sesión</button>
+
+              <div class="auth-divider">
+                <span>o también</span>
+              </div>
+
+              <button type="button" class="btn-google-cliente" (click)="ejecutarLoginGoogle()">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Continuar con Google</span>
+              </button>
+
+              <div class="auth-toggle-link">
+                <span>¿No tienes cuenta?</span>
+                <button type="button" (click)="cambiarTabAuth('register')">Regístrate aquí</button>
+              </div>
+            </form>
+          }
+
+          <!-- PESTAÑA: REGISTRARSE -->
+          @if ((clienteAuthService.modalAuthTab$ | async) === 'register') {
+            <form (ngSubmit)="ejecutarRegistro()" class="auth-form" autocomplete="on">
+              <div class="form-title-wrap">
+                <h3>Crea tu cuenta de cliente</h3>
+                <p>Únete para guardar favoritos y disfrutar descuentos exclusivos.</p>
+              </div>
+
+              @if (registerError) {
+                <div class="alert-auth-error">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
+                  <span>{{ registerError }}</span>
+                </div>
+              }
+
+              <div class="form-grid-2-cols">
+                <div class="form-group-cliente">
+                  <label for="reg-nombre">Nombre</label>
+                  <input 
+                    type="text" 
+                    id="reg-nombre" 
+                    [(ngModel)]="registerNombre" 
+                    name="registerNombre" 
+                    placeholder="Tu nombre" 
+                    required 
+                    autocomplete="given-name" />
+                </div>
+                <div class="form-group-cliente">
+                  <label for="reg-apellidos">Apellidos</label>
+                  <input 
+                    type="text" 
+                    id="reg-apellidos" 
+                    [(ngModel)]="registerApellidos" 
+                    name="registerApellidos" 
+                    placeholder="Tus apellidos" 
+                    autocomplete="family-name" />
+                </div>
+              </div>
+
+              <div class="form-group-cliente">
+                <label for="reg-email">Correo Electrónico</label>
+                <input 
+                  type="email" 
+                  id="reg-email" 
+                  [(ngModel)]="registerEmail" 
+                  name="registerEmail" 
+                  placeholder="ejemplo@correo.com" 
+                  required 
+                  autocomplete="email" />
+              </div>
+
+              <div class="form-group-cliente">
+                <label for="reg-password">Contraseña</label>
+                <input 
+                  type="password" 
+                  id="reg-password" 
+                  [(ngModel)]="registerPassword" 
+                  name="registerPassword" 
+                  placeholder="Crea una contraseña segura" 
+                  required 
+                  autocomplete="new-password" />
+              </div>
+
+              <button type="submit" class="btn-submit-cliente">Crear Cuenta</button>
+
+              <div class="auth-divider">
+                <span>o también</span>
+              </div>
+
+              <button type="button" class="btn-google-cliente" (click)="ejecutarLoginGoogle()">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Registrarse con Google</span>
+              </button>
+
+              <div class="auth-toggle-link">
+                <span>¿Ya tienes cuenta?</span>
+                <button type="button" (click)="cambiarTabAuth('login')">Inicia sesión aquí</button>
+              </div>
+            </form>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL 2: MI PERFIL (CLIENTE AUTENTICADO)  -->
+  <!-- ========================================== -->
+  @if (clienteAuthService.modalPerfilOpen$ | async) {
+    <div class="modal-backdrop-cliente" (click)="cerrarModalPerfil()">
+      <div class="modal-card-cliente perfil-modal-card" (click)="$event.stopPropagation()">
+        <div class="perfil-modal-header">
+          <div class="header-user-info">
+            <div class="perfil-avatar-circle">
+              {{ clienteAuthService.nombreParaMostrar.charAt(0).toUpperCase() }}
+            </div>
+            <div>
+              <h3>Mi Perfil</h3>
+              <p class="user-greeting">Hola, <strong>{{ clienteAuthService.nombreParaMostrar }}</strong></p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-cliente" (click)="cerrarModalPerfil()" aria-label="Cerrar modal">×</button>
+        </div>
+
+        <div class="perfil-modal-body">
+          <!-- SECCIÓN: DATOS DE USUARIO -->
+          <div class="perfil-section">
+            <h4 class="section-title">Datos Personales</h4>
+
+            @if (perfilMensajeExito) {
+              <div class="alert-perfil-success">
+                ✓ ¡Nombre de pila actualizado con éxito!
+              </div>
+            }
+
+            <div class="form-group-cliente">
+              <label for="perfil-nombre-pila">
+                Nombre de pila
+                <small class="label-hint">(Cómo se mostrará tu nombre en la tienda)</small>
+              </label>
+              <div class="input-action-inline">
+                <input 
+                  type="text" 
+                  id="perfil-nombre-pila" 
+                  [(ngModel)]="nombrePilaEdit" 
+                  placeholder="Ej: Juancho, Anita..." />
+                <button type="button" class="btn-save-pila" (click)="guardarNombrePila()">Guardar</button>
+              </div>
+            </div>
+
+            <div class="form-group-cliente">
+              <label for="perfil-email">
+                Correo Electrónico
+                <span class="badge-readonly">Solo lectura</span>
+              </label>
+              <input 
+                type="email" 
+                id="perfil-email" 
+                [value]="clienteAuthService.currentCliente?.email" 
+                readonly 
+                class="input-readonly" />
+            </div>
+          </div>
+
+          <!-- SECCIÓN: MIS PEDIDOS (SOLO VALIDADOS / CONCRETADOS / ENTREGADOS) -->
+          <div class="perfil-section">
+            <div class="pedidos-section-header">
+              <h4 class="section-title">Mis Pedidos</h4>
+              <span class="pedidos-filter-note">Mostrando pedidos validados y entregados</span>
+            </div>
+
+            @if (cargandoPedidos) {
+              <div class="pedidos-loading">
+                <div class="spinner-small"></div>
+                <span>Cargando tus pedidos...</span>
+              </div>
+            } @else if (misPedidos.length > 0) {
+              <div class="pedidos-cliente-list">
+                @for (pedido of misPedidos; track pedido.id) {
+                  <div class="pedido-cliente-card">
+                    <div class="pedido-card-left">
+                      <div class="pedido-orden">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                        </svg>
+                        <strong>{{ pedido.numeroOrden }}</strong>
+                      </div>
+                      <span class="pedido-fecha">{{ pedido.fecha }}</span>
+                    </div>
+
+                    <div class="pedido-card-right">
+                      <strong class="pedido-total">S/ {{ pedido.total?.toFixed ? pedido.total.toFixed(2) : pedido.total }}</strong>
+                      <span class="badge-pedido-status badge-status-validado">
+                        {{ pedido.estado }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="pedidos-empty-state">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+                <p>No tienes pedidos concretados o validados registrados actualmente.</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="perfil-modal-footer">
+          <button type="button" class="btn-logout-cliente" (click)="cerrarSesion()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL 3: AVISO INICIAR SESIÓN (FAVORITOS) -->
+  <!-- ========================================== -->
+  @if (clienteAuthService.modalAvisoLoginOpen$ | async) {
+    <div class="modal-backdrop-cliente" (click)="cerrarAvisoLogin()">
+      <div class="modal-card-cliente aviso-login-card" (click)="$event.stopPropagation()">
+        <div class="aviso-icon-bubble">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="#FF69B4">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </div>
+        <h3 class="aviso-title">Inicia sesión</h3>
+        <p class="aviso-mensaje">Debes iniciar sesión o registrarte para guardar tus productos favoritos.</p>
+        <div class="aviso-actions">
+          <button type="button" class="btn-cancel-aviso" (click)="cerrarAvisoLogin()">Cancelar</button>
+          <button type="button" class="btn-confirm-aviso" (click)="irAlRegistroDesdeAviso()">Ir al registro</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL 4: MIS FAVORITOS                     -->
+  <!-- ========================================== -->
+  @if (clienteAuthService.modalFavoritosOpen$ | async) {
+    <div class="modal-backdrop-cliente" (click)="cerrarModalFavoritos()">
+      <div class="modal-card-cliente favoritos-modal-card" (click)="$event.stopPropagation()">
+        <div class="favoritos-modal-header">
+          <div class="favoritos-title-wrap">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="#FF69B4">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            <h3>Mis Favoritos ({{ cantidadFavoritos }})</h3>
+          </div>
+          <button type="button" class="btn-close-cliente" (click)="cerrarModalFavoritos()" aria-label="Cerrar modal">×</button>
+        </div>
+
+        <div class="favoritos-modal-body">
+          @if ((clienteAuthService.favoritos$ | async)?.length) {
+            <div class="favoritos-grid-list">
+              @for (fav of (clienteAuthService.favoritos$ | async); track fav.id) {
+                <div class="favorito-item-card">
+                  <div class="fav-thumb" (click)="irAProducto(fav.id)">
+                    <img [src]="obtenerImagenUrl(fav.imagenPrincipal || fav.imageUrl || '')" [alt]="fav.nombre" />
+                  </div>
+                  <div class="fav-info" (click)="irAProducto(fav.id)">
+                    <h5 class="fav-name">{{ fav.nombre }}</h5>
+                    <div class="fav-prices">
+                      <strong class="fav-price">S/ {{ fav.precio }}</strong>
+                      @if (fav.precioAnterior && fav.precioAnterior > fav.precio) {
+                        <s class="fav-old-price">S/ {{ fav.precioAnterior }}</s>
+                      }
+                    </div>
+                  </div>
+                  <div class="fav-actions">
+                    <button type="button" class="btn-remove-fav" (click)="eliminarDeFavoritos(fav.id)" title="Quitar de favoritos">
+                      ✕
+                    </button>
+                    <button type="button" class="btn-view-fav" (click)="irAProducto(fav.id)">
+                      Ver
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="favoritos-empty">
+              <div class="empty-heart-circle">
+                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#FF69B4" stroke-width="1.6">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+              </div>
+              <h4>No tienes productos favoritos aún</h4>
+              <p>Explora nuestro catálogo y guarda los productos que más te gusten haciendo clic en el corazón.</p>
+              <a routerLink="/productos" class="btn-explore-catalog" (click)="cerrarModalFavoritos()">Explorar catálogo</a>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
 </div>
