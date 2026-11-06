@@ -337,6 +337,70 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
   mostrarModalEditar = false;
   pedidoEditando: any = null;
 
+  // ─── PAGINACIÓN REACTIVA (CP035 / MantisBT #0002699) ───────────────
+  paginaActual: number = 1;
+  pedidosPorPagina: number = 10; // Límite por defecto
+
+  get totalPaginas(): number {
+    const total = Math.ceil(this.pedidosFiltrados.length / this.pedidosPorPagina);
+    return total > 0 ? total : 1;
+  }
+
+  get pedidosPaginados(): PedidoAdmin[] {
+    const total = this.totalPaginas;
+    if (this.paginaActual > total) {
+      this.paginaActual = total;
+    }
+    const inicio = (this.paginaActual - 1) * this.pedidosPorPagina;
+    return this.pedidosFiltrados.slice(inicio, inicio + this.pedidosPorPagina);
+  }
+
+  cambiarPagina(numero: number): void {
+    if (numero >= 1 && numero <= this.totalPaginas) {
+      this.paginaActual = numero;
+    }
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+    }
+  }
+
+  paginaSiguiente(): void {
+    if (this.paginaActual < this.totalPaginas) {
+      this.paginaActual++;
+    }
+  }
+
+  reiniciarPaginacion(): void {
+    this.paginaActual = 1;
+  }
+
+  cambiarPedidosPorPagina(cantidad: any): void {
+    this.pedidosPorPagina = Number(cantidad);
+    this.reiniciarPaginacion();
+  }
+
+  get paginas(): number[] {
+    const total = this.totalPaginas;
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  get inicioRegistro(): number {
+    if (this.pedidosFiltrados.length === 0) return 0;
+    return (this.paginaActual - 1) * this.pedidosPorPagina + 1;
+  }
+
+  get finRegistro(): number {
+    const fin = this.paginaActual * this.pedidosPorPagina;
+    return fin > this.pedidosFiltrados.length ? this.pedidosFiltrados.length : fin;
+  }
+
+  get totalRegistros(): number {
+    return this.pedidosFiltrados.length;
+  }
+
   // ─── FILTROS TABLA ────────────────────────────────────────────────
   filtroTexto      = '';
   filtroEstado     = 'todos';          // 'todos' | estado
@@ -405,6 +469,7 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
   aplicarFiltroEstado(estado: string) {
     this.filtroEstado = estado;
     this.mostrarFiltroEstado = false;
+    this.reiniciarPaginacion();
   }
 
   toggleFiltroFecha() {
@@ -415,6 +480,7 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
   limpiarFechas() {
     this.filtroFechaDesde = '';
     this.filtroFechaHasta = '';
+    this.reiniciarPaginacion();
   }
 
   get etiquetaFiltroFecha(): string {
