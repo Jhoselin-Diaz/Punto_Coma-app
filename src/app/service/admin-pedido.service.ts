@@ -8,8 +8,14 @@ import { environment } from '../../environments/environment';
 })
 export class AdminPedidoService {
   private readonly baseUrl = `${environment.apiUrl.replace('/v1', '')}/admin/pedidos`;
+  private readonly publicRastreoUrl = `${environment.apiUrl.replace('/v1', '')}/public/rastreo`;
 
   constructor(private http: HttpClient) {}
+
+  consultarRastreoPublico(telefono: string): Observable<any[]> {
+    const cleanTelefono = telefono.replace(/[^\d]/g, '');
+    return this.http.get<any[]>(`${this.publicRastreoUrl}/${cleanTelefono}`);
+  }
 
   getPedidos(): Observable<any[]> {
     return this.http.get<any[]>(this.baseUrl);

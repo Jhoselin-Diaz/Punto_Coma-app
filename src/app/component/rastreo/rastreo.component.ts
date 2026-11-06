@@ -35,7 +35,16 @@ export class RastreoComponent implements OnInit {
   busquedaRealizada: boolean = false;
   pedidosEncontrados: PedidoRastreo[] = [];
   pedidoSeleccionado: PedidoRastreo | null = null;
+  pedidoActivo: PedidoRastreo | null = null;
+  encontrado: boolean = false;
   mensajeError: string | null = null;
+
+  get telefonoInput(): string {
+    return this.telefonoBusqueda;
+  }
+  set telefonoInput(val: string) {
+    this.telefonoBusqueda = val;
+  }
 
   // Control de pestaña informativa de agencias ('shalom' | 'olva')
   agenciaSeleccionada: 'shalom' | 'olva' = 'shalom';
@@ -72,13 +81,15 @@ export class RastreoComponent implements OnInit {
   }
 
   consultarEnvios(): void {
-    const rawTel = (this.telefonoBusqueda || '').trim();
+    const rawTel = (this.telefonoBusqueda || this.telefonoInput || '').trim();
     const telLimpio = rawTel.replace(/\D/g, '');
 
     if (!telLimpio || telLimpio.length < 7) {
       this.mensajeError = 'Por favor, ingresa un número de celular válido de al menos 9 dígitos.';
       this.pedidosEncontrados = [];
       this.pedidoSeleccionado = null;
+      this.pedidoActivo = null;
+      this.encontrado = false;
       this.busquedaRealizada = true;
       return;
     }
@@ -87,72 +98,67 @@ export class RastreoComponent implements OnInit {
     this.mensajeError = null;
     this.busquedaRealizada = true;
 
-    // Normalizador de comparación telefónica ignorando prefijo 51
-    const coincide = (t: string) => {
-      if (!t) return false;
-      const tClean = t.replace(/\D/g, '');
-      return tClean === telLimpio || tClean === '51' + telLimpio || '51' + tClean === telLimpio;
-    };
-
-    this.pedidoService.getPedidosDeCliente(telLimpio).subscribe({
+    // Llamada directa al endpoint público desprotegido /api/public/rastreo/{telefono}
+    this.pedidoService.consultarRastreoPublico(telLimpio).subscribe({
       next: (pedidos) => {
-        this.cargando = false;
         if (!pedidos || pedidos.length === 0) {
-          this.pedidosEncontrados = [];
-          this.pedidoSeleccionado = null;
-          this.cdr.detectChanges();
+          // Si el usuario escribió 9 dígitos y no hubo coincidencia, intentar inmediatamente con el prefijo "51"
+          if (telLimpio.length === 9) {
+            this.pedidoService.consultarRastreoPublico('51' + telLimpio).subscribe({
+              next: (pedidos51) => {
+                this.cargando = false;
+                this.procesarPedidos(pedidos51 || []);
+              },
+              error: () => {
+                this.cargando = false;
+                this.procesarPedidos([]);
+              }
+            });
+            return;
+          }
+          this.cargando = false;
+          this.procesarPedidos([]);
           return;
         }
 
-        // Filtrar exclusivamente pedidos que coincidan con el teléfono,
-        // que estén en estado "EN_CAMINO" y tengan vigencia activa (no expirada)
-        const ahora = Date.now();
-        const pedidosFiltrados = pedidos.filter(p => {
-          const coincideTel = coincide(p.telefono);
-          const est = (p.estado || '').toUpperCase();
-          const esEnCamino = est === 'EN_CAMINO' || est === 'EN CAMINO';
-
-          let vigente = true;
-          if (p.fechaExpiracionRastreo) {
-            try {
-              const expTime = new Date(p.fechaExpiracionRastreo).getTime();
-              if (!isNaN(expTime)) {
-                vigente = expTime >= ahora;
-              }
-            } catch {
-              vigente = true;
-            }
-          }
-
-          return coincideTel && esEnCamino && vigente;
-        });
-
-        // Mapear los pedidos encontrados respetando la agencia y guía reales asignadas
-        this.pedidosEncontrados = pedidosFiltrados.map(p => this.transformarAPedidoRastreo(p));
-
-        if (this.pedidosEncontrados.length > 0) {
-          this.seleccionarPedido(this.pedidosEncontrados[0]);
-        } else {
-          this.pedidoSeleccionado = null;
-        }
-        this.cdr.detectChanges();
+        this.cargando = false;
+        this.procesarPedidos(pedidos);
       },
       error: (err) => {
         this.cargando = false;
-        console.error('Error al consultar rastreo de pedidos:', err);
+        console.error('Error al consultar rastreo público:', err);
         this.mensajeError = 'No se pudo conectar con el servicio de rastreo. Intenta nuevamente en unos instantes.';
         this.pedidosEncontrados = [];
         this.pedidoSeleccionado = null;
+        this.pedidoActivo = null;
+        this.encontrado = false;
         this.cdr.detectChanges();
       }
     });
   }
 
+  private procesarPedidos(pedidos: any[]): void {
+    this.pedidosEncontrados = (pedidos || []).map(p => this.transformarAPedidoRastreo(p));
+
+    if (this.pedidosEncontrados.length > 0) {
+      this.seleccionarPedido(this.pedidosEncontrados[0]);
+    } else {
+      this.pedidoSeleccionado = null;
+      this.pedidoActivo = null;
+      this.encontrado = false;
+    }
+    this.cdr.detectChanges();
+  }
+
   seleccionarPedido(pedido: PedidoRastreo): void {
     this.pedidoSeleccionado = pedido;
-    if (pedido.agencia === 'OLVA') {
+    this.pedidoActivo = pedido;
+    this.encontrado = true;
+
+    const ag = (pedido.agencia || '').toString().toUpperCase();
+    if (ag.includes('OLVA')) {
       this.agenciaSeleccionada = 'olva';
-    } else if (pedido.agencia === 'SHALOM') {
+    } else if (ag.includes('SHALOM')) {
       this.agenciaSeleccionada = 'shalom';
     }
     this.cdr.detectChanges();
