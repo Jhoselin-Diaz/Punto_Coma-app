@@ -18,6 +18,8 @@ export interface PedidoRastreo {
   total: string;
   agencia: 'SHALOM' | 'OLVA' | 'MOTORIZADO';
   numeroSeguimiento?: string;
+  codigoRecojo?: string;
+  fleteDestino?: number;
   direccionEnvio?: string;
   productos?: string;
 }
@@ -50,7 +52,7 @@ export class RastreoComponent implements OnInit {
   agenciaSeleccionada: 'shalom' | 'olva' = 'shalom';
 
   // Feedback visual temporal al copiar
-  codigoCopiado: boolean = false;
+  codigoCopiado: 'orden' | 'recojo' | 'guia' | null = null;
   private copiadoTimeout: any = null;
 
   constructor(
@@ -98,7 +100,7 @@ export class RastreoComponent implements OnInit {
     this.mensajeError = null;
     this.busquedaRealizada = true;
 
-    // Llamada directa al endpoint público desprotegido /api/public/rastreo/{telefono}
+    // Llamada directa al endpoint público /api/pedidos/cliente/{telefono}
     this.pedidoService.consultarRastreoPublico(telLimpio).subscribe({
       next: (pedidos) => {
         if (!pedidos || pedidos.length === 0) {
@@ -168,21 +170,26 @@ export class RastreoComponent implements OnInit {
     this.agenciaSeleccionada = agencia;
   }
 
-  copiarCodigo(codigo?: string): void {
+  copiarTexto(codigo?: string, tipo: 'orden' | 'recojo' | 'guia' = 'guia'): void {
     if (!codigo || !codigo.trim()) return;
 
+    const texto = codigo.trim();
     if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(codigo.trim()).then(() => {
-        this.marcarCopiado();
+      navigator.clipboard.writeText(texto).then(() => {
+        this.marcarCopiado(tipo);
       }).catch(() => {
-        this.fallbackCopiar(codigo.trim());
+        this.fallbackCopiar(texto, tipo);
       });
     } else {
-      this.fallbackCopiar(codigo.trim());
+      this.fallbackCopiar(texto, tipo);
     }
   }
 
-  private fallbackCopiar(texto: string): void {
+  copiarCodigo(codigo?: string): void {
+    this.copiarTexto(codigo, 'guia');
+  }
+
+  private fallbackCopiar(texto: string, tipo: 'orden' | 'recojo' | 'guia'): void {
     try {
       const textarea = document.createElement('textarea');
       textarea.value = texto;
@@ -193,19 +200,19 @@ export class RastreoComponent implements OnInit {
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      this.marcarCopiado();
+      this.marcarCopiado(tipo);
     } catch (e) {
       console.warn('No se pudo copiar el código al portapapeles:', e);
     }
   }
 
-  private marcarCopiado(): void {
-    this.codigoCopiado = true;
+  private marcarCopiado(tipo: 'orden' | 'recojo' | 'guia'): void {
+    this.codigoCopiado = tipo;
     if (this.copiadoTimeout) {
       clearTimeout(this.copiadoTimeout);
     }
     this.copiadoTimeout = setTimeout(() => {
-      this.codigoCopiado = false;
+      this.codigoCopiado = null;
       this.cdr.detectChanges();
     }, 2000);
     this.cdr.detectChanges();
@@ -213,7 +220,7 @@ export class RastreoComponent implements OnInit {
 
   /**
    * Transforma el DTO devuelto por el backend a la estructura requerida para Rastreo,
-   * utilizando los datos reales persistidos en la base de datos (agencia_envio, numero_guia).
+   * utilizando los datos reales persistidos en la base de datos (agencia_envio, numero_guia, codigo_recojo, flete_destino).
    */
   private transformarAPedidoRastreo(p: any): PedidoRastreo {
     const idOrden = (p.id || '').toString();
@@ -238,6 +245,9 @@ export class RastreoComponent implements OnInit {
       numeroSeguimiento = (guia && guia !== 'DIRECTO') ? guia : undefined;
     }
 
+    const codigoRecojo = (p.codigoRecojo && p.codigoRecojo.toString().trim()) ? p.codigoRecojo.toString().trim() : undefined;
+    const fleteDestino = (p.fleteDestino !== undefined && p.fleteDestino !== null && Number(p.fleteDestino) > 0) ? Number(p.fleteDestino) : undefined;
+
     return {
       id: idOrden,
       dbId: dbId,
@@ -249,9 +259,10 @@ export class RastreoComponent implements OnInit {
       total: p.total || 'S/ 0.00',
       agencia: agencia,
       numeroSeguimiento: numeroSeguimiento,
+      codigoRecojo: codigoRecojo,
+      fleteDestino: fleteDestino,
       direccionEnvio: p.direccion || p.direccionEnvio || p.direccionEntrega || 'Dirección registrada',
       productos: p.producto || 'Productos seleccionados'
     };
   }
 }
-

@@ -1,6 +1,17 @@
 <div class="admin-rastreo-container">
-  <!-- PESTAÑAS DEL MÓDULO -->
-  <div class="rastreo-tabs">
+  <!-- ENCABEZADO -->
+  <div class="rastreo-header">
+    <div class="header-titles">
+      <h2>Módulo de Rastreo y Envíos</h2>
+      <p class="subtitle">Gestiona las URLs oficiales de consulta, despacha pedidos con número de seguimiento y supervisa envíos en tránsito.</p>
+    </div>
+    <div class="header-badges">
+      <span class="badge-pill active">● Servicio en Línea</span>
+    </div>
+  </div>
+
+  <!-- NAVEGACIÓN POR PESTAÑAS -->
+  <div class="tabs-nav">
     <button
       type="button"
       class="tab-btn"
@@ -13,7 +24,7 @@
       class="tab-btn"
       [class.active]="tabActiva === 'asignar'"
       (click)="tabActiva = 'asignar'">
-      🏷️ Asignar Guías a Pedidos
+      🏷️ Asignar Guía a Pedido
       <span class="badge-count" *ngIf="pedidosDisponibles.length > 0">{{ pedidosDisponibles.length }}</span>
     </button>
     <button
@@ -22,18 +33,19 @@
       [class.active]="tabActiva === 'monitor'"
       (click)="tabActiva = 'monitor'">
       🚚 Envíos en Tránsito
-      <span class="badge-count count-green" *ngIf="enviosEnTransito.length > 0">{{ enviosEnTransito.length }}</span>
+      <span class="badge-count in-transit" *ngIf="enviosEnTransito.length > 0">{{ enviosEnTransito.length }}</span>
     </button>
   </div>
 
-  <div class="rastreo-tab-content">
+  <!-- CONTENIDO DE LAS PESTAÑAS -->
+  <div class="tab-content">
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!-- PESTAÑA 1: CONFIGURACIÓN DE URLS DE AGENCIAS                      -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <div *ngIf="tabActiva === 'urls'" class="panel-card">
       <div class="panel-header">
-        <h3>Configuración de Portales Oficiales de Rastreo</h3>
-        <p>Define las direcciones web oficiales de seguimiento que se abrirán cuando los clientes consulten sus envíos.</p>
+        <h3>Enlaces Oficiales de Rastreo Externo</h3>
+        <p>Configura las páginas web oficiales de las agencias hacia donde los clientes serán redirigidos para consultar el seguimiento de su paquete.</p>
       </div>
 
       <form (ngSubmit)="guardarUrls()" class="urls-form">
@@ -41,7 +53,7 @@
         <div class="form-group">
           <label for="urlShalom">
             <span class="agency-tag shalom-tag">SHALOM</span>
-            URL Portal Oficial de Seguimiento:
+            URL Portal Oficial de Rastreo:
           </label>
           <div class="input-with-icon">
             <input
@@ -54,7 +66,7 @@
             />
             <a [href]="urlShalom" target="_blank" rel="noopener noreferrer" class="btn-test-link" title="Probar enlace">↗</a>
           </div>
-          <small class="helper-text">Ruta web predeterminada para paquetes enviados por encomienda nacional Shalom.</small>
+          <small class="helper-text">Ruta web para seguimiento de envíos Shalom a nivel nacional.</small>
         </div>
 
         <!-- URL OLVA COURIER -->
@@ -92,7 +104,7 @@
     <div *ngIf="tabActiva === 'asignar'" class="panel-card">
       <div class="panel-header">
         <h3>Despacho y Asignación de Guías</h3>
-        <p>Selecciona un pedido validado para asignarle su agencia de courier, número de seguimiento y vigencia de rastreo.</p>
+        <p>Selecciona un pedido validado para asignarle su agencia de courier, credenciales de recojo o tracking y vigencia de rastreo.</p>
       </div>
 
       <div *ngIf="pedidosDisponibles.length === 0" class="empty-box">
@@ -135,21 +147,78 @@
           </div>
         </div>
 
-        <!-- NÚMERO DE GUÍA (SOLO SI ES SHALOM U OLVA) -->
-        <div class="form-group" *ngIf="agenciaSeleccionada !== 'MOTORIZADO'">
-          <label for="numeroGuia">Número de Guía / Tracking (*):</label>
-          <input
-            type="text"
-            id="numeroGuia"
-            [(ngModel)]="numeroGuia"
-            name="numeroGuia"
-            placeholder="Ej. SHA-098231 o 77894210"
-            required
-            class="input-control"
-          />
-          <small class="helper-text">Este es el código que el cliente podrá copiar en la vista de rastreo para consultar en la agencia.</small>
+        <!-- CAMPOS ESPECÍFICOS PARA SHALOM -->
+        <div *ngIf="agenciaSeleccionada === 'SHALOM'" class="agency-fields-box shalom-box">
+          <div class="agency-box-header">
+            <span class="box-badge shalom-badge">Credenciales de Recojo Shalom</span>
+            <small>Para el retiro en ventanilla de Shalom, el cliente requiere presentar ambos códigos junto a su DNI físico.</small>
+          </div>
+
+          <div class="fields-two-cols">
+            <div class="form-group">
+              <label for="numeroGuiaShalom">N° de Orden Shalom (*):</label>
+              <input
+                type="text"
+                id="numeroGuiaShalom"
+                [(ngModel)]="numeroGuia"
+                name="numeroGuiaShalom"
+                placeholder="Ej. 9560819"
+                required
+                class="input-control font-mono"
+              />
+              <small class="helper-text">Número de orden / guía provisto por Shalom.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="codigoRecojoShalom">Código de Orden / Clave de Recojo (*):</label>
+              <input
+                type="text"
+                id="codigoRecojoShalom"
+                [(ngModel)]="codigoRecojo"
+                name="codigoRecojoShalom"
+                placeholder="Ej. C7P9"
+                maxlength="15"
+                required
+                class="input-control font-mono uppercase-input"
+              />
+              <small class="helper-text">Clave alfanumérica de recojo de 4 dígitos/letras.</small>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 10px;">
+            <label for="fleteDestinoShalom">Flete a pagar en destino (S/):</label>
+            <input
+              type="number"
+              step="0.50"
+              min="0"
+              id="fleteDestinoShalom"
+              [(ngModel)]="fleteDestino"
+              name="fleteDestinoShalom"
+              placeholder="Ej. 15.00 (Opcional)"
+              class="input-control"
+            />
+            <small class="helper-text">Costo que el cliente debe cancelar en ventanilla de Shalom. Dejar en 0 o vacío si el flete ya fue pagado previamente.</small>
+          </div>
         </div>
 
+        <!-- CAMPOS ESPECÍFICOS PARA OLVA COURIER -->
+        <div *ngIf="agenciaSeleccionada === 'OLVA'" class="agency-fields-box olva-box">
+          <div class="form-group">
+            <label for="numeroGuiaOlva">Número de Guía / Tracking Olva (*):</label>
+            <input
+              type="text"
+              id="numeroGuiaOlva"
+              [(ngModel)]="numeroGuia"
+              name="numeroGuiaOlva"
+              placeholder="Ej. 77894210"
+              required
+              class="input-control font-mono"
+            />
+            <small class="helper-text">Código único de seguimiento para consultar el recorrido del paquete en el tracking oficial de Olva.</small>
+          </div>
+        </div>
+
+        <!-- AVISO PARA MOTORIZADO LOCAL -->
         <div class="notice-box notice-motorizado" *ngIf="agenciaSeleccionada === 'MOTORIZADO'">
           🛵 <strong>Envío directo por Motorizado:</strong> La entrega se gestiona localmente sin código de tracking externo. El cliente verá un aviso informativo para coordinar en tiempo real.
         </div>
@@ -186,7 +255,7 @@
       <div class="panel-header-flex">
         <div>
           <h3>Monitor de Envíos en Tránsito</h3>
-          <p>Supervisa los pedidos que están en ruta hacia los clientes, edita guías o márcalos como entregados.</p>
+          <p>Supervisa los pedidos que están en ruta hacia los clientes, edita guías/credenciales o márcalos como entregados.</p>
         </div>
         <button type="button" class="btn-secondary" (click)="cargarPedidos()">🔄 Actualizar</button>
       </div>
@@ -205,7 +274,7 @@
               <th>Cliente</th>
               <th>Teléfono</th>
               <th>Agencia</th>
-              <th>N° Guía</th>
+              <th>Datos de Despacho</th>
               <th>Vigencia</th>
               <th>Acciones</th>
             </tr>
@@ -219,7 +288,30 @@
                 <span class="agency-tag-sm" [ngClass]="(p.agencia || '').toLowerCase()">{{ p.agencia }}</span>
               </td>
               <td>
-                <code class="code-pill">{{ p.numeroGuia || 'Directo' }}</code>
+                <!-- DATOS SHALOM -->
+                <div *ngIf="p.agencia === 'SHALOM'" class="transit-codes-box">
+                  <div class="code-line">
+                    <span class="code-lbl">Orden:</span>
+                    <code class="code-pill font-mono">{{ p.numeroGuia || 'Sin orden' }}</code>
+                  </div>
+                  <div class="code-line" *ngIf="p.codigoRecojo">
+                    <span class="code-lbl">Clave:</span>
+                    <code class="code-pill code-recojo font-mono">{{ p.codigoRecojo }}</code>
+                  </div>
+                  <div class="flete-badge" *ngIf="p.fleteDestino && p.fleteDestino > 0">
+                    Destino: S/ {{ p.fleteDestino | number:'1.2-2' }}
+                  </div>
+                </div>
+
+                <!-- DATOS OLVA -->
+                <div *ngIf="p.agencia === 'OLVA'">
+                  <code class="code-pill font-mono">{{ p.numeroGuia || 'Sin guía' }}</code>
+                </div>
+
+                <!-- DATOS MOTORIZADO -->
+                <div *ngIf="p.agencia === 'MOTORIZADO'">
+                  <code class="code-pill pill-motorizado">Directo</code>
+                </div>
               </td>
               <td>
                 <span class="vigencia-badge">{{ calcularDiasRestantes(p.fechaExpiracionRastreo) }}</span>
@@ -235,7 +327,7 @@
                     ✓ Entregado
                   </button>
 
-                  <!-- BOTÓN 2: EDITAR -->
+                  <!-- BOTÓN 2: EDITAR GUÍA -->
                   <button
                     type="button"
                     class="btn-action btn-action-edit"
@@ -244,13 +336,13 @@
                     ✏️ Editar
                   </button>
 
-                  <!-- BOTÓN 3: ANULAR / DEVOLVER A PENDIENTES -->
+                  <!-- BOTÓN 3: ANULAR DESPACHO -->
                   <button
                     type="button"
                     class="btn-action btn-action-cancel"
                     (click)="abrirModalAnular(p)"
                     title="Anular despacho y devolver a pendientes">
-                    ↩️ Anular
+                    ✕ Anular
                   </button>
                 </div>
               </td>
@@ -261,17 +353,14 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════════════ -->
-  <!-- MODAL CENTRADO ESTILIZADO (CONFIRMAR ENTREGA / EDITAR / ANULAR)       -->
-  <!-- ═══════════════════════════════════════════════════════════════════════ -->
-  <div class="modal-backdrop-custom" *ngIf="modalVisible">
-    <div class="modal-card-custom" [ngClass]="'modal-' + modalTipo">
-      <!-- BOTÓN CERRAR SUPERIOR -->
-      <button type="button" class="btn-close-modal" (click)="cerrarModal()" [disabled]="procesandoModal">✕</button>
-
-      <!-- ENCABEZADO CON ÍCONO TEMÁTICO -->
-      <div class="modal-icon-header">
-        <div class="icon-circle" [ngClass]="'circle-' + modalTipo">
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL CENTRADO ESTILIZADO (ENTREGAR, EDITAR, ANULAR)               -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="modalVisible" (click)="cerrarModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <!-- CABECERA DEL MODAL -->
+      <div class="modal-card-header">
+        <div class="modal-icon-badge" [ngClass]="modalTipo">
           <span *ngIf="modalTipo === 'entregar'">✓</span>
           <span *ngIf="modalTipo === 'editar'">✏️</span>
           <span *ngIf="modalTipo === 'anular'">⚠️</span>
@@ -297,7 +386,11 @@
         </div>
         <div class="info-row" *ngIf="modalTipo !== 'editar'">
           <span class="info-label">Agencia / Guía:</span>
-          <span>{{ pedidoEnModal.agencia }} — <code>{{ pedidoEnModal.numeroGuia || 'Directo' }}</code></span>
+          <span>
+            {{ pedidoEnModal.agencia }} — <code>{{ pedidoEnModal.numeroGuia || 'Directo' }}</code>
+            <ng-container *ngIf="pedidoEnModal.codigoRecojo"> | Clave: <code>{{ pedidoEnModal.codigoRecojo }}</code></ng-container>
+            <ng-container *ngIf="pedidoEnModal.fleteDestino && pedidoEnModal.fleteDestino > 0"> (Destino: S/ {{ pedidoEnModal.fleteDestino | number:'1.2-2' }})</ng-container>
+          </span>
         </div>
       </div>
 
@@ -329,16 +422,61 @@
             </div>
           </div>
 
-          <div class="form-group-modal" *ngIf="editAgencia !== 'MOTORIZADO'">
-            <label class="modal-label" for="editNumeroGuia">Número de Guía / Tracking (*):</label>
+          <!-- EDIT SHALOM -->
+          <div *ngIf="editAgencia === 'SHALOM'" class="edit-fields-stack">
+            <div class="form-group-modal">
+              <label class="modal-label" for="editNumeroGuiaShalom">N° de Orden Shalom (*):</label>
+              <input
+                type="text"
+                id="editNumeroGuiaShalom"
+                [(ngModel)]="editNumeroGuia"
+                name="editNumeroGuiaShalom"
+                placeholder="Ej. 9560819"
+                class="modal-input font-mono"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="modal-label" for="editCodigoRecojo">Código de Orden / Clave de Recojo (*):</label>
+              <input
+                type="text"
+                id="editCodigoRecojo"
+                [(ngModel)]="editCodigoRecojo"
+                name="editCodigoRecojo"
+                placeholder="Ej. C7P9"
+                maxlength="15"
+                class="modal-input font-mono uppercase-input"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="modal-label" for="editFleteDestino">Flete en destino (S/):</label>
+              <input
+                type="number"
+                step="0.50"
+                min="0"
+                id="editFleteDestino"
+                [(ngModel)]="editFleteDestino"
+                name="editFleteDestino"
+                placeholder="Ej. 15.00 (Opcional)"
+                class="modal-input"
+              />
+            </div>
+          </div>
+
+          <!-- EDIT OLVA -->
+          <div class="form-group-modal" *ngIf="editAgencia === 'OLVA'">
+            <label class="modal-label" for="editNumeroGuiaOlva">Número de Guía / Tracking (*):</label>
             <input
               type="text"
-              id="editNumeroGuia"
+              id="editNumeroGuiaOlva"
               [(ngModel)]="editNumeroGuia"
-              name="editNumeroGuia"
-              placeholder="Ej. SHA-098231 o 77894210"
-              class="modal-input"
+              name="editNumeroGuiaOlva"
+              placeholder="Ej. 77894210"
+              class="modal-input font-mono"
             />
+          </div>
+
+          <div class="notice-box notice-motorizado" *ngIf="editAgencia === 'MOTORIZADO'" style="margin-bottom: 15px;">
+            🛵 La entrega se coordinará de manera directa por motorizado local sin código de tracking externo.
           </div>
 
           <div class="form-group-modal">
@@ -363,7 +501,7 @@
             <span>ℹ️</span>
             <div>
               El pedido volverá al estado <strong>VALIDADO</strong> y reaparecerá en la pestaña
-              <strong>"Asignar Guías a Pedidos"</strong> para que puedas registrar una nueva guía o corregir el método de entrega.
+              <strong>"Asignar Guía a Pedido"</strong> para que puedas registrar una nueva guía o corregir el método de entrega.
             </div>
           </div>
         </div>

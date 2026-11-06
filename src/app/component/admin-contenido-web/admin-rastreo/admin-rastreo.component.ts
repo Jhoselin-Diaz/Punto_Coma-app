@@ -15,6 +15,8 @@ export interface PedidoValido {
   direccion?: string;
   agencia?: string;
   numeroGuia?: string;
+  codigoRecojo?: string;
+  fleteDestino?: number;
   fechaDespacho?: string;
   fechaExpiracionRastreo?: string;
 }
@@ -39,6 +41,8 @@ export class AdminRastreoComponent implements OnInit {
   pedidoSeleccionadoId: string = '';
   agenciaSeleccionada: 'SHALOM' | 'OLVA' | 'MOTORIZADO' = 'SHALOM';
   numeroGuia: string = '';
+  codigoRecojo: string = '';
+  fleteDestino: number | null = null;
   vigenciaDias: number = 5; // 5 días por defecto (Local / Lima)
   guardandoDespacho: boolean = false;
 
@@ -55,6 +59,8 @@ export class AdminRastreoComponent implements OnInit {
   // Campos para Edición en Modal
   editAgencia: 'SHALOM' | 'OLVA' | 'MOTORIZADO' = 'SHALOM';
   editNumeroGuia: string = '';
+  editCodigoRecojo: string = '';
+  editFleteDestino: number | null = null;
   editVigenciaDias: number = 5;
 
   constructor(
@@ -140,9 +146,20 @@ export class AdminRastreoComponent implements OnInit {
       return;
     }
 
-    if (this.agenciaSeleccionada !== 'MOTORIZADO' && (!this.numeroGuia || !this.numeroGuia.trim())) {
-      this.modalAlertaService.warning('Ingresa el número de guía o tracking provisto por la agencia.', 'Guía Requerida');
-      return;
+    if (this.agenciaSeleccionada === 'SHALOM') {
+      if (!this.numeroGuia || !this.numeroGuia.trim()) {
+        this.modalAlertaService.warning('Ingresa el N° de Orden provisto por Shalom.', 'N° de Orden Requerido');
+        return;
+      }
+      if (!this.codigoRecojo || !this.codigoRecojo.trim()) {
+        this.modalAlertaService.warning('Ingresa el Código de Orden / Clave de Recojo de Shalom.', 'Código de Recojo Requerido');
+        return;
+      }
+    } else if (this.agenciaSeleccionada === 'OLVA') {
+      if (!this.numeroGuia || !this.numeroGuia.trim()) {
+        this.modalAlertaService.warning('Ingresa el número de tracking o remito provisto por Olva Courier.', 'N° de Guía Requerido');
+        return;
+      }
     }
 
     const pedido = this.pedidosDisponibles.find(p => p.id === this.pedidoSeleccionadoId || String(p.dbId) === this.pedidoSeleccionadoId);
@@ -154,12 +171,18 @@ export class AdminRastreoComponent implements OnInit {
     const fechaExp = new Date();
     fechaExp.setDate(ahora.getDate() + (Number(this.vigenciaDias) || 5));
 
+    const numGuiaFinal = this.agenciaSeleccionada !== 'MOTORIZADO' ? this.numeroGuia.trim() : 'DIRECTO';
+    const codigoRecojoFinal = this.agenciaSeleccionada === 'SHALOM' ? (this.codigoRecojo || '').trim().toUpperCase() : null;
+    const fleteFinal = this.agenciaSeleccionada === 'SHALOM' && this.fleteDestino !== null && this.fleteDestino !== undefined && (this.fleteDestino as any) !== '' ? Number(this.fleteDestino) : null;
+
     const payload = {
       estado: 'EN_CAMINO',
       agencia: this.agenciaSeleccionada,
       agenciaEnvio: this.agenciaSeleccionada,
-      numeroGuia: this.agenciaSeleccionada !== 'MOTORIZADO' ? this.numeroGuia.trim() : 'DIRECTO',
-      guia: this.agenciaSeleccionada !== 'MOTORIZADO' ? this.numeroGuia.trim() : 'DIRECTO',
+      numeroGuia: numGuiaFinal,
+      guia: numGuiaFinal,
+      codigoRecojo: codigoRecojoFinal,
+      fleteDestino: fleteFinal,
       fechaDespacho: ahora.toISOString(),
       fechaExpiracionRastreo: fechaExp.toISOString()
     };
@@ -177,13 +200,17 @@ export class AdminRastreoComponent implements OnInit {
           ...pedido,
           estado: 'EN_CAMINO',
           agencia: this.agenciaSeleccionada,
-          numeroGuia: payload.numeroGuia,
+          numeroGuia: numGuiaFinal,
+          codigoRecojo: codigoRecojoFinal || '',
+          fleteDestino: fleteFinal || 0,
           fechaDespacho: payload.fechaDespacho,
           fechaExpiracionRastreo: payload.fechaExpiracionRastreo
         };
         if (resp && typeof resp === 'object') {
           if (resp.agenciaEnvio || resp.agencia) pedidoActualizado.agencia = resp.agenciaEnvio || resp.agencia;
           if (resp.numeroGuia || resp.guia) pedidoActualizado.numeroGuia = resp.numeroGuia || resp.guia;
+          if (resp.codigoRecojo !== undefined) pedidoActualizado.codigoRecojo = resp.codigoRecojo;
+          if (resp.fleteDestino !== undefined) pedidoActualizado.fleteDestino = Number(resp.fleteDestino);
           if (resp.fechaDespacho) pedidoActualizado.fechaDespacho = resp.fechaDespacho;
           if (resp.fechaExpiracionRastreo) pedidoActualizado.fechaExpiracionRastreo = resp.fechaExpiracionRastreo;
         }
@@ -193,6 +220,8 @@ export class AdminRastreoComponent implements OnInit {
         // 3. Reset del formulario
         this.pedidoSeleccionadoId = '';
         this.numeroGuia = '';
+        this.codigoRecojo = '';
+        this.fleteDestino = null;
         this.agenciaSeleccionada = 'SHALOM';
         this.vigenciaDias = 5;
 
@@ -236,6 +265,8 @@ export class AdminRastreoComponent implements OnInit {
 
     const guia = (pedido.numeroGuia || '').trim();
     this.editNumeroGuia = (guia && guia !== 'Directo' && guia !== 'DIRECTO') ? guia : '';
+    this.editCodigoRecojo = (pedido.codigoRecojo || '').trim();
+    this.editFleteDestino = (pedido.fleteDestino !== undefined && pedido.fleteDestino !== null && pedido.fleteDestino > 0) ? pedido.fleteDestino : null;
     this.editVigenciaDias = 5;
     this.modalVisible = true;
   }
@@ -295,9 +326,21 @@ export class AdminRastreoComponent implements OnInit {
 
   private ejecutarEdicion(): void {
     if (!this.pedidoEnModal) return;
-    if (this.editAgencia !== 'MOTORIZADO' && (!this.editNumeroGuia || !this.editNumeroGuia.trim())) {
-      this.modalAlertaService.warning('Ingresa el número de guía o tracking provisto por la agencia.', 'Guía Requerida');
-      return;
+
+    if (this.editAgencia === 'SHALOM') {
+      if (!this.editNumeroGuia || !this.editNumeroGuia.trim()) {
+        this.modalAlertaService.warning('Ingresa el N° de Orden de Shalom.', 'N° de Orden Requerido');
+        return;
+      }
+      if (!this.editCodigoRecojo || !this.editCodigoRecojo.trim()) {
+        this.modalAlertaService.warning('Ingresa el Código de Orden / Clave de Recojo de Shalom.', 'Código de Recojo Requerido');
+        return;
+      }
+    } else if (this.editAgencia === 'OLVA') {
+      if (!this.editNumeroGuia || !this.editNumeroGuia.trim()) {
+        this.modalAlertaService.warning('Ingresa el número de guía de Olva Courier.', 'Guía Requerida');
+        return;
+      }
     }
 
     const pedido = this.pedidoEnModal;
@@ -309,6 +352,8 @@ export class AdminRastreoComponent implements OnInit {
     fechaExp.setDate(ahora.getDate() + (Number(this.editVigenciaDias) || 5));
 
     const numGuiaFinal = this.editAgencia !== 'MOTORIZADO' ? this.editNumeroGuia.trim() : 'DIRECTO';
+    const codigoRecojoFinal = this.editAgencia === 'SHALOM' ? (this.editCodigoRecojo || '').trim().toUpperCase() : null;
+    const fleteFinal = this.editAgencia === 'SHALOM' && this.editFleteDestino !== null && this.editFleteDestino !== undefined && (this.editFleteDestino as any) !== '' ? Number(this.editFleteDestino) : null;
 
     const payload = {
       estado: 'EN_CAMINO',
@@ -316,6 +361,8 @@ export class AdminRastreoComponent implements OnInit {
       agenciaEnvio: this.editAgencia,
       numeroGuia: numGuiaFinal,
       guia: numGuiaFinal,
+      codigoRecojo: codigoRecojoFinal,
+      fleteDestino: fleteFinal,
       fechaExpiracionRastreo: fechaExp.toISOString()
     };
 
@@ -330,6 +377,8 @@ export class AdminRastreoComponent implements OnInit {
             ...this.enviosEnTransito[index],
             agencia: this.editAgencia,
             numeroGuia: numGuiaFinal,
+            codigoRecojo: codigoRecojoFinal || '',
+            fleteDestino: fleteFinal || 0,
             fechaExpiracionRastreo: payload.fechaExpiracionRastreo
           };
         }
@@ -358,6 +407,8 @@ export class AdminRastreoComponent implements OnInit {
       agenciaEnvio: null,
       numeroGuia: null,
       guia: null,
+      codigoRecojo: null,
+      fleteDestino: null,
       fechaDespacho: null,
       fechaExpiracionRastreo: null
     };
@@ -376,6 +427,8 @@ export class AdminRastreoComponent implements OnInit {
           estado: 'VALIDADO',
           agencia: undefined,
           numeroGuia: undefined,
+          codigoRecojo: undefined,
+          fleteDestino: undefined,
           fechaDespacho: undefined,
           fechaExpiracionRastreo: undefined
         };
@@ -418,6 +471,8 @@ export class AdminRastreoComponent implements OnInit {
       direccion: p.direccion || p.direccionEnvio || '',
       agencia: p.agencia || p.agenciaEnvio || 'SHALOM',
       numeroGuia: p.numeroGuia || p.guia || '',
+      codigoRecojo: p.codigoRecojo || '',
+      fleteDestino: (p.fleteDestino !== undefined && p.fleteDestino !== null) ? Number(p.fleteDestino) : 0,
       fechaDespacho: p.fechaDespacho || '',
       fechaExpiracionRastreo: p.fechaExpiracionRastreo || ''
     };

@@ -809,3 +809,139 @@
   }
 }
 
+
+
+/* SHALOM & CREDENTIAL BOXES */
+.agency-fields-box {
+  background: #fffcf9;
+  border: 1.5px solid #fed7aa;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agency-fields-box.shalom-box {
+  border-color: #fecdd3;
+  background: #fffbfa;
+}
+
+.agency-box-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.agency-box-header small {
+  font-size: 12px;
+  color: #766c67;
+}
+
+.box-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  align-self: flex-start;
+  letter-spacing: 0.5px;
+}
+
+.box-badge.shalom-badge {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+.fields-two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .fields-two-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  letter-spacing: 1px;
+}
+
+.uppercase-input {
+  text-transform: uppercase;
+}
+
+.transit-codes-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.code-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.code-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: #766c67;
+  text-transform: uppercase;
+}
+
+.code-pill.code-recojo {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.code-pill.pill-motorizado {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.flete-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px dashed #fca5a5;
+  margin-top: 2px;
+  align-self: flex-start;
+}
+
+.clave-pill {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+.flete-pill {
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+.edit-fields-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
