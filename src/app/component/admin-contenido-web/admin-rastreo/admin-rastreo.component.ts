@@ -46,6 +46,17 @@ export class AdminRastreoComponent implements OnInit {
   enviosEnTransito: PedidoValido[] = [];
   cargandoPedidos: boolean = false;
 
+  // MODAL CENTRADO ESTILIZADO
+  modalVisible: boolean = false;
+  modalTipo: 'entregar' | 'editar' | 'anular' | null = null;
+  pedidoEnModal: PedidoValido | null = null;
+  procesandoModal: boolean = false;
+
+  // Campos para Edición en Modal
+  editAgencia: 'SHALOM' | 'OLVA' | 'MOTORIZADO' = 'SHALOM';
+  editNumeroGuia: string = '';
+  editVigenciaDias: number = 5;
+
   constructor(
     private configService: ConfiguracionService,
     private adminPedidoService: AdminPedidoService,
@@ -203,23 +214,181 @@ export class AdminRastreoComponent implements OnInit {
     });
   }
 
-  marcarComoEntregado(pedido: PedidoValido): void {
-    const confirmar = confirm(`¿Confirmas que el pedido ${pedido.id} ha sido entregado exitosamente al cliente ${pedido.cliente}?`);
-    if (!confirmar) return;
+  // GESTIÓN DEL MODAL CENTRADO ESTILIZADO
+  abrirModalEntregar(pedido: PedidoValido): void {
+    this.modalTipo = 'entregar';
+    this.pedidoEnModal = pedido;
+    this.modalVisible = true;
+  }
 
+  abrirModalEditar(pedido: PedidoValido): void {
+    this.modalTipo = 'editar';
+    this.pedidoEnModal = pedido;
+
+    const agRaw = (pedido.agencia || '').toString().toUpperCase();
+    if (agRaw.includes('OLVA')) {
+      this.editAgencia = 'OLVA';
+    } else if (agRaw.includes('MOTORIZADO') || agRaw.includes('DIRECTO')) {
+      this.editAgencia = 'MOTORIZADO';
+    } else {
+      this.editAgencia = 'SHALOM';
+    }
+
+    const guia = (pedido.numeroGuia || '').trim();
+    this.editNumeroGuia = (guia && guia !== 'Directo' && guia !== 'DIRECTO') ? guia : '';
+    this.editVigenciaDias = 5;
+    this.modalVisible = true;
+  }
+
+  abrirModalAnular(pedido: PedidoValido): void {
+    this.modalTipo = 'anular';
+    this.pedidoEnModal = pedido;
+    this.modalVisible = true;
+  }
+
+  cerrarModal(): void {
+    if (this.procesandoModal) return;
+    this.modalVisible = false;
+    this.modalTipo = null;
+    this.pedidoEnModal = null;
+    this.procesandoModal = false;
+  }
+
+  confirmarAccionModal(): void {
+    if (!this.pedidoEnModal || !this.modalTipo) return;
+
+    if (this.modalTipo === 'entregar') {
+      this.ejecutarEntrega();
+    } else if (this.modalTipo === 'editar') {
+      this.ejecutarEdicion();
+    } else if (this.modalTipo === 'anular') {
+      this.ejecutarAnulacion();
+    }
+  }
+
+  private ejecutarEntrega(): void {
+    if (!this.pedidoEnModal) return;
+    const pedido = this.pedidoEnModal;
     const targetId = pedido.dbId || pedido.id;
+    this.procesandoModal = true;
+
     const payload = {
       estado: 'ENTREGADO'
     };
 
     this.adminPedidoService.updatePedido(targetId, payload).subscribe({
       next: () => {
-        this.modalAlertaService.success(`Pedido ${pedido.id} marcado como ENTREGADO. La guía se ha desactivado del rastreo activo.`, 'Entrega Confirmada');
-        this.cargarPedidos();
+        this.procesandoModal = false;
+        this.cerrarModal();
+        this.enviosEnTransito = this.enviosEnTransito.filter(p => p.id !== pedido.id && p.dbId !== pedido.dbId);
+        this.modalAlertaService.success(`Pedido ${pedido.id} marcado como ENTREGADO exitosamente.`, 'Entrega Confirmada');
+        this.cdr.detectChanges();
       },
       error: (err) => {
+        this.procesandoModal = false;
         console.error('Error al marcar entrega:', err);
         this.modalAlertaService.error('No se pudo actualizar el pedido a ENTREGADO.', 'Error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private ejecutarEdicion(): void {
+    if (!this.pedidoEnModal) return;
+    if (this.editAgencia !== 'MOTORIZADO' && (!this.editNumeroGuia || !this.editNumeroGuia.trim())) {
+      this.modalAlertaService.warning('Ingresa el número de guía o tracking provisto por la agencia.', 'Guía Requerida');
+      return;
+    }
+
+    const pedido = this.pedidoEnModal;
+    const targetId = pedido.dbId || pedido.id;
+    this.procesandoModal = true;
+
+    const ahora = new Date();
+    const fechaExp = new Date();
+    fechaExp.setDate(ahora.getDate() + (Number(this.editVigenciaDias) || 5));
+
+    const numGuiaFinal = this.editAgencia !== 'MOTORIZADO' ? this.editNumeroGuia.trim() : 'DIRECTO';
+
+    const payload = {
+      estado: 'EN_CAMINO',
+      agencia: this.editAgencia,
+      agenciaEnvio: this.editAgencia,
+      numeroGuia: numGuiaFinal,
+      guia: numGuiaFinal,
+      fechaExpiracionRastreo: fechaExp.toISOString()
+    };
+
+    this.adminPedidoService.updatePedido(targetId, payload).subscribe({
+      next: () => {
+        this.procesandoModal = false;
+        this.cerrarModal();
+
+        const index = this.enviosEnTransito.findIndex(p => p.id === pedido.id || p.dbId === pedido.dbId);
+        if (index !== -1) {
+          this.enviosEnTransito[index] = {
+            ...this.enviosEnTransito[index],
+            agencia: this.editAgencia,
+            numeroGuia: numGuiaFinal,
+            fechaExpiracionRastreo: payload.fechaExpiracionRastreo
+          };
+        }
+
+        this.modalAlertaService.success(`La información de envío para el pedido ${pedido.id} se actualizó correctamente.`, 'Cambios Guardados');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.procesandoModal = false;
+        console.error('Error al editar despacho:', err);
+        this.modalAlertaService.error('No se pudieron guardar los cambios del despacho.', 'Error al Editar');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private ejecutarAnulacion(): void {
+    if (!this.pedidoEnModal) return;
+    const pedido = this.pedidoEnModal;
+    const targetId = pedido.dbId || pedido.id;
+    this.procesandoModal = true;
+
+    const payload = {
+      estado: 'VALIDADO',
+      agencia: null,
+      agenciaEnvio: null,
+      numeroGuia: null,
+      guia: null,
+      fechaDespacho: null,
+      fechaExpiracionRastreo: null
+    };
+
+    this.adminPedidoService.updatePedido(targetId, payload).subscribe({
+      next: () => {
+        this.procesandoModal = false;
+        this.cerrarModal();
+
+        // 1. Quitar de Envíos en Tránsito
+        this.enviosEnTransito = this.enviosEnTransito.filter(p => p.id !== pedido.id && p.dbId !== pedido.dbId);
+
+        // 2. Devolver a la lista de Pedidos Disponibles para asignación
+        const pedidoRevertido: PedidoValido = {
+          ...pedido,
+          estado: 'VALIDADO',
+          agencia: undefined,
+          numeroGuia: undefined,
+          fechaDespacho: undefined,
+          fechaExpiracionRastreo: undefined
+        };
+        this.pedidosDisponibles = [pedidoRevertido, ...this.pedidosDisponibles.filter(p => p.id !== pedido.id && p.dbId !== pedido.dbId)];
+
+        this.modalAlertaService.success(`Despacho anulado. El pedido ${pedido.id} ha vuelto a la lista de pedidos pendientes para asignarle una nueva guía.`, 'Despacho Anulado');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.procesandoModal = false;
+        console.error('Error al anular despacho:', err);
+        this.modalAlertaService.error('No se pudo anular el despacho del pedido.', 'Error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -254,4 +423,3 @@ export class AdminRastreoComponent implements OnInit {
     };
   }
 }
-

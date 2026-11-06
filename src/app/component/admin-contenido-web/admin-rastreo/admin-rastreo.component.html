@@ -186,7 +186,7 @@
       <div class="panel-header-flex">
         <div>
           <h3>Monitor de Envíos en Tránsito</h3>
-          <p>Supervisa los pedidos que están en ruta hacia los clientes y márcalos como entregados para cerrar el ciclo.</p>
+          <p>Supervisa los pedidos que están en ruta hacia los clientes, edita guías o márcalos como entregados.</p>
         </div>
         <button type="button" class="btn-secondary" (click)="cargarPedidos()">🔄 Actualizar</button>
       </div>
@@ -225,13 +225,192 @@
                 <span class="vigencia-badge">{{ calcularDiasRestantes(p.fechaExpiracionRastreo) }}</span>
               </td>
               <td>
-                <button type="button" class="btn-delivered" (click)="marcarComoEntregado(p)" title="Marcar como entregado">
-                  ✓ Entregado
-                </button>
+                <div class="actions-group">
+                  <!-- BOTÓN 1: ENTREGADO -->
+                  <button
+                    type="button"
+                    class="btn-action btn-action-deliver"
+                    (click)="abrirModalEntregar(p)"
+                    title="Marcar como entregado">
+                    ✓ Entregado
+                  </button>
+
+                  <!-- BOTÓN 2: EDITAR -->
+                  <button
+                    type="button"
+                    class="btn-action btn-action-edit"
+                    (click)="abrirModalEditar(p)"
+                    title="Modificar guía o agencia">
+                    ✏️ Editar
+                  </button>
+
+                  <!-- BOTÓN 3: ANULAR / DEVOLVER A PENDIENTES -->
+                  <button
+                    type="button"
+                    class="btn-action btn-action-cancel"
+                    (click)="abrirModalAnular(p)"
+                    title="Anular despacho y devolver a pendientes">
+                    ↩️ Anular
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL CENTRADO ESTILIZADO (CONFIRMAR ENTREGA / EDITAR / ANULAR)       -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop-custom" *ngIf="modalVisible">
+    <div class="modal-card-custom" [ngClass]="'modal-' + modalTipo">
+      <!-- BOTÓN CERRAR SUPERIOR -->
+      <button type="button" class="btn-close-modal" (click)="cerrarModal()" [disabled]="procesandoModal">✕</button>
+
+      <!-- ENCABEZADO CON ÍCONO TEMÁTICO -->
+      <div class="modal-icon-header">
+        <div class="icon-circle" [ngClass]="'circle-' + modalTipo">
+          <span *ngIf="modalTipo === 'entregar'">✓</span>
+          <span *ngIf="modalTipo === 'editar'">✏️</span>
+          <span *ngIf="modalTipo === 'anular'">⚠️</span>
+        </div>
+        <h3 class="modal-title" *ngIf="modalTipo === 'entregar'">Confirmar Entrega de Pedido</h3>
+        <h3 class="modal-title" *ngIf="modalTipo === 'editar'">Modificar Despacho</h3>
+        <h3 class="modal-title text-danger" *ngIf="modalTipo === 'anular'">Anular Despacho de Pedido</h3>
+      </div>
+
+      <!-- DETALLE DEL PEDIDO SELECCIONADO -->
+      <div class="modal-pedido-info" *ngIf="pedidoEnModal">
+        <div class="info-row">
+          <span class="info-label">Pedido:</span>
+          <strong>{{ pedidoEnModal.id }}</strong>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Cliente:</span>
+          <span>{{ pedidoEnModal.cliente }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Teléfono:</span>
+          <span>📱 {{ pedidoEnModal.telefono }}</span>
+        </div>
+        <div class="info-row" *ngIf="modalTipo !== 'editar'">
+          <span class="info-label">Agencia / Guía:</span>
+          <span>{{ pedidoEnModal.agencia }} — <code>{{ pedidoEnModal.numeroGuia || 'Directo' }}</code></span>
+        </div>
+      </div>
+
+      <!-- CUERPO SEGÚN EL TIPO DE ACCIÓN -->
+      <div class="modal-body-content">
+        <!-- 1. CASO: ENTREGAR -->
+        <div *ngIf="modalTipo === 'entregar'" class="modal-msg">
+          <p>¿Confirmas que el pedido ha sido entregado exitosamente al cliente?</p>
+          <small class="text-muted">El pedido pasará a estado <strong>ENTREGADO</strong> y se desactivará de la vista pública de rastreo.</small>
+        </div>
+
+        <!-- 2. CASO: EDITAR -->
+        <div *ngIf="modalTipo === 'editar'" class="modal-form">
+          <div class="form-group-modal">
+            <label class="modal-label">Agencia de Envío:</label>
+            <div class="agency-mini-selector">
+              <label class="mini-radio" [class.selected]="editAgencia === 'SHALOM'">
+                <input type="radio" name="editAgencia" [(ngModel)]="editAgencia" value="SHALOM" />
+                <span>SHALOM</span>
+              </label>
+              <label class="mini-radio" [class.selected]="editAgencia === 'OLVA'">
+                <input type="radio" name="editAgencia" [(ngModel)]="editAgencia" value="OLVA" />
+                <span>OLVA COURIER</span>
+              </label>
+              <label class="mini-radio" [class.selected]="editAgencia === 'MOTORIZADO'">
+                <input type="radio" name="editAgencia" [(ngModel)]="editAgencia" value="MOTORIZADO" />
+                <span>MOTORIZADO</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group-modal" *ngIf="editAgencia !== 'MOTORIZADO'">
+            <label class="modal-label" for="editNumeroGuia">Número de Guía / Tracking (*):</label>
+            <input
+              type="text"
+              id="editNumeroGuia"
+              [(ngModel)]="editNumeroGuia"
+              name="editNumeroGuia"
+              placeholder="Ej. SHA-098231 o 77894210"
+              class="modal-input"
+            />
+          </div>
+
+          <div class="form-group-modal">
+            <label class="modal-label">Vigencia de Rastreo:</label>
+            <div class="mini-vigencia-row">
+              <label class="mini-radio" [class.selected]="editVigenciaDias === 5">
+                <input type="radio" name="editVigencia" [(ngModel)]="editVigenciaDias" [value]="5" />
+                <span>5 días (Local)</span>
+              </label>
+              <label class="mini-radio" [class.selected]="editVigenciaDias === 14">
+                <input type="radio" name="editVigencia" [(ngModel)]="editVigenciaDias" [value]="14" />
+                <span>14 días (Provincia)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. CASO: ANULAR -->
+        <div *ngIf="modalTipo === 'anular'" class="modal-msg warning-callout">
+          <p>¿Deseas anular el despacho del pedido <strong>{{ pedidoEnModal?.id }}</strong>?</p>
+          <div class="callout-box">
+            <span>ℹ️</span>
+            <div>
+              El pedido volverá al estado <strong>VALIDADO</strong> y reaparecerá en la pestaña
+              <strong>"Asignar Guías a Pedidos"</strong> para que puedas registrar una nueva guía o corregir el método de entrega.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTONES DE ACCIÓN DEL MODAL -->
+      <div class="modal-actions-footer">
+        <button
+          type="button"
+          class="btn-modal-cancel"
+          (click)="cerrarModal()"
+          [disabled]="procesandoModal">
+          Cancelar
+        </button>
+
+        <!-- CONFIRMAR ENTREGA -->
+        <button
+          *ngIf="modalTipo === 'entregar'"
+          type="button"
+          class="btn-modal-confirm btn-confirm-deliver"
+          (click)="confirmarAccionModal()"
+          [disabled]="procesandoModal">
+          <span class="spinner-mini" *ngIf="procesandoModal"></span>
+          {{ procesandoModal ? 'Confirmando...' : 'Confirmar Entrega' }}
+        </button>
+
+        <!-- GUARDAR CAMBIOS DE EDICIÓN -->
+        <button
+          *ngIf="modalTipo === 'editar'"
+          type="button"
+          class="btn-modal-confirm btn-confirm-edit"
+          (click)="confirmarAccionModal()"
+          [disabled]="procesandoModal">
+          <span class="spinner-mini" *ngIf="procesandoModal"></span>
+          {{ procesandoModal ? 'Guardando...' : 'Guardar Cambios' }}
+        </button>
+
+        <!-- ANULAR DESPACHO -->
+        <button
+          *ngIf="modalTipo === 'anular'"
+          type="button"
+          class="btn-modal-confirm btn-confirm-cancel"
+          (click)="confirmarAccionModal()"
+          [disabled]="procesandoModal">
+          <span class="spinner-mini" *ngIf="procesandoModal"></span>
+          {{ procesandoModal ? 'Anulando...' : 'Anular Despacho' }}
+        </button>
       </div>
     </div>
   </div>

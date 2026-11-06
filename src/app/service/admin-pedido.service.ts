@@ -1,24 +1,20 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AdminPedidoService {
-  private readonly baseUrl = `${environment.apiUrl.replace('/v1', '')}/admin/pedidos`;
-  private readonly pedidosRastreoUrl = `${environment.apiUrl.replace('/v1', '')}/pedidos/rastreo`;
-  private readonly publicRastreoUrl = `${environment.apiUrl.replace('/v1', '')}/public/rastreo`;
+  private readonly baseUrl = `${environment.apiUrl.replace(/\/v1$/, '')}/admin/pedidos`;
+  private readonly rastreoUrl = `${environment.apiUrl.replace(/\/v1$/, '')}/pedidos/rastreo`;
 
   constructor(private http: HttpClient) {}
 
   consultarRastreoPublico(telefono: string): Observable<any[]> {
     const cleanTelefono = telefono.replace(/[^\d]/g, '');
-    const apiUrlWithoutV1 = environment.apiUrl.replace('/v1', '');
-    return this.http.get<any[]>(`${apiUrlWithoutV1}/pedidos/rastreo/${cleanTelefono}`).pipe(
-      catchError(() => this.http.get<any[]>(`${this.publicRastreoUrl}/${cleanTelefono}`))
-    );
+    return this.http.get<any[]>(`${this.rastreoUrl}/${cleanTelefono}`);
   }
 
   getPedidos(): Observable<any[]> {
@@ -45,13 +41,14 @@ export class AdminPedidoService {
   solicitarMontoFaltante(pedidoId: number | string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/${pedidoId}/solicitar-monto-faltante`, {});
   }
+
   getVigilanciaStock(): Observable<any> {
-    const url = `${environment.apiUrl.replace('/v1', '')}/admin/dashboard/vigilancia-stock`;
+    const url = `${environment.apiUrl.replace(/\/v1$/, '')}/admin/dashboard/vigilancia-stock`;
     return this.http.get<any>(url);
   }
 
   getProductosMasVendidos(): Observable<any[]> {
-    const url = `${environment.apiUrl.replace('/v1', '')}/admin/dashboard/mas-vendidos`;
+    const url = `${environment.apiUrl.replace(/\/v1$/, '')}/admin/dashboard/mas-vendidos`;
     return this.http.get<any[]>(url);
   }
 }
