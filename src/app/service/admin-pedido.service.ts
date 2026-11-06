@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -8,13 +8,35 @@ import { environment } from '../../environments/environment';
 })
 export class AdminPedidoService {
   private readonly baseUrl = `${environment.apiUrl.replace(/\/v1$/, '')}/admin/pedidos`;
-  private readonly rastreoUrl = `${environment.apiUrl.replace(/\/v1$/, '')}/pedidos/rastreo`;
+  private readonly pedidosUrl = `${environment.apiUrl.replace(/\/v1$/, '')}/pedidos`;
 
   constructor(private http: HttpClient) {}
 
   consultarRastreoPublico(telefono: string): Observable<any[]> {
     const cleanTelefono = telefono.replace(/[^\d]/g, '');
-    return this.http.get<any[]>(`${this.rastreoUrl}/${cleanTelefono}`);
+    const cleanApi = environment.apiUrl.replace(/\/v1$/, '');
+    return this.http.get<any[]>(`${cleanApi}/pedidos/cliente/${cleanTelefono}`).pipe(
+      map(pedidos => {
+        if (!pedidos || !Array.isArray(pedidos)) return [];
+        const ahora = new Date();
+        return pedidos.filter(p => {
+          const est = (p.estado || p.estadoRaw || '').toString().trim().toUpperCase();
+          const esEnCamino = est === 'EN CAMINO' || est === 'EN_CAMINO' || est.includes('CAMINO');
+          const guia = (p.numeroGuia || p.guia || '').toString().trim();
+          const tieneGuia = guia.length > 0 && guia !== 'DIRECTO';
+          const noFinalizado = est !== 'ENTREGADO' && est !== 'RECHAZADO' && est !== 'CANCELADO';
+
+          if (p.fechaExpiracionRastreo) {
+            try {
+              const expDate = new Date(p.fechaExpiracionRastreo);
+              if (expDate < ahora) return false;
+            } catch (ignored) {}
+          }
+
+          return (esEnCamino || tieneGuia) && noFinalizado;
+        });
+      })
+    );
   }
 
   getPedidos(): Observable<any[]> {
@@ -27,7 +49,7 @@ export class AdminPedidoService {
 
   getPedidosDeCliente(telefono: string): Observable<any[]> {
     const cleanTelefono = telefono.replace(/[^\d]/g, '');
-    return this.http.get<any[]>(`${this.baseUrl}/cliente/${cleanTelefono}`);
+    return this.http.get<any[]>(`${this.pedidosUrl}/cliente/${cleanTelefono}`);
   }
 
   validarPedido(id: number | string): Observable<any> {
