@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -8,13 +8,17 @@ import { environment } from '../../environments/environment';
 })
 export class AdminPedidoService {
   private readonly baseUrl = `${environment.apiUrl.replace('/v1', '')}/admin/pedidos`;
+  private readonly pedidosRastreoUrl = `${environment.apiUrl.replace('/v1', '')}/pedidos/rastreo`;
   private readonly publicRastreoUrl = `${environment.apiUrl.replace('/v1', '')}/public/rastreo`;
 
   constructor(private http: HttpClient) {}
 
   consultarRastreoPublico(telefono: string): Observable<any[]> {
     const cleanTelefono = telefono.replace(/[^\d]/g, '');
-    return this.http.get<any[]>(`${this.publicRastreoUrl}/${cleanTelefono}`);
+    const apiUrlWithoutV1 = environment.apiUrl.replace('/v1', '');
+    return this.http.get<any[]>(`${apiUrlWithoutV1}/pedidos/rastreo/${cleanTelefono}`).pipe(
+      catchError(() => this.http.get<any[]>(`${this.publicRastreoUrl}/${cleanTelefono}`))
+    );
   }
 
   getPedidos(): Observable<any[]> {
