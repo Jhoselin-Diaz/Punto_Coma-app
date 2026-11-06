@@ -147,57 +147,78 @@
           </div>
         </div>
 
-        <!-- CAMPOS ESPECÍFICOS PARA SHALOM -->
+        <!-- CAMPOS ESPECÍFICOS PARA SHALOM: 4 CASILLAS INDEPENDIENTES -->
         <div *ngIf="agenciaSeleccionada === 'SHALOM'" class="agency-fields-box shalom-box">
           <div class="agency-box-header">
-            <span class="box-badge shalom-badge">Credenciales de Recojo Shalom</span>
-            <small>Para el retiro en ventanilla de Shalom, el cliente requiere presentar ambos códigos junto a su DNI físico.</small>
+            <span class="box-badge shalom-badge">Credenciales de Rastreo y Entrega Shalom</span>
+            <small>Los datos se dividen para la consulta en el portal web y el retiro presencial en agencia.</small>
           </div>
 
           <div class="fields-two-cols">
+            <!-- CASILLA 1: N° DE ORDEN SHALOM -->
             <div class="form-group">
-              <label for="numeroGuiaShalom">N° de Orden Shalom (*):</label>
+              <label for="numeroGuiaShalom">1. N° de Orden Shalom (*):</label>
               <input
                 type="text"
                 id="numeroGuiaShalom"
                 [(ngModel)]="numeroGuia"
                 name="numeroGuiaShalom"
-                placeholder="Ej. 9560819"
+                placeholder="ej. 9560819"
                 required
                 class="input-control font-mono"
               />
-              <small class="helper-text">Número de orden / guía provisto por Shalom.</small>
+              <small class="helper-text">Para búsqueda de guía en web de Shalom.</small>
             </div>
 
+            <!-- CASILLA 2: CÓDIGO DE ORDEN SHALOM -->
             <div class="form-group">
-              <label for="codigoRecojoShalom">Código de Orden / Clave de Recojo (*):</label>
+              <label for="codigoOrdenShalom">2. Código de Orden Shalom (*):</label>
               <input
                 type="text"
-                id="codigoRecojoShalom"
-                [(ngModel)]="codigoRecojo"
-                name="codigoRecojoShalom"
-                placeholder="Ej. C7P9"
-                maxlength="15"
+                id="codigoOrdenShalom"
+                [(ngModel)]="codigoOrdenShalom"
+                name="codigoOrdenShalom"
+                placeholder="ej. C7P9"
+                maxlength="20"
                 required
                 class="input-control font-mono uppercase-input"
               />
-              <small class="helper-text">Clave alfanumérica de recojo de 4 dígitos/letras.</small>
+              <small class="helper-text">Código de verificación para rastreo en su web.</small>
             </div>
           </div>
 
-          <div class="form-group" style="margin-top: 10px;">
-            <label for="fleteDestinoShalom">Flete a pagar en destino (S/):</label>
-            <input
-              type="number"
-              step="0.50"
-              min="0"
-              id="fleteDestinoShalom"
-              [(ngModel)]="fleteDestino"
-              name="fleteDestinoShalom"
-              placeholder="Ej. 15.00 (Opcional)"
-              class="input-control"
-            />
-            <small class="helper-text">Costo que el cliente debe cancelar en ventanilla de Shalom. Dejar en 0 o vacío si el flete ya fue pagado previamente.</small>
+          <div class="fields-two-cols" style="margin-top: 10px;">
+            <!-- CASILLA 3: CLAVE DE RECOJO EN TIENDA -->
+            <div class="form-group">
+              <label for="claveRecojoShalom">3. Clave de Recojo en Tienda (*):</label>
+              <input
+                type="text"
+                id="claveRecojoShalom"
+                [(ngModel)]="claveRecojo"
+                name="claveRecojoShalom"
+                placeholder="ej. 4545 o PIN"
+                maxlength="20"
+                required
+                class="input-control font-mono uppercase-input"
+              />
+              <small class="helper-text">Código/clave para retiro en ventanilla física.</small>
+            </div>
+
+            <!-- CASILLA 4: FLETE EN DESTINO -->
+            <div class="form-group">
+              <label for="fleteDestinoShalom">4. Flete a pagar en destino (S/):</label>
+              <input
+                type="number"
+                step="0.50"
+                min="0"
+                id="fleteDestinoShalom"
+                [(ngModel)]="fleteDestino"
+                name="fleteDestinoShalom"
+                placeholder="0.00"
+                class="input-control"
+              />
+              <small class="helper-text">Monto en ventanilla. Dejar en 0 si está pagado.</small>
+            </div>
           </div>
         </div>
 
@@ -288,18 +309,22 @@
                 <span class="agency-tag-sm" [ngClass]="(p.agencia || '').toLowerCase()">{{ p.agencia }}</span>
               </td>
               <td>
-                <!-- DATOS SHALOM -->
+                <!-- DATOS SHALOM: CASILLAS INDEPENDIENTES -->
                 <div *ngIf="p.agencia === 'SHALOM'" class="transit-codes-box">
                   <div class="code-line">
-                    <span class="code-lbl">Orden:</span>
+                    <span class="code-lbl">N° Orden:</span>
                     <code class="code-pill font-mono">{{ p.numeroGuia || 'Sin orden' }}</code>
                   </div>
-                  <div class="code-line" *ngIf="p.codigoRecojo">
-                    <span class="code-lbl">Clave:</span>
-                    <code class="code-pill code-recojo font-mono">{{ p.codigoRecojo }}</code>
+                  <div class="code-line" *ngIf="p.codigoOrdenShalom">
+                    <span class="code-lbl">Cód. Web:</span>
+                    <code class="code-pill code-orden font-mono">{{ p.codigoOrdenShalom }}</code>
+                  </div>
+                  <div class="code-line" *ngIf="p.claveRecojo">
+                    <span class="code-lbl">Clave Recojo:</span>
+                    <code class="code-pill code-recojo font-mono">{{ p.claveRecojo }}</code>
                   </div>
                   <div class="flete-badge" *ngIf="p.fleteDestino && p.fleteDestino > 0">
-                    Destino: S/ {{ p.fleteDestino | number:'1.2-2' }}
+                    Flete Destino: S/ {{ p.fleteDestino | number:'1.2-2' }}
                   </div>
                 </div>
 
@@ -332,7 +357,7 @@
                     type="button"
                     class="btn-action btn-action-edit"
                     (click)="abrirModalEditar(p)"
-                    title="Modificar guía o agencia">
+                    title="Modificar guía o credenciales">
                     ✏️ Editar
                   </button>
 
@@ -388,7 +413,8 @@
           <span class="info-label">Agencia / Guía:</span>
           <span>
             {{ pedidoEnModal.agencia }} — <code>{{ pedidoEnModal.numeroGuia || 'Directo' }}</code>
-            <ng-container *ngIf="pedidoEnModal.codigoRecojo"> | Clave: <code>{{ pedidoEnModal.codigoRecojo }}</code></ng-container>
+            <ng-container *ngIf="pedidoEnModal.codigoOrdenShalom"> | Cód: <code>{{ pedidoEnModal.codigoOrdenShalom }}</code></ng-container>
+            <ng-container *ngIf="pedidoEnModal.claveRecojo"> | Clave: <code>{{ pedidoEnModal.claveRecojo }}</code></ng-container>
             <ng-container *ngIf="pedidoEnModal.fleteDestino && pedidoEnModal.fleteDestino > 0"> (Destino: S/ {{ pedidoEnModal.fleteDestino | number:'1.2-2' }})</ng-container>
           </span>
         </div>
@@ -422,33 +448,45 @@
             </div>
           </div>
 
-          <!-- EDIT SHALOM -->
+          <!-- EDIT SHALOM: 4 CASILLAS INDEPENDIENTES -->
           <div *ngIf="editAgencia === 'SHALOM'" class="edit-fields-stack">
             <div class="form-group-modal">
-              <label class="modal-label" for="editNumeroGuiaShalom">N° de Orden Shalom (*):</label>
+              <label class="modal-label" for="editNumeroGuiaShalom">1. N° de Orden Shalom (*):</label>
               <input
                 type="text"
                 id="editNumeroGuiaShalom"
                 [(ngModel)]="editNumeroGuia"
                 name="editNumeroGuiaShalom"
-                placeholder="Ej. 9560819"
+                placeholder="ej. 9560819"
                 class="modal-input font-mono"
               />
             </div>
             <div class="form-group-modal">
-              <label class="modal-label" for="editCodigoRecojo">Código de Orden / Clave de Recojo (*):</label>
+              <label class="modal-label" for="editCodigoOrdenShalom">2. Código de Orden Shalom (*):</label>
               <input
                 type="text"
-                id="editCodigoRecojo"
-                [(ngModel)]="editCodigoRecojo"
-                name="editCodigoRecojo"
-                placeholder="Ej. C7P9"
-                maxlength="15"
+                id="editCodigoOrdenShalom"
+                [(ngModel)]="editCodigoOrdenShalom"
+                name="editCodigoOrdenShalom"
+                placeholder="ej. C7P9"
+                maxlength="20"
                 class="modal-input font-mono uppercase-input"
               />
             </div>
             <div class="form-group-modal">
-              <label class="modal-label" for="editFleteDestino">Flete en destino (S/):</label>
+              <label class="modal-label" for="editClaveRecojo">3. Clave de Recojo en Tienda (*):</label>
+              <input
+                type="text"
+                id="editClaveRecojo"
+                [(ngModel)]="editClaveRecojo"
+                name="editClaveRecojo"
+                placeholder="ej. 4545 o PIN"
+                maxlength="20"
+                class="modal-input font-mono uppercase-input"
+              />
+            </div>
+            <div class="form-group-modal">
+              <label class="modal-label" for="editFleteDestino">4. Flete en destino (S/):</label>
               <input
                 type="number"
                 step="0.50"
@@ -456,7 +494,7 @@
                 id="editFleteDestino"
                 [(ngModel)]="editFleteDestino"
                 name="editFleteDestino"
-                placeholder="Ej. 15.00 (Opcional)"
+                placeholder="0.00"
                 class="modal-input"
               />
             </div>

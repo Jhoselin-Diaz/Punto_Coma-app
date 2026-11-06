@@ -98,7 +98,7 @@
               </div>
             </div>
 
-            <!-- GRID DE DETALLES: SIN MONTO TOTAL PARA EVITAR CONFUSIÓN -->
+            <!-- GRID DE DETALLES: SIN MONTO TOTAL PARA EVITAR CONFUSIONES -->
             <div class="order-grid-details details-3-cols">
               <div class="detail-box">
                 <span class="detail-label">Fecha de orden:</span>
@@ -117,61 +117,97 @@
             </div>
 
             <!-- ═════════════════════════════════════════════════════════════ -->
-            <!-- CASO 1: SEGUIMIENTO SHALOM (DOS CÓDIGOS DIFERENCIADOS + FLETE) -->
+            <!-- CASO 1: SEGUIMIENTO SHALOM (DESGLOSE DE CASILLAS INDEPENDIENTES) -->
             <!-- ═════════════════════════════════════════════════════════════ -->
             <div class="shalom-tracking-card" *ngIf="pedidoSeleccionado.agencia === 'SHALOM'">
-              <div class="shalom-card-header">
-                <div class="shalom-header-badge">
-                  <span class="shalom-red-dot"></span>
-                  <strong>Credenciales de Recojo en Agencia Shalom</strong>
+              <!-- SECCIÓN 1: CONSULTA WEB -->
+              <div class="shalom-section-block">
+                <div class="section-block-header">
+                  <div class="section-title-tag">
+                    <span class="shalom-red-dot"></span>
+                    <strong>1. Datos para Consulta en Web de Shalom</strong>
+                  </div>
+                  <a [href]="urlShalom" target="_blank" rel="noopener noreferrer" class="btn-track-shalom-link">
+                    Rastrear en Shalom ↗
+                  </a>
                 </div>
-                <p class="shalom-notice-txt">
-                  Presenta estos dos códigos junto a tu <strong>DNI físico original</strong> en ventanilla de Shalom para retirar tu paquete:
-                </p>
+                <p class="section-desc">Ingresa a la web de Shalom y digita tu N° de Orden junto con tu Código de Orden para verificar el recorrido:</p>
+
+                <div class="shalom-codes-grid">
+                  <!-- CASILLA 1: N° DE ORDEN -->
+                  <div class="code-box-card">
+                    <div class="code-box-top">
+                      <span class="code-box-title">N° DE ORDEN SHALOM</span>
+                      <span class="code-box-sub">Búsqueda web</span>
+                    </div>
+                    <div class="code-box-content">
+                      <code class="code-value-text">{{ pedidoSeleccionado.numeroSeguimiento || 'Pendiente' }}</code>
+                      <button
+                        type="button"
+                        class="btn-copy-sm"
+                        (click)="copiarTexto(pedidoSeleccionado.numeroSeguimiento, 'orden')"
+                        [disabled]="!pedidoSeleccionado.numeroSeguimiento"
+                        title="Copiar N° de Orden">
+                        <span *ngIf="codigoCopiado === 'orden'" class="text-copied">✓ ¡Copiado!</span>
+                        <span *ngIf="codigoCopiado !== 'orden'">📋 Copiar</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- CASILLA 2: CÓDIGO DE ORDEN -->
+                  <div class="code-box-card" *ngIf="pedidoSeleccionado.codigoOrdenShalom">
+                    <div class="code-box-top">
+                      <span class="code-box-title">CÓDIGO DE ORDEN SHALOM</span>
+                      <span class="code-box-sub">Verificación web</span>
+                    </div>
+                    <div class="code-box-content">
+                      <code class="code-value-text code-orden-txt">{{ pedidoSeleccionado.codigoOrdenShalom }}</code>
+                      <button
+                        type="button"
+                        class="btn-copy-sm"
+                        (click)="copiarTexto(pedidoSeleccionado.codigoOrdenShalom, 'codigoWeb')"
+                        title="Copiar Código de Orden">
+                        <span *ngIf="codigoCopiado === 'codigoWeb'" class="text-copied">✓ ¡Copiado!</span>
+                        <span *ngIf="codigoCopiado !== 'codigoWeb'">📋 Copiar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div class="shalom-codes-grid">
-                <!-- 1. N° DE ORDEN -->
-                <div class="code-box-card">
-                  <div class="code-box-top">
-                    <span class="code-box-title">N° DE ORDEN SHALOM</span>
-                    <span class="code-box-sub">Guía de envío</span>
-                  </div>
-                  <div class="code-box-content">
-                    <code class="code-value-text">{{ pedidoSeleccionado.numeroSeguimiento || 'Pendiente' }}</code>
-                    <button
-                      type="button"
-                      class="btn-copy-sm"
-                      (click)="copiarTexto(pedidoSeleccionado.numeroSeguimiento, 'orden')"
-                      [disabled]="!pedidoSeleccionado.numeroSeguimiento"
-                      title="Copiar N° de Orden">
-                      <span *ngIf="codigoCopiado === 'orden'" class="text-copied">✓ ¡Copiado!</span>
-                      <span *ngIf="codigoCopiado !== 'orden'">📋 Copiar</span>
-                    </button>
+              <!-- SECCIÓN 2: RETIRO EN VENTANILLA FÍSICA -->
+              <div class="shalom-section-block highlight-pickup-block" *ngIf="pedidoSeleccionado.claveRecojo">
+                <div class="section-block-header">
+                  <div class="section-title-tag pickup-title-tag">
+                    <span class="pickup-dot"></span>
+                    <strong>2. Clave de Retiro en Oficina Física</strong>
                   </div>
                 </div>
 
-                <!-- 2. CÓDIGO DE ORDEN / RECOJO -->
-                <div class="code-box-card highlight-box" *ngIf="pedidoSeleccionado.codigoRecojo">
+                <div class="code-box-card highlight-box">
                   <div class="code-box-top">
-                    <span class="code-box-title">CÓDIGO DE ORDEN / RECOJO</span>
-                    <span class="code-box-sub">Clave de entrega</span>
+                    <span class="code-box-title">CLAVE DE RECOJO EN TIENDA</span>
+                    <span class="code-box-sub">Presentar en ventanilla</span>
                   </div>
                   <div class="code-box-content">
-                    <code class="code-value-text code-key">{{ pedidoSeleccionado.codigoRecojo }}</code>
+                    <code class="code-value-text code-key">{{ pedidoSeleccionado.claveRecojo }}</code>
                     <button
                       type="button"
                       class="btn-copy-sm btn-copy-key"
-                      (click)="copiarTexto(pedidoSeleccionado.codigoRecojo, 'recojo')"
+                      (click)="copiarTexto(pedidoSeleccionado.claveRecojo, 'clave')"
                       title="Copiar Clave de Recojo">
-                      <span *ngIf="codigoCopiado === 'recojo'" class="text-copied">✓ ¡Copiado!</span>
-                      <span *ngIf="codigoCopiado !== 'recojo'">📋 Copiar</span>
+                      <span *ngIf="codigoCopiado === 'clave'" class="text-copied">✓ ¡Copiado!</span>
+                      <span *ngIf="codigoCopiado !== 'clave'">📋 Copiar</span>
                     </button>
                   </div>
                 </div>
+
+                <p class="pickup-notice-msg">
+                  ℹ️ <strong>Importante:</strong> Presenta esta clave de recojo junto a tu <strong>DNI físico en ventanilla de Shalom</strong> para retirar tu paquete.
+                </p>
               </div>
 
-              <!-- AVISO VISUAL DE PAGO EN DESTINO (FLETE) -->
+              <!-- AVISO DE PAGO EN DESTINO (FLETE) -->
               <div class="flete-warning-banner" *ngIf="pedidoSeleccionado.fleteDestino && pedidoSeleccionado.fleteDestino > 0">
                 <span class="warning-icon">⚠️</span>
                 <div class="warning-text">
@@ -284,22 +320,22 @@
               <li>
                 <div class="step-num">1</div>
                 <div class="step-content">
-                  <strong>Copia tu N° de Orden y Código de Recojo</strong>
-                  <p>Presiona el botón "Copiar" en cada uno de los recuadros correspondientes que figuran en la tarjeta de tu pedido.</p>
+                  <strong>Copia tu N° de Orden y Código de Orden</strong>
+                  <p>Utiliza los botones "Copiar" correspondientes en la sección 1 para ingresar los datos en la web de Shalom.</p>
                 </div>
               </li>
               <li>
                 <div class="step-num">2</div>
                 <div class="step-content">
-                  <strong>Pega el código en el portal de Shalom</strong>
-                  <p>Haz clic en "Ir a la web oficial de Shalom ↗", pega tu número de orden en el buscador principal y presiona Consultar para ver si ya llegó a agencia.</p>
+                  <strong>Consulta en el Rastreador Oficial de Shalom</strong>
+                  <p>Haz clic en "Ir a la web oficial de Shalom ↗", ingresa tu número y código de orden para verificar si tu encomienda ya arribó a destino.</p>
                 </div>
               </li>
               <li>
                 <div class="step-num">3</div>
                 <div class="step-content">
-                  <strong>Lleva tu DNI físico original para el recojo</strong>
-                  <p>Al acudir a la agencia Shalom de tu localidad, el titular debe presentar su DNI en físico y brindar la clave/código de recojo al personal de ventanilla.</p>
+                  <strong>Retira en agencia con tu Clave de Recojo y DNI</strong>
+                  <p>Al acercarte a la ventanilla física de Shalom, presenta tu DNI original junto con la Clave de Recojo indicada en la sección 2.</p>
                 </div>
               </li>
             </ol>

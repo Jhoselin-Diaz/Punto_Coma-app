@@ -15,6 +15,8 @@ export interface PedidoValido {
   direccion?: string;
   agencia?: string;
   numeroGuia?: string;
+  codigoOrdenShalom?: string;
+  claveRecojo?: string;
   codigoRecojo?: string;
   fleteDestino?: number;
   fechaDespacho?: string;
@@ -40,9 +42,13 @@ export class AdminRastreoComponent implements OnInit {
   pedidosDisponibles: PedidoValido[] = [];
   pedidoSeleccionadoId: string = '';
   agenciaSeleccionada: 'SHALOM' | 'OLVA' | 'MOTORIZADO' = 'SHALOM';
-  numeroGuia: string = '';
-  codigoRecojo: string = '';
-  fleteDestino: number | null = null;
+
+  // Campos independientes Shalom / Olva
+  numeroGuia: string = '';           // N° de Orden Shalom o Guía Olva
+  codigoOrdenShalom: string = '';    // Código de Orden Shalom (web)
+  claveRecojo: string = '';          // Clave de Recojo Shalom (física)
+  fleteDestino: number | null = null;// Flete a pagar en destino (S/)
+
   vigenciaDias: number = 5; // 5 días por defecto (Local / Lima)
   guardandoDespacho: boolean = false;
 
@@ -59,7 +65,8 @@ export class AdminRastreoComponent implements OnInit {
   // Campos para Edición en Modal
   editAgencia: 'SHALOM' | 'OLVA' | 'MOTORIZADO' = 'SHALOM';
   editNumeroGuia: string = '';
-  editCodigoRecojo: string = '';
+  editCodigoOrdenShalom: string = '';
+  editClaveRecojo: string = '';
   editFleteDestino: number | null = null;
   editVigenciaDias: number = 5;
 
@@ -148,11 +155,15 @@ export class AdminRastreoComponent implements OnInit {
 
     if (this.agenciaSeleccionada === 'SHALOM') {
       if (!this.numeroGuia || !this.numeroGuia.trim()) {
-        this.modalAlertaService.warning('Ingresa el N° de Orden provisto por Shalom.', 'N° de Orden Requerido');
+        this.modalAlertaService.warning('Ingresa el N° de Orden Shalom emitido por la agencia.', 'N° de Orden Requerido');
         return;
       }
-      if (!this.codigoRecojo || !this.codigoRecojo.trim()) {
-        this.modalAlertaService.warning('Ingresa el Código de Orden / Clave de Recojo de Shalom.', 'Código de Recojo Requerido');
+      if (!this.codigoOrdenShalom || !this.codigoOrdenShalom.trim()) {
+        this.modalAlertaService.warning('Ingresa el Código de Orden Shalom necesario para rastrear en su web.', 'Código de Orden Requerido');
+        return;
+      }
+      if (!this.claveRecojo || !this.claveRecojo.trim()) {
+        this.modalAlertaService.warning('Ingresa la Clave de Recojo en Tienda para el retiro presencial.', 'Clave de Recojo Requerida');
         return;
       }
     } else if (this.agenciaSeleccionada === 'OLVA') {
@@ -172,7 +183,8 @@ export class AdminRastreoComponent implements OnInit {
     fechaExp.setDate(ahora.getDate() + (Number(this.vigenciaDias) || 5));
 
     const numGuiaFinal = this.agenciaSeleccionada !== 'MOTORIZADO' ? this.numeroGuia.trim() : 'DIRECTO';
-    const codigoRecojoFinal = this.agenciaSeleccionada === 'SHALOM' ? (this.codigoRecojo || '').trim().toUpperCase() : null;
+    const codOrdenFinal = this.agenciaSeleccionada === 'SHALOM' ? (this.codigoOrdenShalom || '').trim().toUpperCase() : null;
+    const claveFinal = this.agenciaSeleccionada === 'SHALOM' ? (this.claveRecojo || '').trim().toUpperCase() : null;
     const fleteFinal = this.agenciaSeleccionada === 'SHALOM' && this.fleteDestino !== null && this.fleteDestino !== undefined && (this.fleteDestino as any) !== '' ? Number(this.fleteDestino) : null;
 
     const payload = {
@@ -181,7 +193,9 @@ export class AdminRastreoComponent implements OnInit {
       agenciaEnvio: this.agenciaSeleccionada,
       numeroGuia: numGuiaFinal,
       guia: numGuiaFinal,
-      codigoRecojo: codigoRecojoFinal,
+      codigoOrdenShalom: codOrdenFinal,
+      claveRecojo: claveFinal,
+      codigoRecojo: claveFinal, // retrocompatibilidad
       fleteDestino: fleteFinal,
       fechaDespacho: ahora.toISOString(),
       fechaExpiracionRastreo: fechaExp.toISOString()
@@ -201,7 +215,9 @@ export class AdminRastreoComponent implements OnInit {
           estado: 'EN_CAMINO',
           agencia: this.agenciaSeleccionada,
           numeroGuia: numGuiaFinal,
-          codigoRecojo: codigoRecojoFinal || '',
+          codigoOrdenShalom: codOrdenFinal || '',
+          claveRecojo: claveFinal || '',
+          codigoRecojo: claveFinal || '',
           fleteDestino: fleteFinal || 0,
           fechaDespacho: payload.fechaDespacho,
           fechaExpiracionRastreo: payload.fechaExpiracionRastreo
@@ -209,7 +225,8 @@ export class AdminRastreoComponent implements OnInit {
         if (resp && typeof resp === 'object') {
           if (resp.agenciaEnvio || resp.agencia) pedidoActualizado.agencia = resp.agenciaEnvio || resp.agencia;
           if (resp.numeroGuia || resp.guia) pedidoActualizado.numeroGuia = resp.numeroGuia || resp.guia;
-          if (resp.codigoRecojo !== undefined) pedidoActualizado.codigoRecojo = resp.codigoRecojo;
+          if (resp.codigoOrdenShalom !== undefined) pedidoActualizado.codigoOrdenShalom = resp.codigoOrdenShalom;
+          if (resp.claveRecojo !== undefined) pedidoActualizado.claveRecojo = resp.claveRecojo;
           if (resp.fleteDestino !== undefined) pedidoActualizado.fleteDestino = Number(resp.fleteDestino);
           if (resp.fechaDespacho) pedidoActualizado.fechaDespacho = resp.fechaDespacho;
           if (resp.fechaExpiracionRastreo) pedidoActualizado.fechaExpiracionRastreo = resp.fechaExpiracionRastreo;
@@ -220,7 +237,8 @@ export class AdminRastreoComponent implements OnInit {
         // 3. Reset del formulario
         this.pedidoSeleccionadoId = '';
         this.numeroGuia = '';
-        this.codigoRecojo = '';
+        this.codigoOrdenShalom = '';
+        this.claveRecojo = '';
         this.fleteDestino = null;
         this.agenciaSeleccionada = 'SHALOM';
         this.vigenciaDias = 5;
@@ -265,7 +283,8 @@ export class AdminRastreoComponent implements OnInit {
 
     const guia = (pedido.numeroGuia || '').trim();
     this.editNumeroGuia = (guia && guia !== 'Directo' && guia !== 'DIRECTO') ? guia : '';
-    this.editCodigoRecojo = (pedido.codigoRecojo || '').trim();
+    this.editCodigoOrdenShalom = (pedido.codigoOrdenShalom || '').trim();
+    this.editClaveRecojo = (pedido.claveRecojo || pedido.codigoRecojo || '').trim();
     this.editFleteDestino = (pedido.fleteDestino !== undefined && pedido.fleteDestino !== null && pedido.fleteDestino > 0) ? pedido.fleteDestino : null;
     this.editVigenciaDias = 5;
     this.modalVisible = true;
@@ -329,16 +348,20 @@ export class AdminRastreoComponent implements OnInit {
 
     if (this.editAgencia === 'SHALOM') {
       if (!this.editNumeroGuia || !this.editNumeroGuia.trim()) {
-        this.modalAlertaService.warning('Ingresa el N° de Orden de Shalom.', 'N° de Orden Requerido');
+        this.modalAlertaService.warning('Ingresa el N° de Orden Shalom.', 'Campo Requerido');
         return;
       }
-      if (!this.editCodigoRecojo || !this.editCodigoRecojo.trim()) {
-        this.modalAlertaService.warning('Ingresa el Código de Orden / Clave de Recojo de Shalom.', 'Código de Recojo Requerido');
+      if (!this.editCodigoOrdenShalom || !this.editCodigoOrdenShalom.trim()) {
+        this.modalAlertaService.warning('Ingresa el Código de Orden Shalom para rastreo en su web.', 'Campo Requerido');
+        return;
+      }
+      if (!this.editClaveRecojo || !this.editClaveRecojo.trim()) {
+        this.modalAlertaService.warning('Ingresa la Clave de Recojo en Tienda para entrega física.', 'Campo Requerido');
         return;
       }
     } else if (this.editAgencia === 'OLVA') {
       if (!this.editNumeroGuia || !this.editNumeroGuia.trim()) {
-        this.modalAlertaService.warning('Ingresa el número de guía de Olva Courier.', 'Guía Requerida');
+        this.modalAlertaService.warning('Ingresa el número de guía o tracking de Olva Courier.', 'Guía Requerida');
         return;
       }
     }
@@ -352,7 +375,8 @@ export class AdminRastreoComponent implements OnInit {
     fechaExp.setDate(ahora.getDate() + (Number(this.editVigenciaDias) || 5));
 
     const numGuiaFinal = this.editAgencia !== 'MOTORIZADO' ? this.editNumeroGuia.trim() : 'DIRECTO';
-    const codigoRecojoFinal = this.editAgencia === 'SHALOM' ? (this.editCodigoRecojo || '').trim().toUpperCase() : null;
+    const codOrdenFinal = this.editAgencia === 'SHALOM' ? (this.editCodigoOrdenShalom || '').trim().toUpperCase() : null;
+    const claveFinal = this.editAgencia === 'SHALOM' ? (this.editClaveRecojo || '').trim().toUpperCase() : null;
     const fleteFinal = this.editAgencia === 'SHALOM' && this.editFleteDestino !== null && this.editFleteDestino !== undefined && (this.editFleteDestino as any) !== '' ? Number(this.editFleteDestino) : null;
 
     const payload = {
@@ -361,7 +385,9 @@ export class AdminRastreoComponent implements OnInit {
       agenciaEnvio: this.editAgencia,
       numeroGuia: numGuiaFinal,
       guia: numGuiaFinal,
-      codigoRecojo: codigoRecojoFinal,
+      codigoOrdenShalom: codOrdenFinal,
+      claveRecojo: claveFinal,
+      codigoRecojo: claveFinal,
       fleteDestino: fleteFinal,
       fechaExpiracionRastreo: fechaExp.toISOString()
     };
@@ -377,13 +403,15 @@ export class AdminRastreoComponent implements OnInit {
             ...this.enviosEnTransito[index],
             agencia: this.editAgencia,
             numeroGuia: numGuiaFinal,
-            codigoRecojo: codigoRecojoFinal || '',
+            codigoOrdenShalom: codOrdenFinal || '',
+            claveRecojo: claveFinal || '',
+            codigoRecojo: claveFinal || '',
             fleteDestino: fleteFinal || 0,
             fechaExpiracionRastreo: payload.fechaExpiracionRastreo
           };
         }
 
-        this.modalAlertaService.success(`La información de envío para el pedido ${pedido.id} se actualizó correctamente.`, 'Cambios Guardados');
+        this.modalAlertaService.success(`La información de despacho para el pedido ${pedido.id} se actualizó correctamente.`, 'Cambios Guardados');
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -407,6 +435,8 @@ export class AdminRastreoComponent implements OnInit {
       agenciaEnvio: null,
       numeroGuia: null,
       guia: null,
+      codigoOrdenShalom: null,
+      claveRecojo: null,
       codigoRecojo: null,
       fleteDestino: null,
       fechaDespacho: null,
@@ -427,6 +457,8 @@ export class AdminRastreoComponent implements OnInit {
           estado: 'VALIDADO',
           agencia: undefined,
           numeroGuia: undefined,
+          codigoOrdenShalom: undefined,
+          claveRecojo: undefined,
           codigoRecojo: undefined,
           fleteDestino: undefined,
           fechaDespacho: undefined,
@@ -471,7 +503,9 @@ export class AdminRastreoComponent implements OnInit {
       direccion: p.direccion || p.direccionEnvio || '',
       agencia: p.agencia || p.agenciaEnvio || 'SHALOM',
       numeroGuia: p.numeroGuia || p.guia || '',
-      codigoRecojo: p.codigoRecojo || '',
+      codigoOrdenShalom: p.codigoOrdenShalom || '',
+      claveRecojo: p.claveRecojo || p.codigoRecojo || '',
+      codigoRecojo: p.claveRecojo || p.codigoRecojo || '',
       fleteDestino: (p.fleteDestino !== undefined && p.fleteDestino !== null) ? Number(p.fleteDestino) : 0,
       fechaDespacho: p.fechaDespacho || '',
       fechaExpiracionRastreo: p.fechaExpiracionRastreo || ''

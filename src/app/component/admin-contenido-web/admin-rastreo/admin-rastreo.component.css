@@ -483,33 +483,40 @@
 /* ═══════════════════════════════════════════════════════════════════ */
 /* MODAL CENTRADO ESTILIZADO                                          */
 /* ═══════════════════════════════════════════════════════════════════ */
+.modal-backdrop,
+.modal-overlay,
 .modal-backdrop-custom {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(30, 20, 15, 0.6);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  padding: 16px;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  background: rgba(18, 14, 11, 0.65) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1.5rem !important;
   animation: modalFadeIn 0.2s ease-out;
 }
 
+.modal-card,
+.modal-container,
 .modal-card-custom {
-  background: #ffffff;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 20px 45px rgba(43, 27, 22, 0.25);
-  border: 1px solid #eee4dd;
-  padding: 24px 28px;
-  position: relative;
+  background: #ffffff !important; /* FONDO 100% SÓLIDO, NADA DE TRANSPARENCIAS */
+  border-radius: 20px !important;
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.35) !important;
+  max-width: 580px !important;
+  width: 100% !important;
+  padding: 2.2rem !important;
+  position: relative !important;
+  z-index: 10000 !important;
+  color: #2d241e !important;
+  border: 1px solid #e5e7eb !important;
   display: flex;
   flex-direction: column;
   gap: 18px;
   animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1 !important;
 }
 
 .btn-close-modal {
@@ -715,20 +722,20 @@
 }
 
 .btn-modal-cancel {
-  background: transparent;
-  border: 1px solid #cfc5bd;
-  color: #766c67;
-  padding: 9px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 10px !important;
+  padding: 0.65rem 1.4rem !important;
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .btn-modal-cancel:hover {
-  background-color: #f5ede6;
-  color: #2b1b16;
+  background: #e5e7eb !important;
+  color: #111827 !important;
 }
 
 .btn-modal-confirm {
@@ -944,4 +951,11 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+
+.code-pill.code-orden {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
 }
