@@ -507,16 +507,46 @@
   box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.35) !important;
   max-width: 580px !important;
   width: 100% !important;
-  padding: 2.2rem !important;
+  max-height: 88vh !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 2rem 2.2rem 1.5rem 2.2rem !important;
   position: relative !important;
   z-index: 10000 !important;
   color: #2d241e !important;
   border: 1px solid #e5e7eb !important;
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
   gap: 18px;
   animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 1 !important;
+}
+
+/* ESTILIZADO DE LA BARRA DE DESPLAZAMIENTO (SCROLLBAR MODERNA) */
+.modal-card::-webkit-scrollbar,
+.modal-container::-webkit-scrollbar,
+.modal-card-custom::-webkit-scrollbar {
+  width: 7px;
+}
+
+.modal-card::-webkit-scrollbar-track,
+.modal-container::-webkit-scrollbar-track,
+.modal-card-custom::-webkit-scrollbar-track {
+  background: #f8f6f4;
+  border-radius: 8px;
+}
+
+.modal-card::-webkit-scrollbar-thumb,
+.modal-container::-webkit-scrollbar-thumb,
+.modal-card-custom::-webkit-scrollbar-thumb {
+  background: #d4a373;
+  border-radius: 8px;
+}
+
+.modal-card::-webkit-scrollbar-thumb:hover,
+.modal-container::-webkit-scrollbar-thumb:hover,
+.modal-card-custom::-webkit-scrollbar-thumb:hover {
+  background: #bc6c25;
 }
 
 .btn-close-modal {
@@ -717,8 +747,11 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding-top: 10px;
+  padding-top: 14px;
+  margin-top: 10px;
+  padding-bottom: 0.8rem;
   border-top: 1px solid #f3ece6;
+  flex-shrink: 0;
 }
 
 .btn-modal-cancel {
