@@ -44,6 +44,7 @@ export const routes: Routes = [
   { path: 'admin/contenido-web/ofertas', component: AdminContenidoWebComponent },
   { path: 'admin/contenido-web/shop-video', component: AdminContenidoWebComponent },
   { path: 'admin/contenido-web/contacto', component: AdminContenidoWebComponent },
+  { path: 'admin/contenido-web/rastreo', component: AdminContenidoWebComponent },
   { path: 'admin/productos', redirectTo: 'admin/contenido-web/productos', pathMatch: 'full' },
   { path: 'admin/inventario', component: AdminInventarioComponent },
   { path: 'admin/dashboard', component: AdminDashboardComponent },

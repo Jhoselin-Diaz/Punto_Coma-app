@@ -5,6 +5,7 @@ import { Producto, ProductosService } from '../../service/productos.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
 import { ContentService, HomeBanner } from '../../service/content.service';
 import { CategoriasDestacadasService, CategoriaDestacadaDTO } from '../../service/categorias-destacadas.service';
+import { ClienteAuthService } from '../../service/cliente-auth.service';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
@@ -31,6 +32,7 @@ export class InicioComponent implements OnInit, OnDestroy {
     public configService: ConfiguracionService,
     private contentService: ContentService,
     private categoriasService: CategoriasDestacadasService,
+    public clienteAuthService: ClienteAuthService,
     private sanitizer: DomSanitizer,
     private router: Router
   ) {
@@ -125,6 +127,20 @@ export class InicioComponent implements OnInit, OnDestroy {
     });
 
     this.cargarDatosFrescos();
+  }
+
+  esAgotado(producto: any): boolean {
+    return producto && producto.stock !== undefined && producto.stock !== null && Number(producto.stock) <= 0;
+  }
+
+  toggleFavorito(event: Event, producto: any): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.clienteAuthService.toggleFavorito(producto);
+  }
+
+  esFavorito(id: number | string): boolean {
+    return this.clienteAuthService.esFavorito(id);
   }
 
   ngOnDestroy() {

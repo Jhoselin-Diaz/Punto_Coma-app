@@ -183,11 +183,11 @@
               </div>
               <div class="form-group">
                 <label>Precio de Oferta (S/)</label>
-                <input type="number" [(ngModel)]="newOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChange()" />
+                <input type="number" [(ngModel)]="newOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChange()" [class.is-invalid]="errorPrecioOfertaNuevo" />
               </div>
               <div class="form-group">
                 <label>Descuento (%)</label>
-                <input type="number" [(ngModel)]="newOffer.descuento" (input)="onDescuentoChange()" placeholder="Ej: 20" />
+                <input type="number" [(ngModel)]="newOffer.descuento" (input)="onDescuentoChange()" placeholder="Ej: 20" [class.is-invalid]="errorDescuentoNuevo" />
               </div>
             </div>
 
@@ -234,7 +234,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" (click)="showAddOfferModal = false" type="button">Cancelar</button>
+        <button class="btn-cancel" (click)="showAddOfferModal = false; errorDescuentoNuevo = false; errorPrecioOfertaNuevo = false" type="button">Cancelar</button>
         <button class="btn-save" (click)="guardarNuevaOferta()" type="button">Crear oferta</button>
       </div>
     </div>
@@ -247,7 +247,7 @@
     <div class="modal-card-ultra-large">
       <div class="modal-header">
         <h3>Editar oferta</h3>
-        <button class="btn-close-modal" (click)="showEditOfferModal = false" type="button">×</button>
+        <button class="btn-close-modal" (click)="closeEditOfferModal()" type="button">×</button>
       </div>
 
       <div class="modal-body-content">
@@ -266,11 +266,11 @@
               </div>
               <div class="form-group">
                 <label>Precio de Oferta (S/)</label>
-                <input type="number" [(ngModel)]="editingOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChangeEdit()" />
+                <input type="number" [(ngModel)]="editingOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChangeEdit()" [class.is-invalid]="errorPrecioOfertaEdit" />
               </div>
               <div class="form-group">
                 <label>Descuento (%)</label>
-                <input type="number" [(ngModel)]="editingOffer.descuento" (input)="onDescuentoChangeEdit()" placeholder="Ej: 20" />
+                <input type="number" [(ngModel)]="editingOffer.descuento" (input)="onDescuentoChangeEdit()" placeholder="Ej: 20" [class.is-invalid]="errorDescuentoEdit" />
               </div>
             </div>
 
@@ -317,8 +317,8 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" (click)="showEditOfferModal = false" type="button">Cancelar</button>
-        <button class="btn-del-img" (click)="eliminarOferta(editingOffer); showEditOfferModal = false" style="position: static;" type="button">Eliminar oferta</button>
+        <button class="btn-cancel" (click)="closeEditOfferModal()" type="button">Cancelar</button>
+        <button class="btn-del-img" (click)="eliminarOferta(editingOffer); closeEditOfferModal()" style="position: static;" type="button">Eliminar oferta</button>
         <button class="btn-save" (click)="guardarCambiosOferta()" type="button">Guardar cambios</button>
       </div>
     </div>

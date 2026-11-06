@@ -12,11 +12,22 @@ export interface ConfiguracionCarrito {
   beneficio4: string;
 }
 
+export type TipoAplicacionCupon = 'BIENVENIDA' | 'CATEGORIA' | 'OFERTAS' | 'OFERTA' | 'LIQUIDACION' | 'GENERAL';
+
 export interface Cupon {
   id?: number;
   codigo: string;
   porcentajeDescuento: number;
   activo: boolean;
+  montoMinimo?: number | null;
+  fechaInicio?: string | null;
+  fechaFin?: string | null;
+  limiteUso?: number | null;
+  usosActuales?: number | null;
+  tipoAplicacion?: TipoAplicacionCupon;
+  categoriaAplicable?: string | null;
+  productoIds?: string | null;
+  visibleWeb?: boolean;
 }
 
 @Injectable({
@@ -54,5 +65,9 @@ export class AdminCarritoService {
 
   validarCupon(codigo: string): Observable<Cupon> {
     return this.http.get<Cupon>(`${this.cuponesUrl}/validar/${codigo}`);
+  }
+
+  registrarUsoCupon(id: number): Observable<Cupon> {
+    return this.http.post<Cupon>(`${this.cuponesUrl}/${id}/usar`, {});
   }
 }

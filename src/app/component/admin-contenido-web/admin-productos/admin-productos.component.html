@@ -16,9 +16,10 @@
       <button [class.active]="filtroActivo === 'en-oferta'" (click)="filtrarProductos('en-oferta')" type="button">En Oferta</button>
     </div>
 
-    <!-- Agregar producto button -->
-    <div style="display: flex; gap: 8px;">
-      <button class="btn-cancel" (click)="showGlobalShippingModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px;" type="button">⚙️ Configurar Envíos y Devoluciones</button>
+    <!-- Botones de acción -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn-cancel" (click)="showGlobalShippingModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px; font-size: 13.5px;" type="button">⚙️ Configurar Envíos y Devoluciones</button>
+      <button class="btn-cancel" (click)="abrirModalCategorias()" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600;" type="button">🏷️ Añadir Categoría</button>
       <button class="btn-add-product" (click)="openAddProduct()" type="button">+ Agregar producto</button>
     </div>
   </div>
@@ -54,7 +55,7 @@
             <tr>
               <td>
                 <div class="prod-thumb-small">
-                  <img [src]="prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || 'images/prod-jaspeada.png'" [alt]="prod.nombre" />
+                  <img [src]="prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || '/assets/img/placeholder-producto.png'" (error)="onImgError($event, prod)" [alt]="prod.nombre" />
                 </div>
               </td>
               <td><strong>{{ prod.nombre }}</strong></td>
@@ -124,15 +125,49 @@
             <div class="form-grid-3">
               <div class="form-group">
                 <label>Precio Original</label>
-                <input type="number" placeholder="0.00" [(ngModel)]="newProduct.precio" />
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  min="0.01"
+                  step="0.01"
+                  [(ngModel)]="newProduct.precio"
+                  (keydown)="validarPrecioKeydown($event)"
+                  (input)="sanitizarPrecioInput($event, 'new', 'precio')"
+                  (blur)="formatearPrecioBlur('new', 'precio')"
+                  (paste)="validarPegadoPrecio($event, 'new', 'precio')"
+                  (drop)="$event.preventDefault()"
+                />
               </div>
               <div class="form-group">
                 <label>Precio Oferta</label>
-                <input type="number" placeholder="Opcional" [(ngModel)]="newProduct.precioOferta" />
+                <input
+                  type="number"
+                  placeholder="Opcional"
+                  min="0.01"
+                  step="0.01"
+                  [(ngModel)]="newProduct.precioOferta"
+                  (keydown)="validarPrecioKeydown($event)"
+                  (input)="sanitizarPrecioInput($event, 'new', 'precioOferta')"
+                  (blur)="formatearPrecioBlur('new', 'precioOferta')"
+                  (paste)="validarPegadoPrecio($event, 'new', 'precioOferta')"
+                  (drop)="$event.preventDefault()"
+                />
               </div>
               <div class="form-group">
                 <label>Stock Inicial</label>
-                <input type="number" placeholder="Cantidad" [(ngModel)]="newProduct.stock" />
+                <input
+                  type="number"
+                  placeholder="Cantidad"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  [(ngModel)]="newProduct.stock"
+                  (keydown)="validarSoloEnterosStock($event, 'new')"
+                  (input)="sanitizarStockInput($event, 'new')"
+                  (paste)="validarPegadoStock($event, 'new')"
+                  (drop)="$event.preventDefault()"
+                />
               </div>
             </div>
 
@@ -140,10 +175,9 @@
               <div class="form-group">
                 <label>Categoría</label>
                 <select [(ngModel)]="newProduct.categoria">
-                  <option>Tazas</option>
-                  <option>Vasos</option>
-                  <option>Sets de Cerámica</option>
-                  <option>Accesorios</option>
+                  @for (cat of categoriasDisponibles; track cat) {
+                    <option [value]="cat">{{ cat }}</option>
+                  }
                 </select>
               </div>
               <div class="switches-grid-inside">
@@ -175,15 +209,17 @@
           <div class="uploader-tab-layout">
             <div class="main-image-preview">
               <p class="section-sub">Imagen Principal</p>
-              <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none" />
+              <input type="file" #fileInput (change)="onFileSelected($event)" accept=".jpg,.jpeg,.png,image/jpeg,image/png" style="display: none" />
               
               <div class="big-preview-box" 
                    [class.empty-state]="!newProduct.imagenPrincipal || (!newProduct.imagenPrincipal.startsWith('http') && !newProduct.imagenPrincipal.startsWith('blob:'))"
+                   [class.drag-over]="isDraggingMain"
                    (dragover)="onDragOver($event)"
+                   (dragleave)="onDragLeave($event)"
                    (drop)="onDrop($event)">
                    
                 @if (newProduct.imagenPrincipal && (newProduct.imagenPrincipal.startsWith('http') || newProduct.imagenPrincipal.startsWith('blob:'))) {
-                  <img [src]="imagenTemporalUrl" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <img [src]="imagenTemporalUrl" (error)="onImgError($event)" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;" />
                   <button class="btn-del-img" (click)="removeImage($event)" type="button">Eliminar</button>
                 } @else {
                   <div class="placeholder-drag-drop">
@@ -196,7 +232,7 @@
                     <div class="origin-buttons-row">
                       <button type="button" class="btn-picker-choice" (click)="fileInput.click()">Desde PC</button>
                       <button type="button" class="btn-picker-choice-primary" (click)="abrirPicker('principal')">Google Drive</button>
-                      <button type="button" class="btn-picker-choice-secondary" (click)="fallbackUrlPrompt('principal')">Pegar URL</button>
+                      <button type="button" class="btn-picker-choice-secondary" (click)="abrirModalPegarUrl('principal')">URL de Drive</button>
                     </div>
                   </div>
                 }
@@ -220,7 +256,12 @@
                     <button class="btn-del-thumb" (click)="removeMiniatura(0, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura1')">
+                  <div class="thumb-uploader-box"
+                       [class.drag-over]="isDraggingThumb[0]"
+                       (dragover)="onDragOverMiniatura($event, 0)"
+                       (dragleave)="onDragLeaveMiniatura($event, 0)"
+                       (drop)="onDropMiniatura($event, 0)"
+                       (click)="abrirModalOrigenImagen('miniatura1')">
                     <span>+ Añadir</span>
                   </div>
                 }
@@ -239,7 +280,12 @@
                     <button class="btn-del-thumb" (click)="removeMiniatura(1, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura2')">
+                  <div class="thumb-uploader-box"
+                       [class.drag-over]="isDraggingThumb[1]"
+                       (dragover)="onDragOverMiniatura($event, 1)"
+                       (dragleave)="onDragLeaveMiniatura($event, 1)"
+                       (drop)="onDropMiniatura($event, 1)"
+                       (click)="abrirModalOrigenImagen('miniatura2')">
                     <span>+ Añadir</span>
                   </div>
                 }
@@ -258,7 +304,12 @@
                     <button class="btn-del-thumb" (click)="removeMiniatura(2, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura3')">
+                  <div class="thumb-uploader-box"
+                       [class.drag-over]="isDraggingThumb[2]"
+                       (dragover)="onDragOverMiniatura($event, 2)"
+                       (dragleave)="onDragLeaveMiniatura($event, 2)"
+                       (drop)="onDropMiniatura($event, 2)"
+                       (click)="abrirModalOrigenImagen('miniatura3')">
                     <span>+ Añadir</span>
                   </div>
                 }
@@ -415,7 +466,7 @@
         <!-- TAB 4: RELACIONADOS -->
         @if (addProductModalTab === 'relacionados') {
           <div class="relacionados-tab-layout">
-            <h4>Vincular productos sugeridos</h4>
+            <h4>Sugerir ventas cruzadas</h4>
             <span class="bar-divider"></span>
             <p class="sub-caption-picker">Selecciona qué productos se mostrarán en la ficha técnica de este nuevo artículo:</p>
 
@@ -423,7 +474,7 @@
               @for (prod of productosAdmin; track prod.id) {
                 <div class="rel-product-row" [class.selected]="newProduct.sugeridosIds.includes(prod.id)" (click)="toggleSugerido(prod.id)">
                   <span class="chk-indicator"></span>
-                  <img [src]="prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || 'images/prod-jaspeada.png'" [alt]="prod.nombre" />
+                  <img [src]="prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || '/assets/img/placeholder-producto.png'" (error)="onImgError($event, prod)" [alt]="prod.nombre" />
                   <span><strong>{{ prod.nombre }}</strong> - S/ {{ prod.precio }}</span>
                 </div>
               } @empty {
@@ -450,7 +501,7 @@
     <div class="modal-card-large">
       <div class="modal-header">
         <h3>Editar producto</h3>
-        <button class="btn-close-modal" (click)="showEditProductModal = false" type="button">×</button>
+        <button class="btn-close-modal" (click)="closeEditProductModal()" type="button">×</button>
       </div>
 
       <!-- Tabs del Modal -->
@@ -473,15 +524,49 @@
             <div class="form-grid-3">
               <div class="form-group">
                 <label>Precio Original</label>
-                <input type="number" [(ngModel)]="editingProduct.precio" />
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  min="0.01"
+                  step="0.01"
+                  [(ngModel)]="editingProduct.precio"
+                  (keydown)="validarPrecioKeydown($event)"
+                  (input)="sanitizarPrecioInput($event, 'edit', 'precio')"
+                  (blur)="formatearPrecioBlur('edit', 'precio')"
+                  (paste)="validarPegadoPrecio($event, 'edit', 'precio')"
+                  (drop)="$event.preventDefault()"
+                />
               </div>
               <div class="form-group">
                 <label>Precio Oferta</label>
-                <input type="number" [(ngModel)]="editingProduct.precioOferta" />
+                <input
+                  type="number"
+                  placeholder="Opcional"
+                  min="0.01"
+                  step="0.01"
+                  [(ngModel)]="editingProduct.precioOferta"
+                  (keydown)="validarPrecioKeydown($event)"
+                  (input)="sanitizarPrecioInput($event, 'edit', 'precioOferta')"
+                  (blur)="formatearPrecioBlur('edit', 'precioOferta')"
+                  (paste)="validarPegadoPrecio($event, 'edit', 'precioOferta')"
+                  (drop)="$event.preventDefault()"
+                />
               </div>
               <div class="form-group">
                 <label>Stock actual</label>
-                <input type="number" [(ngModel)]="editingProduct.stock" />
+                <input
+                  type="number"
+                  placeholder="Cantidad"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  [(ngModel)]="editingProduct.stock"
+                  (keydown)="validarSoloEnterosStock($event, 'edit')"
+                  (input)="sanitizarStockInput($event, 'edit')"
+                  (paste)="validarPegadoStock($event, 'edit')"
+                  (drop)="$event.preventDefault()"
+                />
               </div>
             </div>
 
@@ -489,10 +574,9 @@
               <div class="form-group">
                 <label>Categoría</label>
                 <select [(ngModel)]="editingProduct.categoria">
-                  <option>Tazas</option>
-                  <option>Vasos</option>
-                  <option>Sets de Cerámica</option>
-                  <option>Accesorios</option>
+                  @for (cat of categoriasDisponibles; track cat) {
+                    <option [value]="cat">{{ cat }}</option>
+                  }
                 </select>
               </div>
               <div class="switches-grid-inside">
@@ -524,15 +608,17 @@
           <div class="uploader-tab-layout">
             <div class="main-image-preview">
               <p class="section-sub">Imagen Principal</p>
-              <input type="file" #fileInputEdit (change)="onFileSelected($event)" accept="image/*" style="display: none" />
+              <input type="file" #fileInputEdit (change)="onFileSelected($event)" accept=".jpg,.jpeg,.png,image/jpeg,image/png" style="display: none" />
               
               <div class="big-preview-box" 
                    [class.empty-state]="!editingProduct.imagenPrincipal || (!editingProduct.imagenPrincipal.startsWith('http') && !editingProduct.imagenPrincipal.startsWith('blob:'))"
+                   [class.drag-over]="isDraggingMain"
                    (dragover)="onDragOver($event)"
+                   (dragleave)="onDragLeave($event)"
                    (drop)="onDrop($event)">
                    
                 @if (editingProduct.imagenPrincipal && (editingProduct.imagenPrincipal.startsWith('http') || editingProduct.imagenPrincipal.startsWith('blob:'))) {
-                  <img [src]="imagenTemporalUrl" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <img [src]="imagenTemporalUrl" (error)="onImgError($event)" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;" />
                   <button class="btn-del-img" (click)="removeImage($event)" type="button">Eliminar</button>
                 } @else {
                   <div class="placeholder-drag-drop">
@@ -545,7 +631,7 @@
                     <div class="origin-buttons-row">
                       <button type="button" class="btn-picker-choice" (click)="fileInputEdit.click()">Desde PC</button>
                       <button type="button" class="btn-picker-choice-primary" (click)="abrirPicker('principal')">Google Drive</button>
-                      <button type="button" class="btn-picker-choice-secondary" (click)="fallbackUrlPrompt('principal')">Pegar URL</button>
+                      <button type="button" class="btn-picker-choice-secondary" (click)="abrirModalPegarUrl('principal')">URL de Drive</button>
                     </div>
                   </div>
                 }
@@ -569,7 +655,12 @@
                     <button class="btn-del-thumb" (click)="removeMiniatura(0, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura1')">
+                  <div class="thumb-uploader-box"
+                       [class.drag-over]="isDraggingThumb[0]"
+                       (dragover)="onDragOverMiniatura($event, 0)"
+                       (dragleave)="onDragLeaveMiniatura($event, 0)"
+                       (drop)="onDropMiniatura($event, 0)"
+                       (click)="abrirModalOrigenImagen('miniatura1')">
                     <span>+ Añadir</span>
                   </div>
                 }
@@ -588,7 +679,12 @@
                     <button class="btn-del-thumb" (click)="removeMiniatura(1, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura2')">
+                  <div class="thumb-uploader-box"
+                       [class.drag-over]="isDraggingThumb[1]"
+                       (dragover)="onDragOverMiniatura($event, 1)"
+                       (dragleave)="onDragLeaveMiniatura($event, 1)"
+                       (drop)="onDropMiniatura($event, 1)"
+                       (click)="abrirModalOrigenImagen('miniatura2')">
                     <span>+ Añadir</span>
                   </div>
                 }
@@ -607,7 +703,12 @@
                     <button class="btn-del-thumb" (click)="removeMiniatura(2, $event)" type="button">×</button>
                   </div>
                 } @else {
-                  <div class="thumb-uploader-box" (click)="elegirOrigenMiniatura('miniatura3')">
+                  <div class="thumb-uploader-box"
+                       [class.drag-over]="isDraggingThumb[2]"
+                       (dragover)="onDragOverMiniatura($event, 2)"
+                       (dragleave)="onDragLeaveMiniatura($event, 2)"
+                       (drop)="onDropMiniatura($event, 2)"
+                       (click)="abrirModalOrigenImagen('miniatura3')">
                     <span>+ Añadir</span>
                   </div>
                 }
@@ -776,7 +877,7 @@
                     <span class="chk-indicator">
                       {{ esSugeridoSeleccionado(p.id) ? '✓' : '' }}
                     </span>
-                    <img [src]="p.imagenPrincipal || p.imageUrl || p.imagen_principal || 'images/prod-jaspeada.png'" alt="..." />
+                    <img [src]="p.imagenPrincipal || p.imageUrl || p.imagen_principal || '/assets/img/placeholder-producto.png'" (error)="onImgError($event, p)" alt="..." />
                     <span><strong>{{ p.nombre }}</strong> - S/ {{ p.precio }}</span>
                   </div>
                 }
@@ -789,8 +890,8 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" (click)="showEditProductModal = false" type="button">Cancelar</button>
-        <button class="btn-del-img" (click)="eliminarProducto(editingProduct.id); showEditProductModal = false" style="position: static;" type="button">Eliminar producto</button>
+        <button class="btn-cancel" (click)="closeEditProductModal()" type="button">Cancelar</button>
+        <button class="btn-del-img" (click)="eliminarProducto(editingProduct.id); closeEditProductModal()" style="position: static;" type="button">Eliminar producto</button>
         <button class="btn-save" (click)="guardarCambiosProducto()" type="button">Guardar cambios</button>
       </div>
     </div>
@@ -883,6 +984,191 @@
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showGlobalShippingModal = false" type="button">Cancelar</button>
         <button class="btn-save" (click)="guardarConfiguracionGlobal()" type="button">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL GESTIÓN DE CATEGORÍAS -->
+@if (showCategoriasModal) {
+  <div class="modal-backdrop" (click)="cerrarModalCategorias()">
+    <div class="modal-card-medium" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>Gestión de Categorías</h3>
+          <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Añade, edita o elimina las categorías para tus productos.</p>
+        </div>
+        <button class="btn-close-modal" (click)="cerrarModalCategorias()" type="button">×</button>
+      </div>
+
+      <div class="modal-body-content" style="padding: 24px 32px;">
+        <!-- CASILLA PARA AGREGAR -->
+        <div style="background: #fdfaf7; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 8px;">
+            Añadir nueva categoría
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input
+              type="text"
+              placeholder="Escribe el nombre de la categoría..."
+              [(ngModel)]="nuevaCategoriaTexto"
+              (keyup.enter)="agregarCategoria()"
+              style="flex: 1; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; outline: none; background: white;"
+            />
+            <button
+              type="button"
+              (click)="agregarCategoria()"
+              class="btn-add-product"
+              style="padding: 10px 18px; font-size: 13.5px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;"
+            >
+              + Añadir
+            </button>
+          </div>
+        </div>
+
+        <!-- LISTA DE CATEGORÍAS EXISTENTES -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 13px; font-weight: 700; color: var(--ink);">
+              Categorías actuales ({{ categoriasDisponibles.length }})
+            </span>
+          </div>
+
+          <div style="max-height: 290px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px;">
+            @for (cat of categoriasDisponibles; track cat; let i = $index) {
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: white; border: 1px solid var(--line); border-radius: 8px;">
+                @if (indiceCategoriaEnEdicion === i) {
+                  <!-- MODO EDICIÓN -->
+                  <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
+                    <input
+                      type="text"
+                      [(ngModel)]="nombreCategoriaEditando"
+                      (keyup.enter)="guardarEdicionCategoria(i)"
+                      placeholder="Nombre de categoría..."
+                      style="flex: 1; padding: 7px 10px; border: 1.5px solid var(--orange); border-radius: 6px; font-size: 13.5px; outline: none;"
+                    />
+                    <button
+                      type="button"
+                      (click)="guardarEdicionCategoria(i)"
+                      style="background: #4b8d37; color: white; border: none; border-radius: 6px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      (click)="cancelarEdicionCategoria()"
+                      style="background: #f1ede8; color: var(--ink); border: none; border-radius: 6px; padding: 7px 12px; font-size: 12.5px; cursor: pointer;"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                } @else {
+                  <!-- MODO VISUALIZACIÓN -->
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--orange);"></span>
+                    <span style="font-size: 14px; font-weight: 600; color: var(--ink);">{{ cat }}</span>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <button
+                      type="button"
+                      (click)="iniciarEdicionCategoria(i, cat)"
+                      style="background: none; border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; font-size: 12px; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+                      title="Editar nombre de categoría"
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      type="button"
+                      (click)="eliminarCategoria(i, cat)"
+                      style="background: none; border: 1px solid #ffd4cc; border-radius: 6px; padding: 6px 11px; font-size: 12px; color: #d9381e; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+                      title="Eliminar categoría"
+                    >
+                      🗑️ Borrar
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 16px 32px;">
+        <button class="btn-cancel" (click)="cerrarModalCategorias()" type="button" style="width: 100%;">Listo</button>
+      </div>
+    </div>
+  </div>
+}
+
+
+<!-- MODAL DE SELECCIÓN DE ORIGEN DE IMAGEN (PC, GOOGLE DRIVE, PEGAR URL) -->
+@if (showModalOrigenImagen) {
+  <div class="modal-backdrop" (click)="cerrarModalOrigenImagen()">
+    <div class="modal-card-medium" (click)="$event.stopPropagation()" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Seleccionar origen de imagen</h3>
+        <button class="btn-close-modal" (click)="cerrarModalOrigenImagen()" type="button" aria-label="Cerrar modal">×</button>
+      </div>
+
+      <div class="modal-body-content" style="padding: 24px; text-align: center;">
+        <p style="color: var(--muted); margin-bottom: 20px; font-size: 14px;">
+          Elige cómo deseas añadir la imagen {{ tipoImagenObjetivo === 'principal' ? 'principal' : 'miniatura' }}:
+        </p>
+
+        <!-- Input oculto para selección de archivos desde la PC -->
+        <input type="file" #fileInputMiniModal (change)="onFileSeleccionadoModal($event)" accept=".jpg,.jpeg,.png,image/jpeg,image/png" style="display: none;" />
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <button type="button" class="btn-picker-choice" style="padding: 12px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;" (click)="fileInputMiniModal.click()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Subir desde mi PC
+          </button>
+
+          <button type="button" class="btn-picker-choice-primary" style="padding: 12px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;" (click)="seleccionarGoogleDriveDesdeModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+            Google Drive
+          </button>
+
+          <button type="button" class="btn-picker-choice" style="padding: 12px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;" (click)="seleccionarPegarUrlDesdeModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            URL de Drive
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 24px; justify-content: flex-end;">
+        <button class="btn-cancel" (click)="cerrarModalOrigenImagen()" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL PARA PEGAR URL DE IMAGEN (SIN PROMPT NATIVO) -->
+@if (showModalPegarUrl) {
+  <div class="modal-backdrop" (click)="cerrarModalPegarUrl()">
+    <div class="modal-card-medium" (click)="$event.stopPropagation()" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">URL de Google Drive</h3>
+        <button class="btn-close-modal" (click)="cerrarModalPegarUrl()" type="button" aria-label="Cerrar modal">×</button>
+      </div>
+
+      <div class="modal-body-content" style="padding: 24px;">
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label style="font-size: 13.5px; font-weight: 600; color: var(--text);">Enlace de Google Drive:</label>
+          <input type="text"
+                 [(ngModel)]="urlImagenInput"
+                 (keyup.enter)="guardarUrlPegada()"
+                 placeholder="https://drive.google.com/..."
+                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13.5px; margin-top: 6px;" />
+          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">
+            Ingresa un enlace compartido de Google Drive.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 24px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-cancel" (click)="cerrarModalPegarUrl()" type="button">Cancelar</button>
+        <button class="btn-save-primary" (click)="guardarUrlPegada()" type="button" style="padding: 9px 18px;">Aplicar URL</button>
       </div>
     </div>
   </div>

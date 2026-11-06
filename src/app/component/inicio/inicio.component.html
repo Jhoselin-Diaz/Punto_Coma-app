@@ -33,8 +33,22 @@
         </div>
         <div class="grid recent-grid">
           @for (prod of cat.productos; track prod.id) {
-            <article class="product-card" [routerLink]="['/productos', prod.id]" style="cursor: pointer;">
+            <article class="product-card" [class.card-agotado]="esAgotado(prod)" [routerLink]="['/productos', prod.id]" style="cursor: pointer;">
               <div class="image-wrap">
+                <button 
+                  type="button" 
+                  class="btn-favorito-card" 
+                  [class.favorito-activo]="esFavorito(prod.id)"
+                  (click)="toggleFavorito($event, prod)"
+                  [attr.aria-label]="esFavorito(prod.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+                  title="Favorito">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </button>
+                @if (esAgotado(prod)) {
+                  <span class="stock-badge-agotado">SIN STOCK</span>
+                }
                 <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-jaspeada.png'" [alt]="prod.nombre" loading="lazy" />
               </div>
               <div class="card-info">
@@ -45,6 +59,9 @@
                     <span class="price-old" style="text-decoration: line-through; font-size: 12px; color: var(--muted); margin-left: 6px;">S/ {{ prod.precioAnterior }}</span>
                   } @else {
                     <strong>S/ {{ prod.precio }}</strong>
+                  }
+                  @if (esAgotado(prod)) {
+                    <span class="home-tag-agotado">Agotado</span>
                   }
                 </p>
               </div>

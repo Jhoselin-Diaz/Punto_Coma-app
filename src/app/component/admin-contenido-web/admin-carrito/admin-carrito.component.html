@@ -48,9 +48,8 @@
                 id="whatsappUrl" 
                 name="whatsappUrl" 
                 [(ngModel)]="config.whatsappUrl" 
-                placeholder="https://wa.me/51999999999?text=" 
-                required />
-              <small>URL base que el botón "Finalizar pedido por WhatsApp" llamará para redirigir al cliente.</small>
+                placeholder="https://wa.me/51999999999?text=" />
+              <small>URL base que el botón "Finalizar pedido por WhatsApp" llamará para redirigir al cliente. Deja vacío para probar contingencia.</small>
             </div>
 
             <!-- SECCIÓN DE BENEFICIOS CON SWITCHES -->
@@ -160,9 +159,161 @@
                     id="porcentaje" 
                     name="porcentaje" 
                     [(ngModel)]="nuevoCupon.porcentajeDescuento" 
+                    (input)="errorPorcentajeCuponNuevo = false"
+                    [class.is-invalid]="errorPorcentajeCuponNuevo"
                     min="1" 
-                    max="100" 
+                    max="99" 
+                    placeholder="1 - 99"
                     required />
+                </div>
+
+                <div class="form-group">
+                  <label for="tipoAplicacion">Tipo de Aplicación</label>
+                  <select 
+                    id="tipoAplicacion" 
+                    name="tipoAplicacion" 
+                    [(ngModel)]="nuevoCupon.tipoAplicacion" 
+                    required
+                    class="tipo-cupon-select">
+                    <option value="GENERAL">General (Todos los productos)</option>
+                    <option value="BIENVENIDA">Bienvenida (Primer pedido de nuevos registrados)</option>
+                    <option value="CATEGORIA">Por Categoría Específica</option>
+                    <option value="OFERTAS">Solo Productos en Oferta</option>
+                    <option value="LIQUIDACION">Liquidación / Selección Específica de Productos</option>
+                  </select>
+                </div>
+
+                @if (nuevoCupon.tipoAplicacion === 'BIENVENIDA') {
+                  <div class="tipo-info-box welcome-info-box">
+                    <div class="info-icon">🎁</div>
+                    <div class="info-content">
+                      <strong>Cupón de Bienvenida Exclusivo</strong>
+                      <p>Solo puede existir 1 cupón de bienvenida activo. Se sincronizará automáticamente con el banner promocional del carrito y solo podrá ser utilizado por clientes registrados en su primer pedido.</p>
+                    </div>
+                  </div>
+                }
+
+                @if (nuevoCupon.tipoAplicacion === 'CATEGORIA') {
+                  <div class="form-group">
+                    <label for="categoriaAplicable">Categoría Específica</label>
+                    <select 
+                      id="categoriaAplicable" 
+                      name="categoriaAplicable" 
+                      [(ngModel)]="nuevoCupon.categoriaAplicable" 
+                      required
+                      class="tipo-cupon-select">
+                      <option value="" disabled>-- Selecciona una categoría --</option>
+                      @for (cat of categoriasDisponibles; track cat) {
+                        <option [value]="cat">{{ cat }}</option>
+                      }
+                    </select>
+                    <small class="field-hint">El descuento se calculará únicamente sobre los artículos de esta categoría.</small>
+                  </div>
+                }
+
+                @if (nuevoCupon.tipoAplicacion === 'OFERTAS' || nuevoCupon.tipoAplicacion === 'OFERTA') {
+                  <div class="tipo-info-box offer-info-box">
+                    <div class="info-icon">🏷️</div>
+                    <div class="info-content">
+                      <strong>Solo Productos en Oferta</strong>
+                      <p>El descuento aplicará única y exclusivamente a los productos que cuenten con precio de oferta en el catálogo.</p>
+                    </div>
+                  </div>
+                }
+
+                @if (nuevoCupon.tipoAplicacion === 'LIQUIDACION') {
+                  <div class="form-group productos-seleccion-group">
+                    <div class="prods-selection-header">
+                      <label>Productos Específicos ({{ productosSeleccionadosNuevo.length }} seleccionados)</label>
+                    </div>
+                    <div class="search-prods-box">
+                      <input 
+                        type="text" 
+                        placeholder="🔍 Filtrar productos..." 
+                        [(ngModel)]="filtroProductosNuevo" 
+                        name="filtroProdsNuevo" 
+                        class="input-filtro-prods" />
+                    </div>
+                    <div class="prods-checklist-container">
+                      @for (p of obtenerProductosFiltradosNuevo(); track p.id) {
+                        <label class="prod-checklist-item" [class.selected]="esProductoSeleccionadoNuevo(p.id)">
+                          <input 
+                            type="checkbox" 
+                            [checked]="esProductoSeleccionadoNuevo(p.id)" 
+                            (change)="toggleProductoNuevo(p.id)" />
+                          <span class="prod-name">{{ p.nombre }}</span>
+                          <span class="prod-price">S/ {{ p.precio }}</span>
+                        </label>
+                      } @empty {
+                        <div class="empty-prods-msg">No se encontraron productos coincidentes.</div>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <div class="form-group">
+                  <label for="montoMinimo">
+                    Monto Mínimo de Compra (S/) <span class="optional-tag">(Opcional)</span>
+                  </label>
+                  <input 
+                    type="number" 
+                    id="montoMinimo" 
+                    name="montoMinimo" 
+                    [(ngModel)]="nuevoCupon.montoMinimo" 
+                    min="0" 
+                    step="0.5" 
+                    placeholder="Ej. 50.00" />
+                  <small class="field-hint">Aplica solo si el subtotal de compra alcanza o supera este monto.</small>
+                </div>
+
+                <div class="form-group-dates-grid">
+                  <div class="form-group">
+                    <label for="fechaInicio">
+                      Fecha Inicio <span class="optional-tag">(Opcional)</span>
+                    </label>
+                    <input 
+                      type="date" 
+                      id="fechaInicio" 
+                      name="fechaInicio" 
+                      [(ngModel)]="nuevoCupon.fechaInicio" />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="fechaFin">
+                      Fecha Fin <span class="optional-tag">(Opcional)</span>
+                    </label>
+                    <input 
+                      type="date" 
+                      id="fechaFin" 
+                      name="fechaFin" 
+                      [(ngModel)]="nuevoCupon.fechaFin" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="limiteUso">
+                    Límite de Usos <span class="optional-tag">(Opcional)</span>
+                  </label>
+                  <input 
+                    type="number" 
+                    id="limiteUso" 
+                    name="limiteUso" 
+                    [(ngModel)]="nuevoCupon.limiteUso" 
+                    min="1" 
+                    step="1" 
+                    placeholder="Ej. 50 (vacío para ilimitado)" />
+                  <small class="field-hint">Cantidad máxima de veces que puede canjearse este cupón.</small>
+                </div>
+
+                <div class="form-group-checkbox">
+                  <label class="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      name="visibleWeb" 
+                      [(ngModel)]="nuevoCupon.visibleWeb" />
+                    <span class="slider round"></span>
+                  </label>
+                  <span class="label-text">Visible en la tienda web (Panel lateral)</span>
                 </div>
 
                 <div class="form-group-checkbox">
@@ -196,7 +347,12 @@
                   <thead>
                     <tr>
                       <th>Código</th>
+                      <th>Tipo</th>
                       <th>Descuento</th>
+                      <th>Monto Mínimo</th>
+                      <th>Vigencia</th>
+                      <th>Usos / Límite</th>
+                      <th>Visible en Web</th>
                       <th>Estado</th>
                       <th>Acciones</th>
                     </tr>
@@ -205,19 +361,78 @@
                     @for (cupon of cupones; track cupon.id) {
                       <tr>
                         <td class="coupon-code-cell">{{ cupon.codigo }}</td>
-                        <td><strong>{{ cupon.porcentajeDescuento }}%</strong></td>
                         <td>
-                          <label class="toggle-switch">
+                          <span class="tipo-cupon-badge" [class]="'badge-tipo-' + (cupon.tipoAplicacion || 'GENERAL').toLowerCase()">
+                            {{ obtenerEtiquetaTipo(cupon) }}
+                          </span>
+                        </td>
+                        <td><strong class="discount-badge">{{ cupon.porcentajeDescuento }}%</strong></td>
+                        <td>
+                          @if (cupon.montoMinimo && cupon.montoMinimo > 0) {
+                            <span class="min-amount-badge">S/ {{ cupon.montoMinimo.toFixed(2) }}</span>
+                          } @else {
+                            <span class="no-limit-text">Sin mínimo</span>
+                          }
+                        </td>
+                        <td>
+                          @if (cupon.fechaInicio && cupon.fechaFin) {
+                            <span class="date-range-text">{{ cupon.fechaInicio }} al {{ cupon.fechaFin }}</span>
+                            @if (esCuponExpirado(cupon)) {
+                              <span class="badge-vencido">Vencido</span>
+                            }
+                          } @else if (cupon.fechaInicio) {
+                            <span class="date-range-text">Desde {{ cupon.fechaInicio }}</span>
+                          } @else if (cupon.fechaFin) {
+                            <span class="date-range-text">Hasta {{ cupon.fechaFin }}</span>
+                            @if (esCuponExpirado(cupon)) {
+                              <span class="badge-vencido">Vencido</span>
+                            }
+                          } @else {
+                            <span class="no-limit-text">Permanente</span>
+                          }
+                        </td>
+                        <td>
+                          @if (cupon.limiteUso && cupon.limiteUso > 0) {
+                            <div class="usage-container">
+                              <span class="usage-count" [class.usage-exhausted]="esCuponAgotado(cupon)">
+                                {{ cupon.usosActuales || 0 }} / {{ cupon.limiteUso }}
+                              </span>
+                              @if (esCuponAgotado(cupon)) {
+                                <span class="badge-agotado">Agotado</span>
+                              }
+                            </div>
+                          } @else {
+                            <span class="usage-unlimited">{{ cupon.usosActuales || 0 }} canjes <span class="text-muted">(Sin límite)</span></span>
+                          }
+                        </td>
+                        <td>
+                          <label class="toggle-switch" title="Mostrar u ocultar en el panel de cupones de la tienda">
                             <input 
                               type="checkbox" 
-                              [checked]="cupon.activo" 
-                              (change)="toggleCuponActivo(cupon)" />
+                              [checked]="cupon.visibleWeb !== false" 
+                              (change)="toggleCuponVisibleWeb(cupon)" />
                             <span class="slider round"></span>
                           </label>
                         </td>
                         <td>
+                          <label class="toggle-switch" title="Habilitar o inhabilitar cupón en el sistema">
+                            <input 
+                              type="checkbox" 
+                              [checked]="cupon.activo" 
+                              (change)="toggleCuponEstado(cupon)" />
+                            <span class="slider round"></span>
+                          </label>
+                        </td>
+                        <td class="actions-cell">
                           <button 
-                            class="btn-delete-icon" 
+                            class="btn-action-icon btn-edit-icon" 
+                            (click)="abrirModalEditar(cupon)" 
+                            title="Editar cupón" 
+                            type="button">
+                            ✏️
+                          </button>
+                          <button 
+                            class="btn-action-icon btn-delete-icon" 
                             (click)="eliminarCupon(cupon)" 
                             title="Eliminar cupón" 
                             type="button">
@@ -227,7 +442,7 @@
                       </tr>
                     } @empty {
                       <tr>
-                        <td colspan="4" class="empty-table-msg">No se encontraron cupones registrados.</td>
+                        <td colspan="9" class="empty-table-msg">No se encontraron cupones registrados.</td>
                       </tr>
                     }
                   </tbody>
@@ -237,6 +452,238 @@
           </div>
         </section>
       }
+
+      <!-- MODAL DE EDICIÓN DE CUPÓN -->
+      @if (mostrarModalEditar && cuponEditando) {
+        <div class="modal-backdrop" (click)="cerrarModalEditar()">
+          <div class="modal-card-cupon" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <div class="modal-header-info">
+                <h3>Editar Cupón</h3>
+                <p>Modifica los parámetros y condiciones de este cupón promocional.</p>
+              </div>
+              <button class="btn-close-modal" (click)="cerrarModalEditar()" type="button" aria-label="Cerrar">✕</button>
+            </div>
+
+            <form (ngSubmit)="guardarEdicionCupon()" class="modal-body">
+              @if (errorEdicionCupon) {
+                <div class="error-alert">{{ errorEdicionCupon }}</div>
+              }
+
+              <div class="form-group">
+                <label for="edit-codigo">Código del Cupón</label>
+                <input 
+                  type="text" 
+                  id="edit-codigo" 
+                  name="editCodigo" 
+                  [(ngModel)]="cuponEditando.codigo" 
+                  required />
+              </div>
+
+              <div class="form-group">
+                <label for="edit-descuento">Porcentaje de Descuento (%)</label>
+                <input 
+                  type="number" 
+                  id="edit-descuento" 
+                  name="editDescuento" 
+                  [(ngModel)]="cuponEditando.porcentajeDescuento" 
+                  (input)="errorPorcentajeCuponEdit = false"
+                  [class.is-invalid]="errorPorcentajeCuponEdit"
+                  min="1" 
+                  max="99" 
+                  placeholder="1 - 99"
+                  required />
+              </div>
+
+              <div class="form-group">
+                <label for="edit-tipoAplicacion">Tipo de Aplicación</label>
+                <select 
+                  id="edit-tipoAplicacion" 
+                  name="editTipoAplicacion" 
+                  [(ngModel)]="cuponEditando.tipoAplicacion" 
+                  required
+                  class="tipo-cupon-select">
+                  <option value="GENERAL">General (Todos los productos)</option>
+                  <option value="BIENVENIDA">Bienvenida (Primer pedido de nuevos registrados)</option>
+                  <option value="CATEGORIA">Por Categoría Específica</option>
+                  <option value="OFERTAS">Solo Productos en Oferta</option>
+                  <option value="LIQUIDACION">Liquidación / Selección Específica de Productos</option>
+                </select>
+              </div>
+
+              @if (cuponEditando.tipoAplicacion === 'BIENVENIDA') {
+                <div class="tipo-info-box welcome-info-box">
+                  <div class="info-icon">🎁</div>
+                  <div class="info-content">
+                    <strong>Cupón de Bienvenida Exclusivo</strong>
+                    <p>Solo puede existir 1 cupón de bienvenida activo. Se sincronizará automáticamente con el banner promocional del carrito y solo podrá ser utilizado por clientes registrados en su primer pedido.</p>
+                  </div>
+                </div>
+              }
+
+              @if (cuponEditando.tipoAplicacion === 'CATEGORIA') {
+                <div class="form-group">
+                  <label for="edit-categoriaAplicable">Categoría Específica</label>
+                  <select 
+                    id="edit-categoriaAplicable" 
+                    name="editCategoriaAplicable" 
+                    [(ngModel)]="cuponEditando.categoriaAplicable" 
+                    required
+                    class="tipo-cupon-select">
+                    <option value="" disabled>-- Selecciona una categoría --</option>
+                    @for (cat of categoriasDisponibles; track cat) {
+                      <option [value]="cat">{{ cat }}</option>
+                    }
+                  </select>
+                  <small class="field-hint">El descuento se calculará únicamente sobre los artículos de esta categoría.</small>
+                </div>
+              }
+
+              @if (cuponEditando.tipoAplicacion === 'OFERTAS' || cuponEditando.tipoAplicacion === 'OFERTA') {
+                <div class="tipo-info-box offer-info-box">
+                  <div class="info-icon">🏷️</div>
+                  <div class="info-content">
+                    <strong>Solo Productos en Oferta</strong>
+                    <p>El descuento aplicará única y exclusivamente a los productos que cuenten con precio de oferta en el catálogo.</p>
+                  </div>
+                </div>
+              }
+
+              @if (cuponEditando.tipoAplicacion === 'LIQUIDACION') {
+                <div class="form-group productos-seleccion-group">
+                  <div class="prods-selection-header">
+                    <label>Productos Específicos ({{ productosSeleccionadosEdit.length }} seleccionados)</label>
+                  </div>
+                  <div class="search-prods-box">
+                    <input 
+                      type="text" 
+                      placeholder="🔍 Filtrar productos..." 
+                      [(ngModel)]="filtroProductosEdit" 
+                      name="filtroProdsEdit" 
+                      class="input-filtro-prods" />
+                  </div>
+                  <div class="prods-checklist-container">
+                    @for (p of obtenerProductosFiltradosEdit(); track p.id) {
+                      <label class="prod-checklist-item" [class.selected]="esProductoSeleccionadoEdit(p.id)">
+                        <input 
+                          type="checkbox" 
+                          [checked]="esProductoSeleccionadoEdit(p.id)" 
+                          (change)="toggleProductoEdit(p.id)" />
+                        <span class="prod-name">{{ p.nombre }}</span>
+                        <span class="prod-price">S/ {{ p.precio }}</span>
+                      </label>
+                    } @empty {
+                      <div class="empty-prods-msg">No se encontraron productos coincidentes.</div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="form-group">
+                <label for="edit-montoMinimo">
+                  Monto Mínimo de Compra (S/) <span class="optional-tag">(Opcional)</span>
+                </label>
+                <input 
+                  type="number" 
+                  id="edit-montoMinimo" 
+                  name="editMontoMinimo" 
+                  [(ngModel)]="cuponEditando.montoMinimo" 
+                  min="0" 
+                  step="0.5" 
+                  placeholder="Ej. 50.00" />
+                <small class="field-hint">Aplica solo si el subtotal de compra alcanza o supera este monto.</small>
+              </div>
+
+              <div class="form-group-dates-grid">
+                <div class="form-group">
+                  <label for="edit-fechaInicio">
+                    Fecha Inicio <span class="optional-tag">(Opcional)</span>
+                  </label>
+                  <input 
+                    type="date" 
+                    id="edit-fechaInicio" 
+                    name="editFechaInicio" 
+                    [(ngModel)]="cuponEditando.fechaInicio" />
+                </div>
+
+                <div class="form-group">
+                  <label for="edit-fechaFin">
+                    Fecha Fin <span class="optional-tag">(Opcional)</span>
+                  </label>
+                  <input 
+                    type="date" 
+                    id="edit-fechaFin" 
+                    name="editFechaFin" 
+                    [(ngModel)]="cuponEditando.fechaFin" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="edit-limiteUso">
+                  Límite de Usos <span class="optional-tag">(Opcional)</span>
+                </label>
+                <input 
+                  type="number" 
+                  id="edit-limiteUso" 
+                  name="editLimiteUso" 
+                  [(ngModel)]="cuponEditando.limiteUso" 
+                  min="1" 
+                  step="1" 
+                  placeholder="Ej. 50 (vacío para ilimitado)" />
+                <small class="field-hint">Usos canjeados hasta el momento: <strong>{{ cuponEditando.usosActuales || 0 }}</strong></small>
+              </div>
+
+              <div class="form-group-checkbox">
+                <label class="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    id="edit-visibleWeb" 
+                    name="editVisibleWeb" 
+                    [(ngModel)]="cuponEditando.visibleWeb" />
+                  <span class="slider round"></span>
+                </label>
+                <span class="label-text">Visible en la tienda web (Panel lateral)</span>
+              </div>
+
+              <div class="form-group-checkbox">
+                <label class="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    id="edit-activo" 
+                    name="editActivo" 
+                    [(ngModel)]="cuponEditando.activo" />
+                  <span class="slider round"></span>
+                </label>
+                <span class="label-text">Cupón activo</span>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn-cancel" (click)="cerrarModalEditar()">Cancelar</button>
+                <button type="submit" class="btn-save" [disabled]="guardandoEdicion">
+                  {{ guardandoEdicion ? 'Guardando...' : '💾 Guardar Cambios' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
     </div>
   </div>
+
+  <!-- TOAST FLOTANTE DE NOTIFICACIÓN (CP081) -->
+  @if (toastVisible) {
+    <div class="cupon-toast" role="alert" aria-live="polite">
+      <div class="toast-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="toast-content">
+        @if (toastTitulo) {
+          <strong class="toast-title">{{ toastTitulo }}</strong>
+        }
+        <span class="toast-message">{{ toastMensaje }}</span>
+      </div>
+    </div>
+  }
 </app-admin-layout>

@@ -9,19 +9,19 @@
 }
 
 .contacto-page {
-  width: min(1328px, calc(100% - 112px));
-  margin: 0 auto 50px;
-  padding-top: 20px;
+  width: min(1080px, calc(100% - 40px));
+  margin: 0 auto 36px;
+  padding-top: 14px;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
 }
 
 /* --- BANNER HERO --- */
 .contacto-hero {
   position: relative;
-  min-height: 260px;
-  border-radius: 20px;
+  min-height: 200px;
+  border-radius: 14px;
   background-color: #f3e9dc; /* Beige cálido suave */
   background-image: url('https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=2874&auto=format&fit=crop');
   background-size: cover;
@@ -49,30 +49,30 @@
 }
 
 .hero-inner h1 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: var(--ink);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 56px;
+  font-size: 44px;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
 
 .divider-stars {
-  font-size: 16px;
+  font-size: 14px;
   color: #cbb29e;
-  margin: 5px 0 12px;
-  letter-spacing: 4px;
+  margin: 4px 0 10px;
+  letter-spacing: 3px;
 }
 
 .divider-stars span {
-  font-size: 14px;
+  font-size: 12px;
   vertical-align: middle;
 }
 
 .hero-inner p {
   margin: 0;
   color: #7d6b60;
-  font-size: 22px;
+  font-size: 18px;
   font-style: italic;
   font-family: Georgia, serif;
 }

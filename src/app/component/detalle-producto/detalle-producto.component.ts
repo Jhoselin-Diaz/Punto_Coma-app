@@ -1,8 +1,11 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { DetalleProducto, Producto, ProductosService } from '../../service/productos.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
+import { CartService } from '../../service/cart.service';
+import { ClienteAuthService } from '../../service/cliente-auth.service';
+import { ModalAlertaService } from '../../service/modal-alerta.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { NgIf } from '@angular/common';
 
@@ -16,6 +19,9 @@ type TabDetalle = 'detalles' | 'material' | 'envios';
 })
 export class DetalleProductoComponent implements OnInit {
   producto?: DetalleProducto;
+  cargando = true;
+  productoNoEncontrado = false;
+  productoDisponible = true;
   relacionados: any[] = [];
   imagenPrincipal = '';
   colorSeleccionado = '';
@@ -25,8 +31,12 @@ export class DetalleProductoComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private productosService: ProductosService,
     public configService: ConfiguracionService,
+    private cartService: CartService,
+    public clienteAuthService: ClienteAuthService,
+    private modalAlertaService: ModalAlertaService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef
   ) {}
@@ -36,13 +46,53 @@ export class DetalleProductoComponent implements OnInit {
       const id = params.get('id');
       if (id) {
         this.cargarProducto(id);
+      } else {
+        this.cargando = false;
+        this.productoNoEncontrado = true;
+        this.cdr.detectChanges();
       }
     });
   }
 
+  toggleFavorito(producto: any): void {
+    if (!producto) return;
+    this.clienteAuthService.toggleFavorito(producto);
+  }
+
+  esFavorito(id?: number | string): boolean {
+    if (!id) return false;
+    return this.clienteAuthService.esFavorito(id);
+  }
+
   cargarProducto(id: any) {
+    this.cargando = true;
+    this.productoNoEncontrado = false;
+    this.productoDisponible = true;
+    this.producto = undefined;
+
     this.productosService.obtenerProductoPorId(id).subscribe({
       next: (p) => {
+        console.log('Respuesta producto backend:', p);
+
+        if (!p || (typeof p === 'object' && Object.keys(p).length === 0)) {
+          this.marcarProductoNoDisponible();
+          return;
+        }
+
+        // Validación estricta de visibilidad y estado activo (HU0003 - Escenario 2 / CP006)
+        const esInactivoOculto = p.visible === false || p.esVisible === false || p.activo === false || p.estado === false || p.estado === 'INACTIVO' || p.estado === 'NO_VISIBLE';
+        if (esInactivoOculto) {
+          console.warn(`[SEGURIDAD] Producto con ID ${id} no está visible en web o se encuentra inactivo. Bloqueando renderizado.`);
+          this.productoDisponible = false;
+          this.productoNoEncontrado = true;
+          this.producto = undefined;
+          this.cargando = false;
+          this.cdr.detectChanges();
+          return;
+        }
+
+        this.productoDisponible = true;
+        this.productoNoEncontrado = false;
         this.producto = this.mapProductoToDetalle(p);
         this.imagenPrincipal = this.producto.galeria[0] || '';
         this.colorSeleccionado = this.producto.colores[0]?.nombre || '';
@@ -55,6 +105,8 @@ export class DetalleProductoComponent implements OnInit {
         } else {
           this.materialCaracteristicasArray = [];
         }
+
+        this.cargando = false;
         
         // Cargar recomendados / relacionados
         this.productosService.obtenerProductosPublicos().subscribe({
@@ -76,9 +128,21 @@ export class DetalleProductoComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error al cargar detalle de producto del backend:', err);
+        console.error('Error al cargar detalle de producto del backend (404/Inactivo):', err);
+        this.marcarProductoNoDisponible();
       }
     });
+  }
+
+  marcarProductoNoDisponible(): void {
+    this.cargando = false;
+    this.productoDisponible = false;
+    this.productoNoEncontrado = true;
+    this.producto = undefined;
+    this.cdr.detectChanges();
+  }
+  irAlCatalogo(): void {
+    this.router.navigate(['/productos']);
   }
 
   mapProductoToDetalle(p: any): DetalleProducto {
@@ -118,6 +182,8 @@ export class DetalleProductoComponent implements OnInit {
           'Esmaltes aptos para consumo de alimentos'
         ];
 
+    const numStock = p.stock !== undefined && p.stock !== null ? Number(p.stock) : 0;
+
     return {
       id: String(p.id),
       nombre: p.nombre,
@@ -132,7 +198,8 @@ export class DetalleProductoComponent implements OnInit {
       rating: p.rating || 5.0,
       resenas: p.resenas || 12,
       descuento: descuentoStr,
-      stock: p.stock > 0 ? `${p.stock} unidades en stock` : 'Agotado',
+      stock: numStock > 0 ? `${numStock} unidades en stock` : 'Agotado (Sin stock)',
+      stockNumero: numStock,
       capacidad: p.capacidad || '350 ml',
       material: p.material || 'Cerámica Gres',
       aptoPara: p.aptoPara || 'Microondas y Lavavajillas',
@@ -195,8 +262,32 @@ export class DetalleProductoComponent implements OnInit {
     this.imagenPrincipal = color.imagen;
   }
 
+  get tieneStock(): boolean {
+    if (!this.producto) return false;
+    return (this.producto.stockNumero ?? 0) > 0;
+  }
+
+  agregarAlCarrito(): void {
+    if (!this.producto || !this.productoDisponible || !this.tieneStock) {
+      this.modalAlertaService.warning('Este producto no tiene unidades disponibles en este momento.', 'Producto Agotado');
+      return;
+    }
+    for (let i = 0; i < this.cantidad; i++) {
+      this.cartService.addItem({
+        id: this.producto.id,
+        nombre: this.producto.nombre,
+        precio: this.producto.precio,
+        imagenPrincipal: this.imagenPrincipal || this.producto.imagen,
+        stock: this.producto.stockNumero
+      });
+    }
+    this.modalAlertaService.success(`Se agregaron ${this.cantidad} ${this.cantidad === 1 ? 'unidad' : 'unidades'} de "${this.producto.nombre}" al carrito.`, '¡Agregado al carrito!');
+  }
+
   cambiarCantidad(valor: number): void {
-    this.cantidad = Math.max(1, this.cantidad + valor);
+    if (!this.tieneStock) return;
+    const max = this.producto?.stockNumero ?? 99;
+    this.cantidad = Math.min(max, Math.max(1, this.cantidad + valor));
   }
 
   cambiarTab(tab: TabDetalle): void {

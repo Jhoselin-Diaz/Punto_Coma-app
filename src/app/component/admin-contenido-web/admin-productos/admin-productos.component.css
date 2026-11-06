@@ -250,13 +250,19 @@
 }
 
 .modal-card-large,
-.modal-card-ultra-large {
+.modal-card-ultra-large,
+.modal-card-medium {
   background-color: #fff;
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.modal-card-medium {
+  width: min(540px, calc(100% - 48px));
+  max-height: 90vh;
 }
 
 .modal-card-large {
@@ -718,4 +724,16 @@
   height: 20px;
   border-radius: 4px;
   width: 100%;
+}
+
+.big-preview-box.drag-over {
+  border-color: var(--orange, #df6c1b) !important;
+  background-color: #fffbf9 !important;
+}
+
+.thumb-uploader-box.drag-over {
+  border-color: var(--orange, #df6c1b) !important;
+  background-color: #fffbf9 !important;
+  color: var(--orange, #df6c1b) !important;
+  transform: scale(1.02);
 }

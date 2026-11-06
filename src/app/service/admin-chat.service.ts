@@ -21,11 +21,13 @@ export interface ChatDTO {
   unreadCount: number;
   prioridad?: string;
   sugerenciaIa?: string;
+  mensajeGenerado?: string;
   pedidoReferenciadoId?: number;
   pedidoIdentificado?: boolean;
   direccionDetectada?: boolean;
   datosCompletos?: boolean;
   fasePedido?: string;
+  totalPedidos?: number;
 }
 
 @Injectable({
@@ -52,7 +54,7 @@ export class AdminChatService {
     return this.http.delete<void>(`${this.baseUrl}/${chatId}`);
   }
 
-  regenerarIa(chatId: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/${chatId}/regenerar-ia`, {});
+  regenerarIa(chatId: number, sugerenciaActual?: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${chatId}/regenerar-ia`, { sugerenciaActual });
   }
 }

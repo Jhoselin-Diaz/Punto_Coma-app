@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.component';
 import { ClienteAuthService } from '../../service/cliente-auth.service';
 import { AdminPedidoService } from '../../service/admin-pedido.service';
+import { ConfiguracionService } from '../../service/configuracion.service';
 
 export interface PedidoRastreo {
   id: string;
@@ -46,8 +47,17 @@ export class RastreoComponent implements OnInit {
   constructor(
     private authService: ClienteAuthService,
     private pedidoService: AdminPedidoService,
+    public configService: ConfiguracionService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  get urlShalom(): string {
+    return this.configService.negocio.url_rastreo_shalom || 'https://rastreo.shalom.pe/';
+  }
+
+  get urlOlva(): string {
+    return this.configService.negocio.url_rastreo_olva || 'https://tracking.olvacourier.com/';
+  }
 
   ngOnInit(): void {
     // Si el usuario está autenticado, autocompletar teléfono y buscar
@@ -63,9 +73,9 @@ export class RastreoComponent implements OnInit {
 
   consultarEnvios(): void {
     const rawTel = (this.telefonoBusqueda || '').trim();
-    const cleanTel = rawTel.replace(/[^\d]/g, '');
+    const telLimpio = rawTel.replace(/\D/g, '');
 
-    if (!cleanTel || cleanTel.length < 7) {
+    if (!telLimpio || telLimpio.length < 7) {
       this.mensajeError = 'Por favor, ingresa un número de celular válido de al menos 9 dígitos.';
       this.pedidosEncontrados = [];
       this.pedidoSeleccionado = null;
@@ -77,7 +87,14 @@ export class RastreoComponent implements OnInit {
     this.mensajeError = null;
     this.busquedaRealizada = true;
 
-    this.pedidoService.getPedidosDeCliente(cleanTel).subscribe({
+    // Normalizador de comparación telefónica ignorando prefijo 51
+    const coincide = (t: string) => {
+      if (!t) return false;
+      const tClean = t.replace(/\D/g, '');
+      return tClean === telLimpio || tClean === '51' + telLimpio || '51' + tClean === telLimpio;
+    };
+
+    this.pedidoService.getPedidosDeCliente(telLimpio).subscribe({
       next: (pedidos) => {
         this.cargando = false;
         if (!pedidos || pedidos.length === 0) {
@@ -87,12 +104,36 @@ export class RastreoComponent implements OnInit {
           return;
         }
 
-        // Mapear pedidos y enriquecer con información de agencia y número de rastreo
-        this.pedidosEncontrados = pedidos.map(p => this.transformarAPedidoRastreo(p));
+        // Filtrar exclusivamente pedidos que coincidan con el teléfono,
+        // que estén en estado "EN_CAMINO" y tengan vigencia activa (no expirada)
+        const ahora = Date.now();
+        const pedidosFiltrados = pedidos.filter(p => {
+          const coincideTel = coincide(p.telefono);
+          const est = (p.estado || '').toUpperCase();
+          const esEnCamino = est === 'EN_CAMINO' || est === 'EN CAMINO';
 
-        // Priorizar el pedido más reciente que esté en camino/validado
+          let vigente = true;
+          if (p.fechaExpiracionRastreo) {
+            try {
+              const expTime = new Date(p.fechaExpiracionRastreo).getTime();
+              if (!isNaN(expTime)) {
+                vigente = expTime >= ahora;
+              }
+            } catch {
+              vigente = true;
+            }
+          }
+
+          return coincideTel && esEnCamino && vigente;
+        });
+
+        // Mapear los pedidos encontrados respetando la agencia y guía reales asignadas
+        this.pedidosEncontrados = pedidosFiltrados.map(p => this.transformarAPedidoRastreo(p));
+
         if (this.pedidosEncontrados.length > 0) {
           this.seleccionarPedido(this.pedidosEncontrados[0]);
+        } else {
+          this.pedidoSeleccionado = null;
         }
         this.cdr.detectChanges();
       },
@@ -165,30 +206,30 @@ export class RastreoComponent implements OnInit {
   }
 
   /**
-   * Transforma el DTO devuelto por el backend a la estructura requerida para Rastreo.
-   * Si el pedido no trae agencia explícita en su dirección o referencia, se asigna según
-   * el destino geográfico o por defecto SHALOM / OLVA con un identificador determinista.
+   * Transforma el DTO devuelto por el backend a la estructura requerida para Rastreo,
+   * utilizando los datos reales persistidos en la base de datos (agencia_envio, numero_guia).
    */
   private transformarAPedidoRastreo(p: any): PedidoRastreo {
-    const direccion = (p.direccion || p.direccionEnvio || p.direccionEntrega || '').toString().toLowerCase();
-    const referencia = (p.referenciaPago || '').toString();
     const idOrden = (p.id || '').toString();
     const dbId = p.dbId || 0;
 
+    // Obtener la agencia asignada desde agenciaEnvio o agencia
+    const agenciaRaw = (p.agenciaEnvio || p.agencia || '').toString().trim().toUpperCase();
     let agencia: 'SHALOM' | 'OLVA' | 'MOTORIZADO' = 'SHALOM';
-    let numeroSeguimiento = '';
 
-    // Detección de agencia
-    if (direccion.includes('motorizado') || direccion.includes('delivery local') || direccion.includes('delivery directo')) {
-      agencia = 'MOTORIZADO';
-    } else if (direccion.includes('olva') || referencia.toLowerCase().includes('olva') || (dbId % 2 === 0)) {
+    if (agenciaRaw.includes('OLVA')) {
       agencia = 'OLVA';
-      // Formato típico de guía Olva Courier (ej. 77482910 o 2026-0048123)
-      numeroSeguimiento = p.numeroSeguimiento || p.guia || `OLV-${String(dbId || 100).padStart(6, '0')}`;
+    } else if (agenciaRaw.includes('MOTORIZADO') || agenciaRaw.includes('DIRECTO')) {
+      agencia = 'MOTORIZADO';
     } else {
       agencia = 'SHALOM';
-      // Formato típico de guía Shalom (ej. SHA-083921)
-      numeroSeguimiento = p.numeroSeguimiento || p.guia || `SHA-${String(dbId || 100).padStart(6, '0')}`;
+    }
+
+    // Obtener el número de seguimiento real asignado
+    let numeroSeguimiento: string | undefined = undefined;
+    if (agencia !== 'MOTORIZADO') {
+      const guia = (p.numeroGuia || p.guia || p.numeroSeguimiento || '').toString().trim();
+      numeroSeguimiento = (guia && guia !== 'DIRECTO') ? guia : undefined;
     }
 
     return {
@@ -198,11 +239,11 @@ export class RastreoComponent implements OnInit {
       telefono: p.telefono || '',
       fecha: p.fecha || 'Reciente',
       hora: p.hora || '',
-      estado: p.estado || 'En preparación',
+      estado: 'En camino',
       total: p.total || 'S/ 0.00',
       agencia: agencia,
-      numeroSeguimiento: agencia !== 'MOTORIZADO' ? numeroSeguimiento : undefined,
-      direccionEnvio: p.direccion || p.direccionEnvio || 'Dirección registrada',
+      numeroSeguimiento: numeroSeguimiento,
+      direccionEnvio: p.direccion || p.direccionEnvio || p.direccionEntrega || 'Dirección registrada',
       productos: p.producto || 'Productos seleccionados'
     };
   }

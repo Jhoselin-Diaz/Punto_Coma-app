@@ -1,0 +1,238 @@
+<div class="admin-rastreo-container">
+  <!-- PESTAÑAS DEL MÓDULO -->
+  <div class="rastreo-tabs">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="tabActiva === 'urls'"
+      (click)="tabActiva = 'urls'">
+      🌐 URLs de Agencias
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="tabActiva === 'asignar'"
+      (click)="tabActiva = 'asignar'">
+      🏷️ Asignar Guías a Pedidos
+      <span class="badge-count" *ngIf="pedidosDisponibles.length > 0">{{ pedidosDisponibles.length }}</span>
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="tabActiva === 'monitor'"
+      (click)="tabActiva = 'monitor'">
+      🚚 Envíos en Tránsito
+      <span class="badge-count count-green" *ngIf="enviosEnTransito.length > 0">{{ enviosEnTransito.length }}</span>
+    </button>
+  </div>
+
+  <div class="rastreo-tab-content">
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- PESTAÑA 1: CONFIGURACIÓN DE URLS DE AGENCIAS                      -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="tabActiva === 'urls'" class="panel-card">
+      <div class="panel-header">
+        <h3>Configuración de Portales Oficiales de Rastreo</h3>
+        <p>Define las direcciones web oficiales de seguimiento que se abrirán cuando los clientes consulten sus envíos.</p>
+      </div>
+
+      <form (ngSubmit)="guardarUrls()" class="urls-form">
+        <!-- URL SHALOM -->
+        <div class="form-group">
+          <label for="urlShalom">
+            <span class="agency-tag shalom-tag">SHALOM</span>
+            URL Portal Oficial de Seguimiento:
+          </label>
+          <div class="input-with-icon">
+            <input
+              type="url"
+              id="urlShalom"
+              [(ngModel)]="urlShalom"
+              name="urlShalom"
+              placeholder="https://rastreo.shalom.pe/"
+              required
+            />
+            <a [href]="urlShalom" target="_blank" rel="noopener noreferrer" class="btn-test-link" title="Probar enlace">↗</a>
+          </div>
+          <small class="helper-text">Ruta web predeterminada para paquetes enviados por encomienda nacional Shalom.</small>
+        </div>
+
+        <!-- URL OLVA COURIER -->
+        <div class="form-group">
+          <label for="urlOlva">
+            <span class="agency-tag olva-tag">OLVA COURIER</span>
+            URL Portal Oficial de Tracking:
+          </label>
+          <div class="input-with-icon">
+            <input
+              type="url"
+              id="urlOlva"
+              [(ngModel)]="urlOlva"
+              name="urlOlva"
+              placeholder="https://tracking.olvacourier.com/"
+              required
+            />
+            <a [href]="urlOlva" target="_blank" rel="noopener noreferrer" class="btn-test-link" title="Probar enlace">↗</a>
+          </div>
+          <small class="helper-text">Ruta web para tracking de remito web de Olva Courier a domicilio o recojo en tienda.</small>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="guardandoUrls">
+            <span class="spinner-mini" *ngIf="guardandoUrls"></span>
+            {{ guardandoUrls ? 'Guardando cambios...' : 'Guardar URLs de Agencias' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- PESTAÑA 2: ASIGNACIÓN DE GUÍAS A PEDIDOS VALIDADOS                -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="tabActiva === 'asignar'" class="panel-card">
+      <div class="panel-header">
+        <h3>Despacho y Asignación de Guías</h3>
+        <p>Selecciona un pedido validado para asignarle su agencia de courier, número de seguimiento y vigencia de rastreo.</p>
+      </div>
+
+      <div *ngIf="pedidosDisponibles.length === 0" class="empty-box">
+        <span class="empty-icon">📦</span>
+        <h4>No hay pedidos validados pendientes de despacho</h4>
+        <p>Cuando un pedido sea validado en el módulo de Pedidos, aparecerá automáticamente aquí para registrar su guía de envío.</p>
+      </div>
+
+      <form *ngIf="pedidosDisponibles.length > 0" (ngSubmit)="despacharYPublicar()" class="assign-form">
+        <!-- SELECTOR DE PEDIDO -->
+        <div class="form-group">
+          <label for="pedidoSelect">Seleccionar Pedido Validado (*):</label>
+          <select id="pedidoSelect" [(ngModel)]="pedidoSeleccionadoId" name="pedidoSelect" required class="select-control">
+            <option value="" disabled selected>-- Selecciona un pedido --</option>
+            <option *ngFor="let p of pedidosDisponibles" [value]="p.id">
+              {{ p.id }} — {{ p.cliente }} — 📱 {{ p.telefono }} — {{ p.total }}
+            </option>
+          </select>
+        </div>
+
+        <!-- SELECTOR DE MÉTODO DE ENVÍO / AGENCIA -->
+        <div class="form-group">
+          <label>Agencia de Envío / Modalidad (*):</label>
+          <div class="agency-selector-row">
+            <label class="radio-card" [class.selected]="agenciaSeleccionada === 'SHALOM'">
+              <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="SHALOM" />
+              <strong style="color: #e30613;">SHALOM</strong>
+              <small>Agencia a agencia</small>
+            </label>
+            <label class="radio-card" [class.selected]="agenciaSeleccionada === 'OLVA'">
+              <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="OLVA" />
+              <strong style="color: #002a5c;">OLVA COURIER</strong>
+              <small>Domicilio / Tienda</small>
+            </label>
+            <label class="radio-card" [class.selected]="agenciaSeleccionada === 'MOTORIZADO'">
+              <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="MOTORIZADO" />
+              <strong style="color: #0891b2;">MOTORIZADO LOCAL</strong>
+              <small>Delivery directo</small>
+            </label>
+          </div>
+        </div>
+
+        <!-- NÚMERO DE GUÍA (SOLO SI ES SHALOM U OLVA) -->
+        <div class="form-group" *ngIf="agenciaSeleccionada !== 'MOTORIZADO'">
+          <label for="numeroGuia">Número de Guía / Tracking (*):</label>
+          <input
+            type="text"
+            id="numeroGuia"
+            [(ngModel)]="numeroGuia"
+            name="numeroGuia"
+            placeholder="Ej. SHA-098231 o 77894210"
+            required
+            class="input-control"
+          />
+          <small class="helper-text">Este es el código que el cliente podrá copiar en la vista de rastreo para consultar en la agencia.</small>
+        </div>
+
+        <div class="notice-box notice-motorizado" *ngIf="agenciaSeleccionada === 'MOTORIZADO'">
+          🛵 <strong>Envío directo por Motorizado:</strong> La entrega se gestiona localmente sin código de tracking externo. El cliente verá un aviso informativo para coordinar en tiempo real.
+        </div>
+
+        <!-- VIGENCIA TEMPORAL DE RASTREO -->
+        <div class="form-group">
+          <label>Vigencia de Consulta para el Cliente (*):</label>
+          <div class="vigencia-options">
+            <label class="radio-chip" [class.selected]="vigenciaDias === 5">
+              <input type="radio" name="vigencia" [(ngModel)]="vigenciaDias" [value]="5" />
+              <span>Local / Lima (5 días)</span>
+            </label>
+            <label class="radio-chip" [class.selected]="vigenciaDias === 14">
+              <input type="radio" name="vigencia" [(ngModel)]="vigenciaDias" [value]="14" />
+              <span>Provincia (14 días / 2 semanas)</span>
+            </label>
+          </div>
+          <small class="helper-text">Transcurrido este plazo, la guía expira para evitar colisiones con futuras compras del mismo número telefónico.</small>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="guardandoDespacho">
+            <span class="spinner-mini" *ngIf="guardandoDespacho"></span>
+            {{ guardandoDespacho ? 'Publicando despacho...' : 'Despachar y Publicar Rastreo' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- PESTAÑA 3: MONITOR DE ENVÍOS EN TRÁNSITO                          -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="tabActiva === 'monitor'" class="panel-card">
+      <div class="panel-header-flex">
+        <div>
+          <h3>Monitor de Envíos en Tránsito</h3>
+          <p>Supervisa los pedidos que están en ruta hacia los clientes y márcalos como entregados para cerrar el ciclo.</p>
+        </div>
+        <button type="button" class="btn-secondary" (click)="cargarPedidos()">🔄 Actualizar</button>
+      </div>
+
+      <div *ngIf="enviosEnTransito.length === 0" class="empty-box">
+        <span class="empty-icon">🚚</span>
+        <h4>No hay envíos en camino actualmente</h4>
+        <p>Todos los pedidos despachados han sido entregados o no se registran órdenes en tránsito.</p>
+      </div>
+
+      <div class="table-responsive" *ngIf="enviosEnTransito.length > 0">
+        <table class="transit-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th>Agencia</th>
+              <th>N° Guía</th>
+              <th>Vigencia</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of enviosEnTransito">
+              <td><strong>{{ p.id }}</strong></td>
+              <td>{{ p.cliente }}</td>
+              <td>{{ p.telefono }}</td>
+              <td>
+                <span class="agency-tag-sm" [ngClass]="(p.agencia || '').toLowerCase()">{{ p.agencia }}</span>
+              </td>
+              <td>
+                <code class="code-pill">{{ p.numeroGuia || 'Directo' }}</code>
+              </td>
+              <td>
+                <span class="vigencia-badge">{{ calcularDiasRestantes(p.fechaExpiracionRastreo) }}</span>
+              </td>
+              <td>
+                <button type="button" class="btn-delivered" (click)="marcarComoEntregado(p)" title="Marcar como entregado">
+                  ✓ Entregado
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

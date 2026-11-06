@@ -1,9 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ProductosService } from '../../../service/productos.service';
 import { ShopVideoService, ShopVideoDTO } from '../../../service/shop-video.service';
+import { ModalAlertaService } from '../../../service/modal-alerta.service';
 
 interface VideoRow {
   id: string;
@@ -27,11 +30,13 @@ interface VideoRow {
   templateUrl: './admin-shop-video.component.html',
   styleUrl: './admin-shop-video.component.css'
 })
-export class AdminShopVideoComponent implements OnInit {
+export class AdminShopVideoComponent implements OnInit, OnDestroy {
   videosAdmin: VideoRow[] = [];
   productosDisponibles: any[] = [];
   selectedProductsIds: number[] = [];
   isLoading = true;
+  private routeSub?: Subscription;
+  pendingEditVideoId: string | null = null;
 
   showAddVideoModal = false;
   showEditVideoModal = false;
@@ -66,12 +71,51 @@ export class AdminShopVideoComponent implements OnInit {
   constructor(
     private productosService: ProductosService,
     private shopVideoService: ShopVideoService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private modalAlertaService: ModalAlertaService,
+    private router: Router,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit() {
     this.cargarVideos();
     this.cargarProductos();
+
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'edit' && params['id']) {
+        const idStr = String(params['id']);
+        this.pendingEditVideoId = idStr;
+        this.verificarAperturaModalEdicion(idStr);
+      } else {
+        this.pendingEditVideoId = null;
+        if (this.showEditVideoModal) {
+          this.showEditVideoModal = false;
+        }
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.routeSub?.unsubscribe();
+  }
+
+  private verificarAperturaModalEdicion(id: string): void {
+    if (this.videosAdmin && this.videosAdmin.length > 0) {
+      const vid = this.videosAdmin.find(v => v.id === id);
+      if (vid) {
+        this.openEditVideo(vid, false);
+      }
+    }
+  }
+
+  closeEditVideoModal() {
+    this.showEditVideoModal = false;
+    this.pendingEditVideoId = null;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { action: null, id: null },
+      queryParamsHandling: 'merge'
+    });
   }
 
   cargarVideos() {
@@ -92,6 +136,9 @@ export class AdminShopVideoComponent implements OnInit {
           url: v.videoUrl,
           productosIds: v.productosIds || []
         }));
+        if (this.pendingEditVideoId) {
+          this.verificarAperturaModalEdicion(this.pendingEditVideoId);
+        }
         this.isLoading = false;
       },
       error: (err) => {
@@ -126,16 +173,23 @@ export class AdminShopVideoComponent implements OnInit {
     });
   }
 
-  eliminarVideo(id: string) {
-    if (confirm('¿Estás seguro de que deseas eliminar este video?')) {
+  async eliminarVideo(id: string) {
+    const confirmado = await this.modalAlertaService.confirm({
+      titulo: '¿Eliminar video?',
+      mensaje: '¿Estás seguro de que deseas eliminar este video?',
+      tipo: 'peligro',
+      textoConfirmar: 'Sí, eliminar',
+      textoCancelar: 'Cancelar'
+    });
+    if (confirmado) {
       this.shopVideoService.eliminarVideo(+id).subscribe({
         next: () => {
-          alert('Video eliminado con éxito.');
+          this.modalAlertaService.success('Video eliminado con éxito.');
           this.cargarVideos();
         },
         error: (err) => {
           console.error('Error al eliminar video:', err);
-          alert('No se pudo eliminar el video del servidor.');
+          this.modalAlertaService.error('No se pudo eliminar el video del servidor.');
         }
       });
     }
@@ -184,7 +238,7 @@ export class AdminShopVideoComponent implements OnInit {
     });
   }
 
-  openEditVideo(vid: VideoRow) {
+  openEditVideo(vid: VideoRow, updateUrl = true) {
     this.editingVideo = {
       id: vid.id,
       title: vid.title,
@@ -201,6 +255,13 @@ export class AdminShopVideoComponent implements OnInit {
     this.selectedProductsIds = [...vid.productosIds];
     this.actualizarSafePreview(this.editingVideo.url);
     this.showEditVideoModal = true;
+    if (updateUrl && vid?.id) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { action: 'edit', id: vid.id },
+        queryParamsHandling: 'merge'
+      });
+    }
   }
 
   guardarCambiosVideo() {
@@ -223,7 +284,7 @@ export class AdminShopVideoComponent implements OnInit {
     this.shopVideoService.actualizarVideo(+this.editingVideo.id, payload).subscribe({
       next: () => {
         alert('¡Cambios guardados con éxito en el servidor!');
-        this.showEditVideoModal = false;
+        this.closeEditVideoModal();
         this.cargarVideos();
       },
       error: (err) => {

@@ -306,7 +306,7 @@
 
 .mini-image-wrap {
   height: 120px;
-  background-color: #fcece3;
+  background-color: var(--primary-light, #fcece3);
 }
 
 .mini-image-wrap img {
@@ -413,7 +413,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 15px rgba(223, 108, 27, 0.2);
+  box-shadow: 0 6px 15px var(--primary-glow, rgba(223, 108, 27, 0.2));
 }
 
 .badge-icon {

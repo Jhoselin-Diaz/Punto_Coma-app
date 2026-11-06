@@ -114,6 +114,15 @@ export class ContactoComponent implements OnInit, OnDestroy {
     }
   }
 
+  getWaLink(link: string): string {
+    if (!link) return '#';
+    const clean = link.trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return clean;
+    }
+    return `https://wa.me/51${clean}`;
+  }
+
   irAlEnlace(enlace: string) {
     if (!enlace) return;
     window.open(enlace, '_blank');

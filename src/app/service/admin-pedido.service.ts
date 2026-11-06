@@ -15,7 +15,7 @@ export class AdminPedidoService {
     return this.http.get<any[]>(this.baseUrl);
   }
 
-  deletePedido(id: number): Observable<void> {
+  deletePedido(id: number | string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
@@ -24,11 +24,24 @@ export class AdminPedidoService {
     return this.http.get<any[]>(`${this.baseUrl}/cliente/${cleanTelefono}`);
   }
 
-  updatePedido(id: number, data: any): Observable<any> {
+  validarPedido(id: number | string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/${id}/validar`, {});
+  }
+
+  updatePedido(id: number | string, data: any): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/${id}`, data);
   }
 
-  solicitarMontoFaltante(pedidoId: number): Observable<any> {
+  solicitarMontoFaltante(pedidoId: number | string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/${pedidoId}/solicitar-monto-faltante`, {});
+  }
+  getVigilanciaStock(): Observable<any> {
+    const url = `${environment.apiUrl.replace('/v1', '')}/admin/dashboard/vigilancia-stock`;
+    return this.http.get<any>(url);
+  }
+
+  getProductosMasVendidos(): Observable<any[]> {
+    const url = `${environment.apiUrl.replace('/v1', '')}/admin/dashboard/mas-vendidos`;
+    return this.http.get<any[]>(url);
   }
 }

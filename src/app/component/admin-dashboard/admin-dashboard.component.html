@@ -4,266 +4,433 @@
     <h2>Dashboard</h2>
   </div>
 
-  <!-- SECCIÓN 1: ACCIONES RÁPIDAS (Botones Directos y Elegantes) -->
-  <div class="quick-actions-bar mb-28">
-    <span class="actions-lbl-tag">ACCIONES RÁPIDAS:</span>
-    <div class="actions-buttons-flex">
-      <a routerLink="/admin/pedidos" class="btn-action-pill">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-        </svg>
-        Ver Pedidos
-      </a>
-      <a routerLink="/admin/chats" class="btn-action-pill">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-        Responder Chats
-      </a>
-      <a routerLink="/admin/inventario" class="btn-action-pill">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="9" y1="9" x2="15" y2="9"></line>
-          <line x1="9" y1="13" x2="15" y2="13"></line>
-        </svg>
-        Revisar Inventario
-      </a>
-    </div>
-  </div>
-
-  <!-- SECCIÓN 2: CARDS PRINCIPALES HORIZONTALES (5 Cards) -->
-  <div class="stats-grid-five mb-28">
-    <div class="stat-dash-card">
-      <div class="stat-dash-icon card-blue">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-        </svg>
-      </div>
-      <div class="stat-dash-info">
-        <span class="stat-dash-lbl">Pedidos hoy</span>
-        <h3>{{ stats.pedidosHoy }}</h3>
+  <div class="admin-page-wrapper">
+    <!-- SECCIÓN 1: ACCIONES RÁPIDAS (Botones Directos y Elegantes) -->
+    <div class="quick-actions-bar mb-28">
+      <span class="actions-lbl-tag">ACCIONES RÁPIDAS:</span>
+      <div class="actions-buttons-flex">
+        <a routerLink="/admin/pedidos" class="btn-action-pill">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+          </svg>
+          Ver Pedidos
+        </a>
+        <a routerLink="/admin/chats" class="btn-action-pill">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Responder Chats
+        </a>
+        <a routerLink="/admin/inventario" class="btn-action-pill">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="9" y1="9" x2="15" y2="9"></line>
+            <line x1="9" y1="13" x2="15" y2="13"></line>
+          </svg>
+          Revisar Inventario
+        </a>
       </div>
     </div>
 
-    <div class="stat-dash-card">
-      <div class="stat-dash-icon card-green">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="1" x2="12" y2="23"></line>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-        </svg>
-      </div>
-      <div class="stat-dash-info">
-        <span class="stat-dash-lbl">Ventas hoy</span>
-        <h3>S/ {{ stats.ventasHoy | number:'1.2-2' }}</h3>
-      </div>
-    </div>
-
-    <div class="stat-dash-card">
-      <div class="stat-dash-icon card-purple">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-      </div>
-      <div class="stat-dash-info">
-        <span class="stat-dash-lbl">Chats pendientes</span>
-        <h3>{{ stats.chatsPendientes }}</h3>
-      </div>
-    </div>
-
-    <div class="stat-dash-card">
-      <div class="stat-dash-icon card-orange">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-      </div>
-      <div class="stat-dash-info">
-        <span class="stat-dash-lbl">Pedidos confirmados</span>
-        <h3>{{ stats.pedidosConfirmados }}</h3>
-      </div>
-    </div>
-
-    <div class="stat-dash-card highlight-bajo-stock">
-      <div class="stat-dash-icon card-red">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path
-            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" />
-        </svg>
-      </div>
-      <div class="stat-dash-info">
-        <span class="stat-dash-lbl">Bajo stock</span>
-        <h3 class="txt-red">{{ stats.stockBajo }} prod.</h3>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECCIÓN 3: GRID LAYOUT OPERATIVO (TIMELINE Y ALERTAS) -->
-  <div class="dashboard-two-col-grid">
-    <!-- COLUMNA IZQUIERDA: ALERTAS OPERATIVAS Y TIMELINE -->
-    <div class="dash-left-area">
-
-      <!-- ALERTAS OPERATIVAS CRÍTICAS (¡QUÉ HACER AHORA!) -->
-      <div class="dash-alerts-card mb-28">
-        <div class="card-title-border" style="margin-bottom: 16px;">
-          <h4 style="color: var(--red); font-family: Georgia, serif; font-size: 17px; font-weight:700;">
-            ⚠️ Alertas Operativas Importantes
-          </h4>
-          <p class="timeline-desc">Acciones críticas pendientes que requieren tu atención inmediata.</p>
-        </div>
-
-        <div class="alerts-vertical-stack">
-          @for (al of alertasOperativas; track al.id) {
-          <div class="alert-action-strip" [class.urgent]="al.nivel === 'urgente'"
-            [class.moderate]="al.nivel === 'moderado'">
-            <div class="alert-left-details">
-              <h6>{{ al.titulo }}</h6>
-              <p>{{ al.detalles }}</p>
-            </div>
-            <a [routerLink]="al.ruta" class="btn-alert-action">
-              {{ al.accionLabel }}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </a>
-          </div>
-          } @empty {
-            <div class="empty-alerts-state" style="padding: 20px; text-align: center; color: var(--gray); font-size: 13px; font-style: italic;">
-              No hay alertas operativas en este momento.
-            </div>
-          }
-        </div>
-      </div>
-
-      <!-- TIMELINE DE ACTIVIDAD DEL NEGOCIO (DÍA DE HOY) -->
-      <div class="dash-timeline-card mb-28">
-        <div class="card-title-border">
-          <h4>Actividad de la Tienda</h4>
-          <p class="timeline-desc">Eventos logísticos y del cliente registrados hoy.</p>
-        </div>
-
-        <div class="timeline-vertical-box">
-          @for (act of actividades; track act.id) {
-          <div class="timeline-row-item">
-            <div class="timeline-bullet-connector">
-              <span class="timeline-dot" [ngClass]="act.badgeClass"></span>
-              <span class="timeline-line"></span>
-            </div>
-            <div class="timeline-content-card">
-              <div class="timeline-card-header">
-                <h5>{{ act.titulo }}</h5>
-                <span class="timeline-time-ago">{{ act.tiempo }}</span>
-              </div>
-              <p>{{ act.descripcion }}</p>
+    <!-- SECCIÓN 2: CARDS PRINCIPALES HORIZONTALES (5 Cards) -->
+    @if (isLoading) {
+      <div class="stats-grid-five mb-28">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="stat-dash-card skeleton-stat-card">
+            <div class="skeleton-circle"></div>
+            <div class="skeleton-info-group">
+              <div class="skeleton-line skeleton-line-sm"></div>
+              <div class="skeleton-line skeleton-line-lg"></div>
             </div>
           </div>
-          } @empty {
-            <div class="empty-timeline-state" style="padding: 24px; text-align: center; color: var(--gray); font-size: 13.5px; font-style: italic;">
-              No hay actividad registrada el día de hoy.
-            </div>
-          }
-        </div>
+        }
       </div>
-
-      <!-- BENEFICIOS COMPACTOS DEL ASISTENTE -->
-      <div class="dash-benefits-section">
-        <h4 class="section-minor-title">Beneficios del Asistente del Negocio</h4>
-        <div class="benefits-row-grid">
-          @for (ben of beneficios; track ben.titulo) {
-          <div class="benefit-micro-card">
-            <span class="benefit-icon">{{ ben.icono }}</span>
-            <div>
-              <h6>{{ ben.titulo }}</h6>
-              <p>{{ ben.desc }}</p>
-            </div>
+    } @else {
+      <div class="stats-grid-five mb-28">
+        <div class="stat-dash-card">
+          <div class="stat-dash-icon card-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+            </svg>
           </div>
-          }
-        </div>
-      </div>
-    </div>
-
-    <!-- COLUMNA DERECHA: RESUMEN DE ESTADO Y ARTÍCULOS A VIGILAR -->
-    <div class="dash-right-area">
-      <!-- RESUMEN DE ESTADO DE PEDIDOS -->
-      <div class="dash-pedidos-status-card mb-28">
-        <h4>Monitoreo de Pedidos</h4>
-        <p class="card-sub-muted">Flujo logístico acumulado del día.</p>
-
-        <div class="status-indicators-flex">
-          @for (est of resumenEstados; track est.nombre) {
-          <div class="status-bar-box">
-            <div class="status-bar-text-row">
-              <span class="status-name-lbl">{{ est.nombre }}</span>
-              <span class="status-qty-digit font-serif font-bold">{{ est.cantidad }} pedidos</span>
-            </div>
-            <div class="status-bar-track">
-              <div class="status-bar-fill" [ngClass]="est.clase" [style.width.%]="est.porcentaje"></div>
-            </div>
+          <div class="stat-dash-info">
+            <span class="stat-dash-lbl">Pedidos hoy</span>
+            <h3>{{ stats.pedidosHoy }}</h3>
           </div>
-          }
+        </div>
+
+        <div class="stat-dash-card">
+          <div class="stat-dash-icon card-green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </div>
+          <div class="stat-dash-info">
+            <span class="stat-dash-lbl">Ventas hoy</span>
+            <h3>S/ {{ stats.ventasHoy | number:'1.2-2' }}</h3>
+          </div>
+        </div>
+
+        <div class="stat-dash-card">
+          <div class="stat-dash-icon card-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="stat-dash-info">
+            <span class="stat-dash-lbl">Chats pendientes</span>
+            <h3>{{ stats.chatsPendientes }}</h3>
+          </div>
+        </div>
+
+        <div class="stat-dash-card">
+          <div class="stat-dash-icon card-orange">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div class="stat-dash-info">
+            <span class="stat-dash-lbl">Pedidos confirmados</span>
+            <h3>{{ stats.pedidosConfirmados }}</h3>
+          </div>
+        </div>
+
+        <div class="stat-dash-card highlight-bajo-stock">
+          <div class="stat-dash-icon card-red">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" />
+            </svg>
+          </div>
+          <div class="stat-dash-info">
+            <span class="stat-dash-lbl">Bajo stock</span>
+            <h3 class="txt-red">{{ stats.stockBajo }} prod.</h3>
+          </div>
         </div>
       </div>
+    }
 
-      <!-- PRODUCTOS CLAVES A VIGILAR -->
-      <div class="dash-important-products-card">
-        <h4>Vigilancia de Stock</h4>
-        <p class="card-sub-muted">Artículos con mayor movimiento o desabastecimiento físico.</p>
+    <!-- SECCIÓN 3: GRID LAYOUT OPERATIVO (TIMELINE Y ALERTAS) -->
+    <div class="dashboard-two-col-grid">
+      <!-- COLUMNA IZQUIERDA: ALERTAS OPERATIVAS Y TIMELINE -->
+      <div class="dash-left-area">
 
-        <div class="prod-lists-wrapper">
-          <!-- Bestsellers -->
-          <div class="prod-group-box mb-20">
-            <span class="group-badge-title gold-badge">MÁS VENDIDOS</span>
-            <div class="group-rows-list">
-              @for (p of productosDestacados; track p.sku) {
-              @if (p.tipo === 'venta') {
-              <div class="prod-list-row-item">
-                <div class="prod-left-info">
-                  <h6>{{ p.nombre }}</h6>
-                  <span>SKU: {{ p.sku }} • <strong>Ventas: {{ p.ventas }} u.</strong></span>
+        <!-- ALERTAS OPERATIVAS CRÍTICAS (¡QUÉ HACER AHORA!) -->
+        <div class="dash-alerts-card mb-28">
+          <div class="card-title-border" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h4 style="color: var(--red); font-family: Georgia, serif; font-size: 17px; font-weight:700; margin: 0; display: inline-flex; align-items: center; gap: 8px;">
+                <span>⚠️ Alertas Operativas Importantes</span>
+                @if (contadorNotificaciones > 0) {
+                  <span class="alerts-count-badge" id="alerts-counter-badge">{{ contadorNotificaciones }}</span>
+                }
+              </h4>
+            </div>
+            <p class="timeline-desc">Acciones críticas pendientes que requieren tu atención inmediata.</p>
+          </div>
+
+          <div class="alerts-vertical-stack">
+            @if (isLoading) {
+              @for (i of [1, 2, 3]; track i) {
+                <div class="skeleton-alert-strip">
+                  <div class="skeleton-strip-left">
+                    <div class="skeleton-box skeleton-check-box"></div>
+                    <div class="skeleton-circle-sm"></div>
+                    <div class="skeleton-alert-text">
+                      <div class="skeleton-line skeleton-line-title"></div>
+                      <div class="skeleton-line skeleton-line-desc"></div>
+                    </div>
+                  </div>
+                  <div class="skeleton-box skeleton-btn-pill"></div>
                 </div>
-                <span class="stock-badge-pill ok">Disponible ({{ p.stock }})</span>
+              }
+            } @else if (contadorNotificaciones === 0 || alertasOperativas.length === 0) {
+              <!-- ESTADO DESPEJADO: TODO AL DÍA (OPERACIÓN ÓPTIMA) -->
+              <div class="all-clear-state-container" id="alerts-all-clear-box">
+                <div class="all-clear-icon-badge">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+                <h5 class="all-clear-title">¡Todo al día!</h5>
+                <p class="all-clear-desc">
+                  ¡Todo al día! No tienes alertas operativas ni incidencias pendientes.
+                </p>
+                <div class="all-clear-tag">
+                  <span class="all-clear-dot"></span> Operación óptima
+                </div>
               </div>
+            } @else {
+              @for (al of alertasOperativas; track al.id) {
+                <div class="alert-action-strip" 
+                     [class.urgent]="al.nivel === 'urgente'"
+                     [class.moderate]="al.nivel === 'moderado'"
+                     [class.leida]="al.leida"
+                     (click)="navegarAlerta(al)"
+                     style="cursor: pointer;">
+                  
+                  <div class="alert-leading-group">
+                    <button type="button" 
+                            class="btn-alert-check" 
+                            [class.checked]="al.leida" 
+                            (click)="marcarComoLeida(al, $event)"
+                            [attr.aria-label]="al.leida ? 'Alerta leída' : 'Marcar como leída'"
+                            [title]="al.leida ? 'Alerta leída' : 'Marcar como leída'">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </button>
+
+                    <div class="alert-type-icon" [ngClass]="al.iconoClase">
+                      @if (al.tipo === 'pedido_revision') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                      } @else if (al.tipo === 'pedido_pendiente') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                      } @else if (al.tipo === 'prod_agotado') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                      } @else if (al.tipo === 'prod_bajo') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                      } @else if (al.tipo === 'chat_pendiente') {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                      } @else {
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                      }
+                    </div>
+
+                    <div class="alert-left-details">
+                      <div class="alert-title-row">
+                        <h6>{{ sanitizarTexto(al.titulo) }}</h6>
+                        <span class="alert-relative-time">{{ al.tiempo }}</span>
+                      </div>
+                      <p>{{ sanitizarTexto(al.detalles) }}</p>
+                    </div>
+                  </div>
+
+                  <a (click)="navegarAlerta(al, $event)" class="btn-alert-action">
+                    {{ al.accionLabel }}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </a>
+                </div>
+              } @empty {
+                <div class="all-clear-state-container" id="alerts-all-clear-box">
+                  <div class="all-clear-icon-badge">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                  </div>
+                  <h5 class="all-clear-title">¡Todo al día!</h5>
+                  <p class="all-clear-desc">
+                    ¡Todo al día! No tienes alertas operativas ni incidencias pendientes.
+                  </p>
+                  <div class="all-clear-tag">
+                    <span class="all-clear-dot"></span> Operación óptima
+                  </div>
+                </div>
               }
-              }
-            </div>
+            }
+          </div>
+        </div>
+
+        <!-- TIMELINE DE ACTIVIDAD DEL NEGOCIO (DÍA DE HOY) -->
+        <div class="dash-timeline-card mb-28">
+          <div class="card-title-border">
+            <h4>Actividad de la Tienda</h4>
+            <p class="timeline-desc">{{ subtituloActividad }}</p>
           </div>
 
-          <!-- Stock bajo -->
-          <div class="prod-group-box mb-20">
-            <span class="group-badge-title warn-badge">AGOTÁNDOSE</span>
-            <div class="group-rows-list">
-              @for (p of productosDestacados; track p.sku) {
-              @if (p.tipo === 'alerta') {
-              <div class="prod-list-row-item">
-                <div class="prod-left-info">
-                  <h6>{{ p.nombre }}</h6>
-                  <span>SKU: {{ p.sku }} • <strong>Ventas: {{ p.ventas }} u.</strong></span>
+          <div class="timeline-vertical-box">
+            @if (isLoading) {
+              @for (i of [1, 2, 3]; track i) {
+                <div class="skeleton-timeline-item">
+                  <div class="skeleton-timeline-dot"></div>
+                  <div class="skeleton-timeline-content">
+                    <div class="skeleton-line skeleton-line-title" style="width: 45%;"></div>
+                    <div class="skeleton-line skeleton-line-desc" style="width: 80%;"></div>
+                  </div>
                 </div>
-                <span class="stock-badge-pill alert">Quedan {{ p.stock }} u.</span>
-              </div>
               }
+            } @else {
+              @for (act of actividades; track act.id) {
+                <div class="timeline-row-item" 
+                     [class.timeline-clickable]="!!act.pedidoId" 
+                     (click)="navegarActividad(act, $event)" 
+                     [title]="act.pedidoId ? 'Clic para ver pedido ' + act.pedidoId : ''">
+                  <div class="timeline-bullet-connector">
+                    <span class="timeline-dot" [ngClass]="act.badgeClass"></span>
+                    <span class="timeline-line"></span>
+                  </div>
+                  <div class="timeline-content-card">
+                    <div class="timeline-card-header">
+                      <div class="timeline-title-group">
+                        <span class="timeline-event-icon" [ngClass]="act.badgeClass">
+                          @if (act.tipo === 'confirmado') {
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          } @else if (act.tipo === 'enviado') {
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                          } @else if (act.tipo === 'incompleto') {
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                          } @else if (act.tipo === 'nuevo_cliente') {
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                          } @else {
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          }
+                        </span>
+                        <h5>{{ sanitizarTexto(act.titulo) }}</h5>
+                      </div>
+                      <span class="timeline-time-ago">{{ act.tiempo }}</span>
+                    </div>
+                    <p>{{ sanitizarTexto(act.descripcion) }}</p>
+                    @if (act.pedidoId) {
+                      <div class="timeline-direct-action">
+                        <a class="timeline-link-action" (click)="navegarAPedido(act.pedidoId, $event)">
+                          Ver pedido #{{ act.pedidoId }}
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                          </svg>
+                        </a>
+                      </div>
+                    }
+                  </div>
+                </div>
+              } @empty {
+                <div class="empty-timeline-state" style="padding: 24px; text-align: center; color: var(--gray); font-size: 13.5px; font-style: italic;">
+                  No hay actividad registrada el día de hoy.
+                </div>
               }
-            </div>
+            }
           </div>
+        </div>
 
-          <!-- Agotados -->
-          <div class="prod-group-box">
-            <span class="group-badge-title error-badge">SIN EXISTENCIAS</span>
-            <div class="group-rows-list">
-              @for (p of productosDestacados; track p.sku) {
-              @if (p.tipo === 'agotado') {
-              <div class="prod-list-row-item">
-                <div class="prod-left-info">
-                  <h6 class="text-crossed">{{ p.nombre }}</h6>
-                  <span>SKU: {{ p.sku }} • <strong>Ventas: {{ p.ventas }} u.</strong></span>
+        <!-- BENEFICIOS COMPACTOS DEL ASISTENTE -->
+        <div class="dash-benefits-section">
+          <h4 class="section-minor-title">Beneficios del Asistente del Negocio</h4>
+          <div class="benefits-row-grid">
+            @for (ben of beneficios; track ben.titulo) {
+              <div class="benefit-micro-card">
+                <span class="benefit-icon">{{ ben.icono }}</span>
+                <div>
+                  <h6>{{ ben.titulo }}</h6>
+                  <p>{{ ben.desc }}</p>
                 </div>
-                <span class="stock-badge-pill danger">Agotado (0)</span>
               </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: RESUMEN DE ESTADO Y ARTÍCULOS A VIGILAR -->
+      <div class="dash-right-area">
+        <!-- RESUMEN DE ESTADO DE PEDIDOS -->
+        <div class="dash-pedidos-status-card mb-28">
+          <h4>Monitoreo de Pedidos</h4>
+          <p class="card-sub-muted">Flujo logístico acumulado del día.</p>
+
+          <div class="status-indicators-flex">
+            @if (isLoading) {
+              @for (i of [1, 2, 3, 4]; track i) {
+                <div class="status-bar-box">
+                  <div class="skeleton-line skeleton-line-sm" style="width: 45%; margin-bottom: 8px;"></div>
+                  <div class="skeleton-box" style="height: 7px; width: 100%;"></div>
+                </div>
               }
+            } @else {
+              @for (est of resumenEstados; track est.nombre) {
+                <div class="status-bar-box">
+                  <div class="status-bar-text-row">
+                    <span class="status-name-lbl">{{ est.nombre }}</span>
+                    <span class="status-qty-digit font-serif font-bold">{{ est.cantidad }} pedidos</span>
+                  </div>
+                  <div class="status-bar-track">
+                    <div class="status-bar-fill" [ngClass]="est.clase" [style.width.%]="est.porcentaje"></div>
+                  </div>
+                </div>
               }
-            </div>
+            }
+          </div>
+        </div>
+
+        <!-- PRODUCTOS CLAVES A VIGILAR -->
+        <div class="dash-important-products-card">
+          <h4>Vigilancia de Stock</h4>
+          <p class="card-sub-muted">Artículos con mayor movimiento o desabastecimiento físico.</p>
+
+          <div class="prod-lists-wrapper">
+            @if (isLoading) {
+              <div class="prod-group-box mb-20">
+                <span class="group-badge-title gold-badge">MÁS VENDIDOS</span>
+                <div class="group-rows-list">
+                  @for (i of [1, 2]; track i) {
+                    <div class="prod-list-row-item skeleton-prod-item">
+                      <div class="skeleton-line skeleton-line-title" style="width: 50%;"></div>
+                      <div class="skeleton-box skeleton-badge-box"></div>
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <!-- Bestsellers -->
+              <div class="prod-group-box mb-20">
+                <span class="group-badge-title gold-badge">MÁS VENDIDOS</span>
+                <div class="group-rows-list">
+                  @for (p of productosDestacados; track p.sku) {
+                    @if (p.tipo === 'venta') {
+                      <div class="prod-list-row-item">
+                        <div class="prod-left-info">
+                          <h6>{{ formatearNombreProducto(p.nombre) }}</h6>
+                          <span>SKU: {{ p.sku }} • <strong>Ventas: {{ p.ventas }} u.</strong></span>
+                        </div>
+                        <span class="stock-badge-pill ok">Disponible ({{ p.disponible !== undefined ? p.disponible : p.stock }})</span>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+
+              <!-- Stock bajo -->
+              <div class="prod-group-box mb-20">
+                <span class="group-badge-title warn-badge">AGOTÁNDOSE</span>
+                <div class="group-rows-list">
+                  @for (p of productosDestacados; track p.sku) {
+                    @if (p.tipo === 'alerta') {
+                      <div class="prod-list-row-item">
+                        <div class="prod-left-info">
+                          <h6>{{ formatearNombreProducto(p.nombre) }}</h6>
+                          <span>SKU: {{ p.sku }} • <strong>Ventas: {{ p.ventas }} u.</strong></span>
+                        </div>
+                        <span class="stock-badge-pill alert">Quedan {{ p.disponible !== undefined ? p.disponible : p.stock }} u.</span>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+
+              <!-- Agotados -->
+              <div class="prod-group-box">
+                <span class="group-badge-title error-badge">SIN EXISTENCIAS</span>
+                <div class="group-rows-list">
+                  @for (p of productosDestacados; track p.sku) {
+                    @if (p.tipo === 'agotado') {
+                      <div class="prod-list-row-item">
+                        <div class="prod-left-info">
+                          <h6 class="text-crossed">{{ formatearNombreProducto(p.nombre) }}</h6>
+                          <span>SKU: {{ p.sku }} • <strong>Ventas: {{ p.ventas }} u.</strong></span>
+                        </div>
+                        <span class="stock-badge-pill danger">Agotado (0)</span>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
           </div>
         </div>
       </div>

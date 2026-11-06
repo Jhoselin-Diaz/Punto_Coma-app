@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { Cupon } from './admin-carrito.service';
 
 export interface CartItem {
   id: string;
@@ -7,6 +8,9 @@ export interface CartItem {
   precio: number;
   imagen: string;
   cantidad: number;
+  categoria?: string;
+  enOferta?: boolean;
+  precioOriginal?: number;
 }
 
 export interface PlacedOrder {
@@ -55,8 +59,30 @@ export class CartService {
   private discountValue = 0;
   private couponApplied = '';
   private couponPercentage = 0;
+  private appliedCouponData: Cupon | null = null;
   private pendingOrder: PlacedOrder | null = null;
   private allOrders: PlacedOrder[] = [];
+
+  private loadOrdersFromStorage(): void {
+    try {
+      const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('puntoycoma_all_orders') : null;
+      if (stored) {
+        this.allOrders = JSON.parse(stored);
+      }
+    } catch (e) {}
+  }
+
+  private saveOrdersToStorage(): void {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('puntoycoma_all_orders', JSON.stringify(this.allOrders));
+      }
+    } catch (e) {}
+  }
+
+  constructor() {
+    this.loadOrdersFromStorage();
+  }
 
   // ─── ESTADO GLOBAL DE PEDIDOS ───────────────────────────────────────────────
   // Solo '#ORD-0002' arranca en Pendiente (chat de Ana María).
@@ -103,17 +129,17 @@ export class CartService {
 
   /**
    * Inicializa el array de chats SOLO la primera vez (singleton).
-   * Las siguientes llamadas no hacen nada — el estado persiste.
+   * Las siguientes llamadas no hacen nada â€” el estado persiste.
    */
   inicializarChats(pendingOrder?: PlacedOrder | null) {
-    if (this._chatsInicializados) return; // ← clave: no reiniciar
+    if (this._chatsInicializados) return; // ← clave: no reiniciar
 
     const base: ChatConversacion[] = [
       {
         id: '1',
         nombre: 'Ana María',
         telefono: '+51 987 654 321',
-        avatar: '👩🏽',
+        avatar: 'ðŸ‘©ðŸ½',
         ultimaVez: '11:48 a. m.',
         noLeidos: 2,
         primeraCompra: '12 nov 2024',
@@ -124,30 +150,30 @@ export class CartService {
           { id: '#ORD-0004', fecha: '12 Nov 2024', subtotal: 'S/ 39.00', estado: 'Completado' }
         ],
         mensajes: [
-          { texto: 'Hola 😄\nQuiero realizar el siguiente pedido:\n\n🛍️ Productos:\n• Taza aesthetic "Moon" x1\n\n💰 Subtotal: S/ 39.00', tipo: 'entrada', hora: '11:40 a. m.' },
-          { texto: '¡Hola! Gracias por comprar en Punto y Coma 💖\n\nTu pedido se encuentra en proceso de validación.\nPara cotizar el costo de envío, por favor completa los siguientes datos 🚚\n\n📍 Departamento:\n📍 Provincia:\n📍 Distrito:\n🏠 Dirección exacta:\n📝 Referencia:\n\nCuando termines, envíanos la información por este chat 😊', tipo: 'salida', hora: '11:41 a. m.', leido: true },
-          { texto: 'Claro, aquí te dejo mis datos:\n\n📍 Departamento: Lima\n📍 Provincia: Lima\n📍 Distrito: Surco\n🏠 Dirección: Av. Primavera 123\n📝 Referencia: Frente al parque', tipo: 'entrada', hora: '11:47 a. m.' }
+          { texto: 'Hola 😄\nQuiero realizar el siguiente pedido:\n\nðŸ›ï¸ Productos:\n• Taza aesthetic "Moon" x1\n\n💰 Subtotal: S/ 39.00', tipo: 'entrada', hora: '11:40 a. m.' },
+          { texto: '¡Hola! Gracias por comprar en Punto y Coma 💖\n\nTu pedido se encuentra en proceso de validación.\nPara cotizar el costo de envío, por favor completa los siguientes datos 🚚\n\nðŸ“ Departamento:\nðŸ“ Provincia:\nðŸ“ Distrito:\nðŸ  Dirección exacta:\nðŸ“ Referencia:\n\nCuando termines, envíanos la información por este chat 😊', tipo: 'salida', hora: '11:41 a. m.', leido: true },
+          { texto: 'Claro, aquí te dejo mis datos:\n\nðŸ“ Departamento: Lima\nðŸ“ Provincia: Lima\nðŸ“ Distrito: Surco\nðŸ  Dirección: Av. Primavera 123\nðŸ“ Referencia: Frente al parque', tipo: 'entrada', hora: '11:47 a. m.' }
         ],
-        mensajeGenerado: '🚚 El costo de envío es: S/ 8.00\n💰 El total final de tu pedido es: S/ 39.00\n\n🏦 Métodos de pago disponibles:\n💳 BCP: 9999999999999\n🏦 Interbank: 9999999999999\n📱 Yape / Plin: 999999999\n\nPor favor, envíanos tu voucher o comprobante de pago por este medio para continuar con la validación de tu pedido 😉'
+        mensajeGenerado: '🚚 El costo de envío es: S/ 8.00\n💰 El total final de tu pedido es: S/ 39.00\n\nðŸ¦ Métodos de pago disponibles:\n💳 BCP: 9999999999999\nðŸ¦ Interbank: 9999999999999\n📱 Yape / Plin: 999999999\n\nPor favor, envíanos tu voucher o comprobante de pago por este medio para continuar con la validación de tu pedido 😉'
       },
-      { id: '2', nombre: 'Luis Fernando', telefono: '+51 912 345 678', avatar: '👨🏻', ultimaVez: '11:30 a. m.', noLeidos: 1, primeraCompra: '1 ene 2025', totalPedidos: 1, historialPedidos: [{ id: 'PY-1025', fecha: 'Hoy, 11:30 a.m.', subtotal: 'S/ 45.00', estado: 'Pendiente' }], mensajes: [{ texto: '¿El envío llega hoy?', tipo: 'entrada', hora: '11:30 a. m.' }], mensajeGenerado: 'Hola Luis, tu envío está programado para entregarse hoy entre la 1pm y 5pm. ¡Gracias!' },
-      { id: '3', nombre: 'Valeria Castro', telefono: '+51 923 456 789', avatar: '👩🏻', ultimaVez: '11:18 a. m.', noLeidos: 1, primeraCompra: '15 dic 2024', totalPedidos: 5, historialPedidos: [{ id: 'PY-1020', fecha: 'Hoy, 11:18 a.m.', subtotal: 'S/ 120.00', estado: 'Pendiente' }, { id: 'PY-0988', fecha: '2 May 2025', subtotal: 'S/ 35.00', estado: 'Completado' }, { id: 'PY-0820', fecha: '15 Dic 2024', subtotal: 'S/ 80.00', estado: 'Completado' }], mensajes: [{ texto: 'Envié el comprobante de pago', tipo: 'entrada', hora: '11:18 a. m.' }], mensajeGenerado: '¡Recibido Valeria! Tu pedido se enviará pronto. 💖' },
-      { id: '4', nombre: 'Jorge Ramírez', telefono: '+51 934 567 890', avatar: '👨🏽', ultimaVez: '10:50 a. m.', noLeidos: 0, primeraCompra: '20 oct 2024', totalPedidos: 2, historialPedidos: [{ id: 'PY-0980', fecha: 'Ayer', subtotal: 'S/ 35.00', estado: 'Validado' }, { id: 'PY-0710', fecha: '20 Oct 2024', subtotal: 'S/ 45.00', estado: 'Completado' }], mensajes: [{ texto: 'Gracias, quedo atento', tipo: 'entrada', hora: '10:50 a. m.' }], mensajeGenerado: 'De nada Jorge. Si necesitas algo más, escríbenos.' },
-      { id: '5', nombre: 'Sofía López', telefono: '+51 945 678 901', avatar: '👩🏼', ultimaVez: '10:21 a. m.', noLeidos: 0, primeraCompra: '10 may 2025', totalPedidos: 1, historialPedidos: [{ id: 'PY-1030', fecha: 'Hace 3 días', subtotal: 'S/ 0.00', estado: 'Pendiente' }], mensajes: [{ texto: '¿Tienen la taza en color negro?', tipo: 'entrada', hora: '10:21 a. m.' }], mensajeGenerado: '¡Hola Sofía! Sí, contamos con modelos en negro. ¿Te gustaría verlos?' },
-      { id: '6', nombre: 'María Fernanda', telefono: '+51 956 789 012', avatar: '👩🏽', ultimaVez: 'Ayer', noLeidos: 0, primeraCompra: '5 abr 2025', totalPedidos: 4, historialPedidos: [{ id: 'PY-1010', fecha: 'Ayer', subtotal: 'S/ 70.00', estado: 'Enviado' }, { id: 'PY-0955', fecha: '14 Abr 2025', subtotal: 'S/ 45.00', estado: 'Completado' }, { id: 'PY-0920', fecha: '5 Abr 2025', subtotal: 'S/ 80.00', estado: 'Completado' }], mensajes: [{ texto: 'Perfecto, muchas gracias', tipo: 'entrada', hora: 'Ayer' }], mensajeGenerado: '¡Gracias a ti María Fernanda! Que disfrutes tu compra.' }
+      { id: '2', nombre: 'Luis Fernando', telefono: '+51 912 345 678', avatar: 'ðŸ‘¨ðŸ»', ultimaVez: '11:30 a. m.', noLeidos: 1, primeraCompra: '1 ene 2025', totalPedidos: 1, historialPedidos: [{ id: 'PY-1025', fecha: 'Hoy, 11:30 a.m.', subtotal: 'S/ 45.00', estado: 'Pendiente' }], mensajes: [{ texto: '¿El envío llega hoy?', tipo: 'entrada', hora: '11:30 a. m.' }], mensajeGenerado: 'Hola Luis, tu envío está programado para entregarse hoy entre la 1pm y 5pm. ¡Gracias!' },
+      { id: '3', nombre: 'Valeria Castro', telefono: '+51 923 456 789', avatar: 'ðŸ‘©ðŸ»', ultimaVez: '11:18 a. m.', noLeidos: 1, primeraCompra: '15 dic 2024', totalPedidos: 5, historialPedidos: [{ id: 'PY-1020', fecha: 'Hoy, 11:18 a.m.', subtotal: 'S/ 120.00', estado: 'Pendiente' }, { id: 'PY-0988', fecha: '2 May 2025', subtotal: 'S/ 35.00', estado: 'Completado' }, { id: 'PY-0820', fecha: '15 Dic 2024', subtotal: 'S/ 80.00', estado: 'Completado' }], mensajes: [{ texto: 'Envié el comprobante de pago', tipo: 'entrada', hora: '11:18 a. m.' }], mensajeGenerado: '¡Recibido Valeria! Tu pedido se enviará pronto. 💖' },
+      { id: '4', nombre: 'Jorge Ramírez', telefono: '+51 934 567 890', avatar: 'ðŸ‘¨ðŸ½', ultimaVez: '10:50 a. m.', noLeidos: 0, primeraCompra: '20 oct 2024', totalPedidos: 2, historialPedidos: [{ id: 'PY-0980', fecha: 'Ayer', subtotal: 'S/ 35.00', estado: 'Validado' }, { id: 'PY-0710', fecha: '20 Oct 2024', subtotal: 'S/ 45.00', estado: 'Completado' }], mensajes: [{ texto: 'Gracias, quedo atento', tipo: 'entrada', hora: '10:50 a. m.' }], mensajeGenerado: 'De nada Jorge. Si necesitas algo más, escríbenos.' },
+      { id: '5', nombre: 'Sofía López', telefono: '+51 945 678 901', avatar: 'ðŸ‘©ðŸ¼', ultimaVez: '10:21 a. m.', noLeidos: 0, primeraCompra: '10 may 2025', totalPedidos: 1, historialPedidos: [{ id: 'PY-1030', fecha: 'Hace 3 días', subtotal: 'S/ 0.00', estado: 'Pendiente' }], mensajes: [{ texto: '¿Tienen la taza en color negro?', tipo: 'entrada', hora: '10:21 a. m.' }], mensajeGenerado: '¡Hola Sofía! Sí, contamos con modelos en negro. ¿Te gustaría verlos?' },
+      { id: '6', nombre: 'María Fernanda', telefono: '+51 956 789 012', avatar: 'ðŸ‘©ðŸ½', ultimaVez: 'Ayer', noLeidos: 0, primeraCompra: '5 abr 2025', totalPedidos: 4, historialPedidos: [{ id: 'PY-1010', fecha: 'Ayer', subtotal: 'S/ 70.00', estado: 'Enviado' }, { id: 'PY-0955', fecha: '14 Abr 2025', subtotal: 'S/ 45.00', estado: 'Completado' }, { id: 'PY-0920', fecha: '5 Abr 2025', subtotal: 'S/ 80.00', estado: 'Completado' }], mensajes: [{ texto: 'Perfecto, muchas gracias', tipo: 'entrada', hora: 'Ayer' }], mensajeGenerado: '¡Gracias a ti María Fernanda! Que disfrutes tu compra.' }
     ];
 
     // Si hay un pedido del carrito que acaba de llegar, añadirlo al frente
     if (pendingOrder) {
       const productosText = pendingOrder.productos.map(p => `• ${p.nombre} x${p.cantidad}`).join('\n');
       const totalFormatted = pendingOrder.total.toFixed(2);
-      const mensajeTexto = `Hola 😄\nQuiero realizar el siguiente pedido:\n\n🛍️ Productos:\n${productosText}\n\n💰 Subtotal: S/ ${pendingOrder.subtotal.toFixed(2)}\nDescuento: - S/ ${pendingOrder.descuento.toFixed(2)}\nTotal final: S/ ${totalFormatted}`;
+      const mensajeTexto = `Hola 😄\nQuiero realizar el siguiente pedido:\n\nðŸ›ï¸ Productos:\n${productosText}\n\n💰 Subtotal: S/ ${pendingOrder.subtotal.toFixed(2)}\nDescuento: - S/ ${pendingOrder.descuento.toFixed(2)}\nTotal final: S/ ${totalFormatted}`;
 
       const nuevoChat: ChatConversacion = {
         id: pendingOrder.id,
         nombre: 'Juan Pérez (Pedido)',
         telefono: '+51 987 111 222',
-        avatar: '🛍️',
+        avatar: 'ðŸ›ï¸',
         ultimaVez: pendingOrder.fecha.split(', ')[1] || 'Justo ahora',
         noLeidos: 1,
         primeraCompra: new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -184,21 +210,76 @@ export class CartService {
 
   // ─── CARRITO ─────────────────────────────────────────────────────────────────
   get items(): CartItem[] { return this.itemsSubject.value; }
-  get discount(): number {
-    if (this.couponPercentage > 0) {
-      return Math.round(this.subtotal * (this.couponPercentage / 100));
+
+  get appliedCoupon(): Cupon | null {
+    return this.appliedCouponData;
+  }
+
+  esItemElegibleParaCupon(item: CartItem, cuponTarget?: Cupon): boolean {
+    const cupon = cuponTarget || this.appliedCouponData;
+    if (!cupon) return true;
+    const tipo = cupon.tipoAplicacion || 'GENERAL';
+    switch (tipo) {
+      case 'GENERAL':
+      case 'BIENVENIDA':
+        return true;
+      case 'CATEGORIA':
+        const cat = (cupon.categoriaAplicable || '').trim().toLowerCase();
+        return (item.categoria || '').trim().toLowerCase() === cat;
+      case 'OFERTA':
+      case 'OFERTAS':
+        return !!item.enOferta;
+      case 'LIQUIDACION':
+        const pids = (cupon.productoIds || '')
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+        return pids.includes(String(item.id));
+      default:
+        return true;
     }
-    return this.discountValue;
+  }
+  get discount(): number {
+    if (this.appliedCouponData && this.couponPercentage > 0) {
+      const eligibleSubtotal = this.items
+        .filter(item => this.esItemElegibleParaCupon(item))
+        .reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+      return Number((eligibleSubtotal * (this.couponPercentage / 100)).toFixed(2));
+    }
+    if (this.couponPercentage > 0) {
+      return Number((this.subtotal * (this.couponPercentage / 100)).toFixed(2));
+    }
+    return Number(this.discountValue.toFixed(2));
   }
   get coupon(): string { return this.couponApplied; }
 
+  get couponPercentageValue(): number {
+    return this.couponPercentage;
+  }
+
   get subtotal(): number {
-    return this.items.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+    const s = this.items.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+    return Number(s.toFixed(2));
   }
 
   get total(): number {
-    const t = this.subtotal - this.discount;
+    const t = Number((this.subtotal - this.discount).toFixed(2));
     return t > 0 ? t : 0;
+  }
+
+  getItemDiscountedPrice(item: CartItem): number {
+    if (this.couponPercentage > 0 && this.esItemElegibleParaCupon(item)) {
+      const discountedUnitPrice = item.precio * (1 - this.couponPercentage / 100);
+      return Number((discountedUnitPrice * item.cantidad).toFixed(2));
+    }
+    return Number((item.precio * item.cantidad).toFixed(2));
+  }
+
+  getItemDiscountedUnitPrice(item: CartItem): number {
+    if (this.couponPercentage > 0 && this.esItemElegibleParaCupon(item)) {
+      return Number((item.precio * (1 - this.couponPercentage / 100)).toFixed(2));
+    }
+    return Number(item.precio.toFixed(2));
   }
 
   updateQuantity(id: string, cantidad: number) {
@@ -211,23 +292,21 @@ export class CartService {
   }
 
   applyCoupon(code: string): boolean {
-    const c = code.trim().toUpperCase();
-    if (c === 'DESC20') {
-      this.couponApplied = c;
-      this.couponPercentage = 20;
-      return true;
-    }
-    if (c === 'PUNTOYCOMA') {
-      this.couponApplied = c;
-      this.couponPercentage = 10;
-      return true;
-    }
+    // La validación se realiza exclusivamente contra el backend y la base de datos.
+    // Se elimina el fallback hardcodeado para evitar inconsistencias.
     return false;
   }
 
-  applyDynamicCoupon(codigo: string, porcentaje: number) {
-    this.couponApplied = codigo;
-    this.couponPercentage = porcentaje;
+  applyDynamicCoupon(cupon: Cupon | string, porcentaje?: number) {
+    if (typeof cupon === 'object' && cupon !== null) {
+      this.appliedCouponData = cupon;
+      this.couponApplied = cupon.codigo;
+      this.couponPercentage = cupon.porcentajeDescuento;
+    } else {
+      this.couponApplied = String(cupon);
+      this.couponPercentage = porcentaje || 0;
+      this.appliedCouponData = null;
+    }
     this.discountValue = 0;
   }
 
@@ -235,6 +314,7 @@ export class CartService {
     this.couponApplied = '';
     this.couponPercentage = 0;
     this.discountValue = 0;
+    this.appliedCouponData = null;
   }
 
   finalizarPedido() {
@@ -261,10 +341,45 @@ export class CartService {
   clearCart() {
     this.itemsSubject.next([]);
     this.removeCoupon();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('cart');
+      localStorage.removeItem('carrito');
+      localStorage.removeItem('puntoycoma_cart');
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('cart');
+      sessionStorage.removeItem('carrito');
+      sessionStorage.removeItem('puntoycoma_cart');
+    }
+  }
+
+  limpiarCarrito() {
+    this.clearCart();
   }
   getAllOrders(): PlacedOrder[] { return this.allOrders; }
 
+  removeOrder(orderId: string) {
+    this.allOrders = this.allOrders.filter(o => o.id !== orderId);
+    this.saveOrdersToStorage();
+    delete this.orderStatuses[orderId];
+    this.orderStatusChanged$.next(orderId);
+  }
+
+  addOrder(order: any) {
+    if (!this.allOrders.some(o => o.id === order.id)) {
+      this.allOrders.unshift(order);
+      this.saveOrdersToStorage();
+    }
+    if (order.estado) {
+      this.setOrderStatus(order.id, order.estado as any);
+    }
+  }
+
   addItem(product: any) {
+    if (!product || product.visible === false || product.activo === false || product.esVisible === false) {
+      console.warn("Operación bloqueada: el producto no se encuentra disponible o visible para compra.");
+      return;
+    }
     const existing = this.items.find(item => item.id === String(product.id));
     if (existing) {
       this.updateQuantity(existing.id, existing.cantidad + 1);
@@ -275,7 +390,10 @@ export class CartService {
         nombre: product.nombre,
         precio: price,
         imagen: product.imagenPrincipal || product.imageUrl || product.imagen || 'images/prod-jaspeada.png',
-        cantidad: 1
+        cantidad: 1,
+        categoria: product.categoria || '',
+        enOferta: !!(product.precioOferta && product.precioOferta > 0 && (product.precioOriginal || product.precioAnterior || product.precio) > product.precioOferta),
+        precioOriginal: product.precioOriginal || product.precioAnterior || product.precio
       };
       this.itemsSubject.next([...this.items, newItem]);
     }

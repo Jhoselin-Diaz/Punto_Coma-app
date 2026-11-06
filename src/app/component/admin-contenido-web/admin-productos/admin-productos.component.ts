@@ -1,9 +1,12 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ProductosService } from '../../../service/productos.service';
 import { ConfiguracionService } from '../../../service/configuracion.service';
+import { ModalAlertaService } from '../../../service/modal-alerta.service';
 import { GOOGLE_DEVELOPER_KEY, GOOGLE_CLIENT_ID } from '../admin-contenido-web.component';
 
 declare var gapi: any;
@@ -18,18 +21,25 @@ type ProductModalTab = 'general' | 'imagenes' | 'descripcion' | 'relacionados';
   templateUrl: './admin-productos.component.html',
   styleUrl: './admin-productos.component.css'
 })
-export class AdminProductosComponent implements OnInit {
+export class AdminProductosComponent implements OnInit, OnDestroy {
   searchTerm = '';
   filtroActivo: 'todos' | 'visibles' | 'ocultos' | 'en-oferta' = 'todos';
   productosAdmin: any[] = [];
   productosFiltrados: any[] = [];
   productosDisponiblesRelacionados: any[] = [];
   isLoading = true;
+  private routeSub?: Subscription;
+  pendingEditProductId: number | null = null;
 
   // Modales y pestañas
   showAddProductModal = false;
   showEditProductModal = false;
   showGlobalShippingModal = false;
+  showCategoriasModal = false;
+  categoriasDisponibles: string[] = ['Tazas', 'Vasos', 'Sets de Cerámica', 'Accesorios'];
+  nuevaCategoriaTexto = '';
+  indiceCategoriaEnEdicion: number | null = null;
+  nombreCategoriaEditando = '';
   addProductModalTab: ProductModalTab = 'general';
   editProductModalTab: ProductModalTab = 'general';
 
@@ -44,6 +54,14 @@ export class AdminProductosComponent implements OnInit {
   miniaturasTemp: any[] = ['', '', ''];
   miniaturasUrls: string[] = ['', '', ''];
   miniaturaError: boolean[] = [false, false, false];
+  isDraggingMain = false;
+  isDraggingThumb: boolean[] = [false, false, false];
+
+  // Modal para selección de origen y pegar URL (Sin window.prompt)
+  showModalOrigenImagen = false;
+  tipoImagenObjetivo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3' = 'principal';
+  showModalPegarUrl = false;
+  urlImagenInput = '';
 
   globalConfig = {
     envio_cobertura: '',
@@ -100,9 +118,9 @@ export class AdminProductosComponent implements OnInit {
   editingProduct = {
     id: '',
     nombre: '',
-    precio: 0,
-    precioOferta: 0,
-    stock: 0,
+    precio: null as number | null,
+    precioOferta: null as number | null,
+    stock: null as number | null,
     categoria: 'Tazas',
     visible: true,
     destacado: false,
@@ -137,10 +155,14 @@ export class AdminProductosComponent implements OnInit {
     private productosService: ProductosService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
-    public configService: ConfiguracionService
+    public configService: ConfiguracionService,
+    private modalAlertaService: ModalAlertaService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
+    this.cargarCategorias();
     this.cargarProductos();
     this.loadGooglePicker();
     this.globalConfig = {
@@ -157,6 +179,45 @@ export class AdminProductosComponent implements OnInit {
       devolucion_reembolso: this.configService.negocio.devolucion_reembolso || '',
       devolucion_importante: this.configService.negocio.devolucion_importante || ''
     };
+
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'edit' && params['id']) {
+        const numId = Number(params['id']);
+        if (!isNaN(numId)) {
+          this.pendingEditProductId = numId;
+          this.verificarAperturaModalEdicion(numId);
+        }
+      } else {
+        this.pendingEditProductId = null;
+        if (this.showEditProductModal) {
+          this.showEditProductModal = false;
+        }
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.routeSub?.unsubscribe();
+  }
+
+  private verificarAperturaModalEdicion(id: number): void {
+    if (this.productosAdmin && this.productosAdmin.length > 0) {
+      const prod = this.productosAdmin.find(p => p.id === id);
+      if (prod) {
+        this.openEditProduct(prod, false);
+      }
+    }
+  }
+
+  closeEditProductModal() {
+    this.showEditProductModal = false;
+    this.pendingEditProductId = null;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { action: null, id: null },
+      queryParamsHandling: 'merge'
+    });
+    this.cdr.detectChanges();
   }
 
   cargarProductos() {
@@ -165,7 +226,11 @@ export class AdminProductosComponent implements OnInit {
       next: (res: any) => {
         const data = Array.isArray(res) ? res : (res && Array.isArray(res.content) ? res.content : []);
         this.productosAdmin = data;
+        this.sincronizarCategoriasDeProductos();
         this.filtrarProductos(this.filtroActivo);
+        if (this.pendingEditProductId) {
+          this.verificarAperturaModalEdicion(this.pendingEditProductId);
+        }
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -204,16 +269,23 @@ export class AdminProductosComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  eliminarProducto(id: any) {
-    if (confirm('¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.')) {
+  async eliminarProducto(id: any) {
+    const confirmado = await this.modalAlertaService.confirm({
+      titulo: '¿Eliminar producto?',
+      mensaje: '¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.',
+      tipo: 'peligro',
+      textoConfirmar: 'Sí, eliminar',
+      textoCancelar: 'Cancelar'
+    });
+    if (confirmado) {
       this.productosService.eliminarProducto(id).subscribe({
         next: () => {
-          alert('¡Producto eliminado exitosamente!');
+          this.modalAlertaService.success('¡Producto eliminado exitosamente!');
           this.cargarProductos();
         },
         error: (err) => {
           console.error('Error al eliminar el producto:', err);
-          alert('Ocurrió un error al intentar eliminar el producto.');
+          this.modalAlertaService.error('Ocurrió un error al intentar eliminar el producto.');
         }
       });
     }
@@ -229,7 +301,7 @@ export class AdminProductosComponent implements OnInit {
       error: (err) => {
         console.error('Error al actualizar visibilidad:', err);
         prod.visible = !nuevoEstado;
-        alert(`No se pudo actualizar la visibilidad de "${prod.nombre}". Intenta de nuevo.`);
+        this.modalAlertaService.error(`No se pudo actualizar la visibilidad de "${prod.nombre}". Intenta de nuevo.`, 'Error');
         this.filtrarProductos(this.filtroActivo);
       }
     });
@@ -261,6 +333,170 @@ export class AdminProductosComponent implements OnInit {
     return Math.max(0, Math.round((diff * 100) / original));
   }
 
+  // ==========================================
+  // GESTIÓN DE CATEGORÍAS DE PRODUCTOS
+  // ==========================================
+
+  cargarCategorias(): void {
+    const raw = localStorage.getItem('admin_categorias_productos');
+    let lista: string[] = [];
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          lista = parsed.map(c => String(c).trim()).filter(c => c.length > 0);
+        }
+      } catch (e) {
+        console.error('Error al leer categorías de localStorage:', e);
+      }
+    }
+
+    if (lista.length === 0) {
+      lista = ['Tazas', 'Vasos', 'Sets de Cerámica', 'Accesorios'];
+    }
+
+    this.categoriasDisponibles = lista;
+    this.sincronizarCategoriasDeProductos();
+    this.guardarCategoriasEnStorage();
+  }
+
+  sincronizarCategoriasDeProductos(): void {
+    if (!this.productosAdmin || this.productosAdmin.length === 0) return;
+    let huboCambios = false;
+    this.productosAdmin.forEach(p => {
+      if (p.categoria && typeof p.categoria === 'string') {
+        const catNombre = p.categoria.trim();
+        if (catNombre && !this.categoriasDisponibles.some(c => c.toLowerCase() === catNombre.toLowerCase())) {
+          this.categoriasDisponibles.push(catNombre);
+          huboCambios = true;
+        }
+      }
+    });
+    if (huboCambios) {
+      this.guardarCategoriasEnStorage();
+    }
+  }
+
+  guardarCategoriasEnStorage(): void {
+    try {
+      localStorage.setItem('admin_categorias_productos', JSON.stringify(this.categoriasDisponibles));
+    } catch (e) {
+      console.error('Error al guardar categorías en localStorage:', e);
+    }
+  }
+
+  abrirModalCategorias(): void {
+    this.nuevaCategoriaTexto = '';
+    this.cancelarEdicionCategoria();
+    this.cargarCategorias();
+    this.showCategoriasModal = true;
+  }
+
+  cerrarModalCategorias(): void {
+    this.showCategoriasModal = false;
+    this.nuevaCategoriaTexto = '';
+    this.cancelarEdicionCategoria();
+  }
+
+  iniciarEdicionCategoria(index: number, cat: string): void {
+    this.indiceCategoriaEnEdicion = index;
+    this.nombreCategoriaEditando = cat;
+  }
+
+  cancelarEdicionCategoria(): void {
+    this.indiceCategoriaEnEdicion = null;
+    this.nombreCategoriaEditando = '';
+  }
+
+  agregarCategoria(): void {
+    const nombre = (this.nuevaCategoriaTexto || '').trim();
+    if (!nombre) {
+      this.modalAlertaService.warning('No se puede guardar una categoría con la casilla en blanco.', 'Casilla en blanco');
+      return;
+    }
+
+    const existe = this.categoriasDisponibles.some(
+      c => c.toLowerCase() === nombre.toLowerCase()
+    );
+    if (existe) {
+      this.modalAlertaService.warning(`La categoría "${nombre}" ya existe en la lista.`, 'Categoría existente');
+      return;
+    }
+
+    this.categoriasDisponibles.push(nombre);
+    this.guardarCategoriasEnStorage();
+    this.nuevaCategoriaTexto = '';
+    this.modalAlertaService.success(`Categoría "${nombre}" agregada correctamente.`, 'Categoría agregada');
+  }
+
+  guardarEdicionCategoria(index: number): void {
+    const nombreAnterior = this.categoriasDisponibles[index];
+    const nuevoNombre = (this.nombreCategoriaEditando || '').trim();
+
+    if (!nuevoNombre) {
+      this.modalAlertaService.warning('No se puede guardar el cambio si se deja la casilla en blanco.', 'Casilla en blanco');
+      return;
+    }
+
+    if (nuevoNombre.toLowerCase() === nombreAnterior.toLowerCase()) {
+      this.categoriasDisponibles[index] = nuevoNombre;
+      this.guardarCategoriasEnStorage();
+      this.cancelarEdicionCategoria();
+      return;
+    }
+
+    const yaExiste = this.categoriasDisponibles.some(
+      (c, idx) => idx !== index && c.toLowerCase() === nuevoNombre.toLowerCase()
+    );
+    if (yaExiste) {
+      this.modalAlertaService.warning(`Ya existe otra categoría con el nombre "${nuevoNombre}".`, 'Categoría duplicada');
+      return;
+    }
+
+    this.categoriasDisponibles[index] = nuevoNombre;
+    this.guardarCategoriasEnStorage();
+
+    if (this.newProduct.categoria === nombreAnterior) {
+      this.newProduct.categoria = nuevoNombre;
+    }
+    if (this.editingProduct.categoria === nombreAnterior) {
+      this.editingProduct.categoria = nuevoNombre;
+    }
+
+    this.cancelarEdicionCategoria();
+    this.modalAlertaService.success(`Categoría actualizada a "${nuevoNombre}".`, 'Cambio guardado');
+  }
+
+  eliminarCategoria(index: number, cat: string): void {
+    if (this.categoriasDisponibles.length <= 1) {
+      this.modalAlertaService.warning('Debe existir al menos una categoría en el sistema.', 'Acción no permitida');
+      return;
+    }
+
+    const productosConCat = this.productosAdmin.filter(
+      p => (p.categoria || '').toLowerCase() === cat.toLowerCase()
+    );
+
+    this.categoriasDisponibles.splice(index, 1);
+    this.guardarCategoriasEnStorage();
+
+    if (this.newProduct.categoria === cat) {
+      this.newProduct.categoria = this.categoriasDisponibles[0] || 'Tazas';
+    }
+    if (this.editingProduct.categoria === cat) {
+      this.editingProduct.categoria = this.categoriasDisponibles[0] || 'Tazas';
+    }
+
+    if (this.indiceCategoriaEnEdicion === index) {
+      this.cancelarEdicionCategoria();
+    }
+
+    const nota = productosConCat.length > 0 
+      ? ` (Nota: Hay ${productosConCat.length} producto(s) asignados a esta categoría).` 
+      : '';
+    this.modalAlertaService.success(`Categoría "${cat}" eliminada con éxito.${nota}`, 'Categoría eliminada');
+  }
+
   openAddProduct() {
     this.addProductModalTab = 'general';
     this.newProduct = {
@@ -268,7 +504,7 @@ export class AdminProductosComponent implements OnInit {
       precio: null,
       precioOferta: null,
       stock: null,
-      categoria: 'Tazas',
+      categoria: this.categoriasDisponibles[0] || 'Tazas',
       visible: true,
       destacado: false,
       nuevo: true,
@@ -305,7 +541,7 @@ export class AdminProductosComponent implements OnInit {
     this.showAddProductModal = true;
   }
 
-  openEditProduct(prod: any) {
+  openEditProduct(prod: any, updateUrl = true) {
     this.editProductModalTab = 'general';
     this.archivoImagen = null;
 
@@ -345,16 +581,16 @@ export class AdminProductosComponent implements OnInit {
       }
     });
 
-    const origPrice = prod.precioOriginal || prod.precio_original || prod.precioAnterior || prod.precio_anterior || prod.precio || 0;
-    const offPrice = (prod.precioOferta || prod.precio_oferta) ? (prod.precioOferta || prod.precio_oferta) : (origPrice > prod.precio ? prod.precio : null);
+    const origPrice = prod.precioOriginal || prod.precio_original || prod.precioAnterior || prod.precio_anterior || prod.precio || null;
+    const offPrice = (prod.precioOferta || prod.precio_oferta) ? (prod.precioOferta || prod.precio_oferta) : (origPrice && prod.precio && origPrice > prod.precio ? prod.precio : null);
 
     this.editingProduct = {
       id: prod.id,
       nombre: prod.nombre,
-      precio: origPrice,
-      precioOferta: offPrice,
-      stock: prod.stock,
-      categoria: prod.categoria || 'Tazas',
+      precio: origPrice !== null && !isNaN(Number(origPrice)) && Number(origPrice) > 0 ? Number(origPrice) : null,
+      precioOferta: offPrice !== null && !isNaN(Number(offPrice)) && Number(offPrice) > 0 ? Number(offPrice) : null,
+      stock: prod.stock !== undefined && prod.stock !== null && !isNaN(Number(prod.stock)) && Number(prod.stock) > 0 ? Number(prod.stock) : null,
+      categoria: prod.categoria || (this.categoriasDisponibles[0] || 'Tazas'),
       visible: prod.visible !== undefined && prod.visible !== null ? prod.visible : (prod.activo !== undefined && prod.activo !== null ? prod.activo : true),
       destacado: prod.destacado || false,
       nuevo: prod.nuevo || prod.esNuevo || false,
@@ -396,31 +632,321 @@ export class AdminProductosComponent implements OnInit {
     });
 
     this.showEditProductModal = true;
+    if (updateUrl && prod?.id) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { action: 'edit', id: prod.id },
+        queryParamsHandling: 'merge'
+      });
+    }
+  }
+
+  // ==========================================
+  // VALIDACIONES NUMÉRICAS (STOCK Y PRECIOS)
+  // ==========================================
+
+  validarSoloEnterosStock(event: KeyboardEvent, target: 'new' | 'edit'): void {
+    const allowedKeys = [
+      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+      'Home', 'End'
+    ];
+
+    if (allowedKeys.includes(event.key)) {
+      const obj = target === 'new' ? this.newProduct : this.editingProduct;
+      if (event.key === 'ArrowDown' && (obj.stock === null || obj.stock === undefined || obj.stock <= 1)) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (event.ctrlKey || event.metaKey) {
+      return;
+    }
+
+    // Bloquear el 0 como primer dígito (stock debe ser superior a 0)
+    if (event.key === '0') {
+      const input = event.target as HTMLInputElement;
+      if (
+        !input.value ||
+        (input.selectionStart === 0 && input.selectionEnd === input.value.length) ||
+        input.value === '0'
+      ) {
+        event.preventDefault();
+        return;
+      }
+    }
+
+    // Bloquear signos (+, -), puntos (.), comas (,), exponentes (e, E) y cualquier carácter que no sea 0-9
+    if (!/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  sanitizarStockInput(event: Event, target: 'new' | 'edit'): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+
+    let val = input.value;
+    val = val.replace(/[^0-9]/g, '');
+
+    if (val.length > 1 && val.startsWith('0')) {
+      val = val.replace(/^0+/, '') || '';
+    }
+
+    if (val === '0') {
+      val = '';
+    }
+
+    input.value = val;
+
+    if (val === '') {
+      if (target === 'new') this.newProduct.stock = null;
+      else this.editingProduct.stock = null;
+    } else {
+      const parsed = parseInt(val, 10);
+      if (target === 'new') this.newProduct.stock = parsed;
+      else this.editingProduct.stock = parsed;
+    }
+  }
+
+  validarPegadoStock(event: ClipboardEvent, target: 'new' | 'edit'): void {
+    event.preventDefault();
+    const clipboardData = event.clipboardData;
+    if (!clipboardData) return;
+
+    const pastedText = clipboardData.getData('text');
+    let cleanDigits = pastedText.replace(/[^0-9]/g, '');
+    if (cleanDigits) {
+      if (cleanDigits.length > 1 && cleanDigits.startsWith('0')) {
+        cleanDigits = cleanDigits.replace(/^0+/, '') || '';
+      }
+      if (cleanDigits === '0') {
+        cleanDigits = '';
+      }
+      const input = event.target as HTMLInputElement;
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      const current = input.value || '';
+      let finalVal = current.slice(0, start) + cleanDigits + current.slice(end);
+      finalVal = finalVal.replace(/^0+/, '');
+      input.value = finalVal;
+      const parsed = finalVal ? parseInt(finalVal, 10) : null;
+      if (target === 'new') this.newProduct.stock = parsed;
+      else this.editingProduct.stock = parsed;
+    }
+  }
+
+  validarPrecioKeydown(event: KeyboardEvent): void {
+    const allowedKeys = [
+      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+      'Home', 'End'
+    ];
+
+    if (allowedKeys.includes(event.key)) {
+      if (event.key === 'ArrowDown') {
+        const input = event.target as HTMLInputElement;
+        const num = parseFloat(input.value);
+        if (isNaN(num) || num <= 0.01) {
+          event.preventDefault();
+        }
+      }
+      return;
+    }
+
+    if (event.ctrlKey || event.metaKey) {
+      return;
+    }
+
+    // Bloquear signos (+, -) y notación científica (e, E)
+    if (['-', '+', 'e', 'E'].includes(event.key)) {
+      event.preventDefault();
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const currentVal = input.value || '';
+    const selStart = input.selectionStart ?? 0;
+    const selEnd = input.selectionEnd ?? 0;
+
+    // Control para separadores decimales (punto o coma)
+    if (event.key === '.' || event.key === ',') {
+      const hasDecimal = currentVal.includes('.') || currentVal.includes(',');
+      const selectedHasDecimal = currentVal.slice(selStart, selEnd).includes('.') || currentVal.slice(selStart, selEnd).includes(',');
+      if (hasDecimal && !selectedHasDecimal) {
+        event.preventDefault();
+        return;
+      }
+      return;
+    }
+
+    // Solo permitir dígitos
+    if (!/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  sanitizarPrecioInput(event: Event, target: 'new' | 'edit', field: 'precio' | 'precioOferta'): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+
+    let val = input.value;
+    if (!val || val.trim() === '') {
+      if (target === 'new') {
+        this.newProduct[field] = null;
+      } else {
+        this.editingProduct[field] = null;
+      }
+      return;
+    }
+
+    // Cambiar coma por punto
+    val = val.replace(/,/g, '.');
+
+    // Remover caracteres no numéricos excepto el punto
+    val = val.replace(/[^0-9.]/g, '');
+
+    // Si comienza con punto (ej: ".5"), anteponer "0."
+    if (val.startsWith('.')) {
+      val = '0' + val;
+    }
+
+    // Mantener sólo el primer punto
+    const parts = val.split('.');
+    if (parts.length > 2) {
+      val = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    // Limitar a máximo 2 decimales
+    if (parts.length >= 2 && parts[1].length > 2) {
+      val = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+
+    // Normalizar ceros a la izquierda (ej: "05" -> "5", manteniendo "0." o "0.5")
+    if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) {
+      val = val.replace(/^0+/, '') || '0';
+    }
+
+    input.value = val;
+
+    // Permitir al usuario continuar escribiendo si termina en "." o es "0." o "0"
+    if (val.endsWith('.') || val === '0.' || val === '0') {
+      const parsed = parseFloat(val);
+      const num = !isNaN(parsed) && parsed > 0 ? parsed : null;
+      if (target === 'new') this.newProduct[field] = num;
+      else this.editingProduct[field] = num;
+      return;
+    }
+
+    const num = parseFloat(val);
+    if (!isNaN(num) && num > 0) {
+      if (target === 'new') this.newProduct[field] = num;
+      else this.editingProduct[field] = num;
+    } else {
+      if (target === 'new') this.newProduct[field] = null;
+      else this.editingProduct[field] = null;
+    }
+  }
+
+  validarPegadoPrecio(event: ClipboardEvent, target: 'new' | 'edit', field: 'precio' | 'precioOferta'): void {
+    event.preventDefault();
+    const clipboardData = event.clipboardData;
+    if (!clipboardData) return;
+
+    let text = clipboardData.getData('text').trim();
+    text = text.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+
+    if (text.startsWith('.')) {
+      text = '0' + text;
+    }
+
+    const parts = text.split('.');
+    if (parts.length > 2) {
+      text = parts[0] + '.' + parts.slice(1).join('');
+    }
+    if (parts.length >= 2 && parts[1].length > 2) {
+      text = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    if (text.length > 1 && text.startsWith('0') && !text.startsWith('0.')) {
+      text = text.replace(/^0+/, '') || '0';
+    }
+
+    const input = event.target as HTMLInputElement;
+    const num = parseFloat(text);
+
+    if (!isNaN(num) && num > 0) {
+      input.value = text;
+      if (target === 'new') this.newProduct[field] = num;
+      else this.editingProduct[field] = num;
+    } else {
+      input.value = '';
+      if (target === 'new') this.newProduct[field] = null;
+      else this.editingProduct[field] = null;
+    }
+  }
+
+  formatearPrecioBlur(target: 'new' | 'edit', field: 'precio' | 'precioOferta'): void {
+    const obj = target === 'new' ? this.newProduct : this.editingProduct;
+    const rawVal = obj[field];
+
+    if (rawVal === null || rawVal === undefined || isNaN(Number(rawVal)) || Number(rawVal) <= 0) {
+      obj[field] = null;
+    } else {
+      obj[field] = Math.round(Number(rawVal) * 100) / 100;
+    }
   }
 
   guardarNuevoProducto() {
-    if (!this.newProduct.nombre || this.newProduct.precio === null) {
-      alert('Por favor complete los campos obligatorios: Nombre y Precio.');
+    if (!this.newProduct.nombre || !this.newProduct.nombre.trim()) {
+      this.modalAlertaService.warning('Por favor ingrese el nombre del producto.', 'Campo requerido');
       return;
     }
+
+    const precio = Number(this.newProduct.precio);
+    if (this.newProduct.precio === null || this.newProduct.precio === undefined || isNaN(precio) || precio <= 0) {
+      this.modalAlertaService.warning('El precio original debe ser un valor numérico mayor a 0.', 'Precio inválido');
+      return;
+    }
+
+    const stock = Number(this.newProduct.stock);
+    if (this.newProduct.stock === null || this.newProduct.stock === undefined || isNaN(stock) || stock <= 0 || !Number.isInteger(stock)) {
+      this.modalAlertaService.warning('El stock debe ser un número entero superior a 0.', 'Stock inválido');
+      return;
+    }
+
+    let precioOferta: number | null = null;
+    if (this.newProduct.precioOferta !== null && this.newProduct.precioOferta !== undefined && String(this.newProduct.precioOferta).trim() !== '') {
+      const oferta = Number(this.newProduct.precioOferta);
+      if (isNaN(oferta) || oferta <= 0) {
+        this.modalAlertaService.warning('El precio de oferta debe ser mayor a 0 o dejarse vacío.', 'Precio de oferta inválido');
+        return;
+      }
+      if (oferta >= precio) {
+        this.modalAlertaService.warning('El precio de oferta debe ser menor al precio original.', 'Precio de oferta inválido');
+        return;
+      }
+      precioOferta = Math.round(oferta * 100) / 100;
+    }
+
+    const precioFinal = Math.round(precio * 100) / 100;
+    const hasOffer = precioOferta !== null && precioOferta > 0 && precioOferta < precioFinal;
+    const activePrice = hasOffer ? precioOferta : precioFinal;
+    const originalPrice = precioFinal;
 
     const galUrls = this.miniaturasUrls.filter(url => !!url);
     const imgPrincipal = this.newProduct.imagenPrincipal || 'images/prod-jaspeada.png';
 
-    const hasOffer = this.newProduct.precioOferta && this.newProduct.precioOferta > 0 && this.newProduct.precioOferta < this.newProduct.precio;
-    const activePrice = hasOffer ? this.newProduct.precioOferta : this.newProduct.precio;
-    const originalPrice = this.newProduct.precio || 0;
-
     const payload = {
-      nombre: this.newProduct.nombre,
+      nombre: this.newProduct.nombre.trim(),
       precio: activePrice,
-      precioOferta: hasOffer ? this.newProduct.precioOferta : null,
-      precio_oferta: hasOffer ? this.newProduct.precioOferta : null,
+      precioOferta: hasOffer ? precioOferta : null,
+      precio_oferta: hasOffer ? precioOferta : null,
       precioOriginal: originalPrice,
       precio_original: originalPrice,
       precioAnterior: originalPrice,
       precio_anterior: originalPrice,
-      stock: this.newProduct.stock || 0,
+      stock: stock,
       categoria: this.newProduct.categoria,
       activo: this.newProduct.visible,
       imageUrl: imgPrincipal,
@@ -430,7 +956,7 @@ export class AdminProductosComponent implements OnInit {
       descripcion: this.newProduct.descripcionCorta,
       descripcionDetallada: this.newProduct.descripcionLarga,
       caracteristicasDestacadas: this.newProduct.caracteristicas,
-      subtitulo: this.newProduct.nombre,
+      subtitulo: this.newProduct.nombre.trim(),
       rating: 5.0,
       resenas: 0,
       sugeridosIds: this.newProduct.sugeridosIds || [],
@@ -466,54 +992,81 @@ export class AdminProductosComponent implements OnInit {
 
       this.productosService.crearProducto(formData).subscribe({
         next: (res) => {
-          alert('¡Producto guardado exitosamente!');
+          this.modalAlertaService.success('¡Producto registrado con éxito!', '¡Producto registrado con éxito!');
           this.showAddProductModal = false;
           this.cargarProductos();
         },
         error: (err) => {
           console.error('Error al guardar el producto (Multipart):', err);
-          alert('Ocurrió un error al guardar el producto.');
+          this.modalAlertaService.error('Ocurrió un error al guardar el producto.', 'Error al guardar');
         }
       });
     } else {
       this.productosService.crearProducto(payload).subscribe({
         next: (res) => {
-          alert('¡Producto guardado exitosamente!');
+          this.modalAlertaService.success('¡Producto registrado con éxito!', '¡Producto registrado con éxito!');
           this.showAddProductModal = false;
           this.cargarProductos();
         },
         error: (err) => {
           console.error('Error al guardar el producto (JSON):', err);
-          alert('Ocurrió un error al guardar el producto.');
+          this.modalAlertaService.error('Ocurrió un error al guardar el producto.', 'Error al guardar');
         }
       });
     }
   }
 
   guardarCambiosProducto() {
-    if (!this.editingProduct.nombre || this.editingProduct.precio === null) {
-      alert('Por favor complete los campos obligatorios: Nombre y Precio.');
+    if (!this.editingProduct.nombre || !this.editingProduct.nombre.trim()) {
+      this.modalAlertaService.warning('Por favor ingrese el nombre del producto.', 'Campo requerido');
       return;
     }
+
+    const precio = Number(this.editingProduct.precio);
+    if (this.editingProduct.precio === null || this.editingProduct.precio === undefined || isNaN(precio) || precio <= 0) {
+      this.modalAlertaService.warning('El precio original debe ser un valor numérico mayor a 0.', 'Precio inválido');
+      return;
+    }
+
+    const stock = Number(this.editingProduct.stock);
+    if (this.editingProduct.stock === null || this.editingProduct.stock === undefined || isNaN(stock) || stock <= 0 || !Number.isInteger(stock)) {
+      this.modalAlertaService.warning('El stock debe ser un número entero superior a 0.', 'Stock inválido');
+      return;
+    }
+
+    let precioOferta: number | null = null;
+    if (this.editingProduct.precioOferta !== null && this.editingProduct.precioOferta !== undefined && String(this.editingProduct.precioOferta).trim() !== '') {
+      const oferta = Number(this.editingProduct.precioOferta);
+      if (isNaN(oferta) || oferta <= 0) {
+        this.modalAlertaService.warning('El precio de oferta debe ser mayor a 0 o dejarse vacío.', 'Precio de oferta inválido');
+        return;
+      }
+      if (oferta >= precio) {
+        this.modalAlertaService.warning('El precio de oferta debe ser menor al precio original.', 'Precio de oferta inválido');
+        return;
+      }
+      precioOferta = Math.round(oferta * 100) / 100;
+    }
+
+    const precioFinal = Math.round(precio * 100) / 100;
+    const hasOffer = precioOferta !== null && precioOferta > 0 && precioOferta < precioFinal;
+    const activePrice = hasOffer ? precioOferta : precioFinal;
+    const originalPrice = precioFinal;
 
     const galUrls = this.miniaturasUrls.filter(url => !!url);
     const imgPrincipal = this.editingProduct.imagenPrincipal || 'images/prod-jaspeada.png';
 
-    const hasOffer = this.editingProduct.precioOferta && this.editingProduct.precioOferta > 0 && this.editingProduct.precioOferta < this.editingProduct.precio;
-    const activePrice = hasOffer ? this.editingProduct.precioOferta : this.editingProduct.precio;
-    const originalPrice = this.editingProduct.precio || 0;
-
     const payload = {
       id: this.editingProduct.id,
-      nombre: this.editingProduct.nombre,
+      nombre: this.editingProduct.nombre.trim(),
       precio: activePrice,
-      precioOferta: hasOffer ? this.editingProduct.precioOferta : null,
-      precio_oferta: hasOffer ? this.editingProduct.precioOferta : null,
+      precioOferta: hasOffer ? precioOferta : null,
+      precio_oferta: hasOffer ? precioOferta : null,
       precioOriginal: originalPrice,
       precio_original: originalPrice,
       precioAnterior: originalPrice,
       precio_anterior: originalPrice,
-      stock: this.editingProduct.stock || 0,
+      stock: stock,
       categoria: this.editingProduct.categoria,
       activo: this.editingProduct.visible,
       imageUrl: imgPrincipal,
@@ -523,7 +1076,7 @@ export class AdminProductosComponent implements OnInit {
       descripcion: this.editingProduct.descripcionCorta,
       descripcionDetallada: this.editingProduct.descripcionLarga,
       caracteristicasDestacadas: this.editingProduct.caracteristicas,
-      subtitulo: this.editingProduct.nombre,
+      subtitulo: this.editingProduct.nombre.trim(),
       rating: 5.0,
       resenas: 0,
       sugeridosIds: this.editingProduct.sugeridosIds || [],
@@ -559,25 +1112,25 @@ export class AdminProductosComponent implements OnInit {
 
       this.productosService.crearProducto(formData).subscribe({
         next: (res) => {
-          alert('¡Producto actualizado con éxito!');
-          this.showEditProductModal = false;
+          this.modalAlertaService.success('¡Producto actualizado con éxito!', 'Actualización exitosa');
+          this.closeEditProductModal();
           this.cargarProductos();
         },
         error: (err) => {
           console.error('Error al actualizar el producto (Multipart):', err);
-          alert('Ocurrió un error al actualizar el producto.');
+          this.modalAlertaService.error('Ocurrió un error al actualizar el producto.', 'Error al actualizar');
         }
       });
     } else {
       this.productosService.crearProducto(payload).subscribe({
         next: (res) => {
-          alert('¡Producto actualizado con éxito!');
-          this.showEditProductModal = false;
+          this.modalAlertaService.success('¡Producto actualizado con éxito!', 'Actualización exitosa');
+          this.closeEditProductModal();
           this.cargarProductos();
         },
         error: (err) => {
           console.error('Error al actualizar el producto (JSON):', err);
-          alert('Ocurrió un error al actualizar el producto.');
+          this.modalAlertaService.error('Ocurrió un error al actualizar el producto.', 'Error al actualizar');
         }
       });
     }
@@ -588,7 +1141,7 @@ export class AdminProductosComponent implements OnInit {
       ...this.configService.negocio,
       ...this.globalConfig
     });
-    alert('✅ Configuración global de Envíos y Devoluciones guardada.');
+    this.modalAlertaService.success('Configuración global de Envíos y Devoluciones guardada.', 'Configuración Guardada');
     this.showGlobalShippingModal = false;
   }
 
@@ -610,34 +1163,112 @@ export class AdminProductosComponent implements OnInit {
     document.head.appendChild(gsiScript);
   }
 
-  elegirOrigenMiniatura(tipo: 'miniatura1' | 'miniatura2' | 'miniatura3') {
-    const usarGoogle = confirm('¿Deseas buscar la imagen en Google Drive? (Presiona Cancelar para pegar la URL directamente)');
-    if (usarGoogle) {
-      this.abrirPicker(tipo);
-    } else {
-      this.fallbackUrlPrompt(tipo);
+  abrirModalOrigenImagen(tipo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3') {
+    this.tipoImagenObjetivo = tipo;
+    this.showModalOrigenImagen = true;
+  }
+
+  cerrarModalOrigenImagen() {
+    this.showModalOrigenImagen = false;
+  }
+
+  seleccionarGoogleDriveDesdeModal() {
+    const tipo = this.tipoImagenObjetivo;
+    this.cerrarModalOrigenImagen();
+    this.abrirPicker(tipo);
+  }
+
+  seleccionarPegarUrlDesdeModal() {
+    const tipo = this.tipoImagenObjetivo;
+    this.cerrarModalOrigenImagen();
+    this.abrirModalPegarUrl(tipo);
+  }
+
+  abrirModalPegarUrl(tipo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3') {
+    this.tipoImagenObjetivo = tipo;
+    this.urlImagenInput = '';
+    this.showModalPegarUrl = true;
+  }
+
+  cerrarModalPegarUrl() {
+    this.showModalPegarUrl = false;
+    this.urlImagenInput = '';
+  }
+
+  guardarUrlPegada() {
+    if (!this.urlImagenInput || !this.urlImagenInput.trim()) {
+      this.modalAlertaService.warning('Por favor, ingresa una URL válida de Google Drive.', 'URL de Drive');
+      return;
+    }
+    const trimmed = this.urlImagenInput.trim();
+    if (!trimmed.includes('drive.google.com')) {
+      this.modalAlertaService.warning('Por favor, ingresa una URL válida de Google Drive.', 'URL de Drive');
+      return;
+    }
+
+    const fileId = this.extraerGoogleDriveId(trimmed);
+    const publicUrl = this.obtenerGoogleDrivePreviewUrl(fileId) || trimmed;
+
+    this.handlePickerUrl(this.tipoImagenObjetivo, publicUrl);
+    this.cerrarModalPegarUrl();
+  }
+
+  onFileSeleccionadoModal(event: any) {
+    if (event.target.files && event.target.files.length > 0) {
+      const file = event.target.files[0];
+      if (!this.validarArchivoImagen(file)) {
+        if (event.target) event.target.value = '';
+        return;
+      }
+
+      const tipo = this.tipoImagenObjetivo;
+      if (tipo === 'principal') {
+        this.handleImageFile(file);
+      } else {
+        const index = tipo === 'miniatura1' ? 0 : (tipo === 'miniatura2' ? 1 : 2);
+        this.procesarArchivoMiniatura(file, index);
+      }
+      this.cerrarModalOrigenImagen();
+      this.cdr.detectChanges();
+    }
+    if (event.target) {
+      event.target.value = '';
     }
   }
 
+  // Delegación para mantener compatibilidad si se invoca elegirOrigenMiniatura
+  elegirOrigenMiniatura(tipo: 'miniatura1' | 'miniatura2' | 'miniatura3') {
+    this.abrirModalOrigenImagen(tipo);
+  }
+
   abrirPicker(tipo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3') {
-    // Verificar si el token ya expiró (duración típica de 50 minutos / 3000 segundos)
+    const isGoogleLoaded = typeof window !== 'undefined' && (window as any).google?.accounts?.oauth2;
+    const isGapiLoaded = typeof window !== 'undefined' && (window as any).gapi;
+
+    if (!isGoogleLoaded || !isGapiLoaded) {
+      console.warn('Google API scripts aún no están listos. Reintentando inicialización...');
+      this.loadGooglePicker();
+      this.modalAlertaService.info('Iniciando servicios de Google Drive. Por favor intenta presionar el botón de nuevo en un momento.', 'Google Drive');
+      return;
+    }
+
     const tokenExpirado = this.tokenTimestamp && (Date.now() - this.tokenTimestamp > 3000 * 1000);
     if (tokenExpirado) {
-      console.log('🔄 El token de Google ha expirado. Limpiando para forzar re-autenticación.');
       this.oauthToken = '';
       this.tokenTimestamp = 0;
     }
 
     if (!this.oauthToken) {
       try {
-        const client = google.accounts.oauth2.initTokenClient({
-          client_id: this.clientId || 'YOUR_CLIENT_ID.apps.googleusercontent.com',
+        const client = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: this.clientId || GOOGLE_CLIENT_ID,
           scope: 'https://www.googleapis.com/auth/drive.readonly',
           callback: (response: any) => {
             if (response.error !== undefined) {
               console.error('❌ Error al inicializar Token Client:', response);
               this.oauthToken = '';
               this.tokenTimestamp = 0;
+              this.modalAlertaService.error('No se pudo autenticar con Google. Puedes utilizar la opción "Pegar URL" o "Desde PC".', 'Error de Autenticación');
               return;
             }
             this.oauthToken = response.access_token;
@@ -648,10 +1279,10 @@ export class AdminProductosComponent implements OnInit {
         });
         client.requestAccessToken({ prompt: 'consent' });
       } catch (err) {
-        console.warn('Google GSI Token Client initialization failed, using URL fallback.', err);
+        console.warn('Google GSI Token Client initialization failed:', err);
         this.oauthToken = '';
         this.tokenTimestamp = 0;
-        this.fallbackUrlPrompt(tipo);
+        this.modalAlertaService.warning('No se pudo iniciar sesión con Google Drive. Puedes usar "Pegar URL" o "Desde PC".', 'Google Drive');
       }
     } else {
       this.createPicker(tipo);
@@ -659,8 +1290,8 @@ export class AdminProductosComponent implements OnInit {
   }
 
   createPicker(tipo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3') {
-    const isGooglePickerAvailable = typeof window !== 'undefined' && (window as any).google && (window as any).google.picker;
-    const isGapiPickerAvailable = typeof window !== 'undefined' && (window as any).gapi && (window as any).gapi.picker;
+    const isGooglePickerAvailable = typeof window !== 'undefined' && (window as any).google?.picker;
+    const isGapiPickerAvailable = typeof window !== 'undefined' && (window as any).gapi?.picker;
 
     if (this.pickerApiLoaded && this.oauthToken && (isGooglePickerAvailable || isGapiPickerAvailable)) {
       try {
@@ -670,12 +1301,11 @@ export class AdminProductosComponent implements OnInit {
 
         const picker = new pickerNamespace.PickerBuilder()
           .enableFeature(pickerNamespace.Feature.NAV_HIDDEN)
-          .setDeveloperKey(this.developerKey || 'YOUR_DEVELOPER_KEY')
-          .setAppId(this.clientId ? this.clientId.split('-')[0] : 'YOUR_APP_ID')
+          .setDeveloperKey(this.developerKey || GOOGLE_DEVELOPER_KEY)
+          .setAppId(this.clientId ? this.clientId.split('-')[0] : '398851876989')
           .setOAuthToken(this.oauthToken)
           .addView(view)
           .setCallback((data: any) => {
-            console.log('--- DATA CRUDA DEL PICKER ---', data);
             if (data.action === pickerNamespace.Action.PICKED) {
               const doc = data.docs[0];
               const fileId = doc[pickerNamespace.Document.ID] || doc.id;
@@ -683,7 +1313,7 @@ export class AdminProductosComponent implements OnInit {
               this.handlePickerUrl(tipo, publicUrl);
             } else if (data.action === 'error' || data.error) {
               console.error('❌ Error detectado en el callback de Google Picker:', data.error || data);
-              this.oauthToken = ''; // Resetear el token en caso de error
+              this.oauthToken = '';
               this.tokenTimestamp = 0;
             }
           })
@@ -693,11 +1323,17 @@ export class AdminProductosComponent implements OnInit {
         console.error('❌ Excepción al crear Google Picker:', err);
         this.oauthToken = '';
         this.tokenTimestamp = 0;
-        this.fallbackUrlPrompt(tipo);
+        this.modalAlertaService.warning('Ocurrió un problema al abrir el selector de Google Drive.', 'Google Drive');
       }
     } else {
-      console.warn('⚠️ Gapi/Google Picker API no cargada completamente, redireccionando a prompt.');
-      this.fallbackUrlPrompt(tipo);
+      if (typeof window !== 'undefined' && (window as any).gapi) {
+        (window as any).gapi.load('picker', () => {
+          this.pickerApiLoaded = true;
+          this.createPicker(tipo);
+        });
+      } else {
+        this.modalAlertaService.warning('La API de Google Picker aún se está cargando. Intenta de nuevo en unos segundos.', 'Google Drive');
+      }
     }
   }
 
@@ -725,7 +1361,6 @@ export class AdminProductosComponent implements OnInit {
     if (cleanId.toLowerCase() === 'null' || cleanId.toLowerCase() === 'undefined' || cleanId.length === 0) {
       return '';
     }
-    // Si contiene slashes, puntos o dos puntos, no es un ID válido de Google Drive
     if (cleanId.includes('/') || cleanId.includes('.') || cleanId.includes(':')) {
       if (cleanId.startsWith('http')) {
         return cleanId;
@@ -734,23 +1369,6 @@ export class AdminProductosComponent implements OnInit {
     }
     return `https://lh3.googleusercontent.com/d/${cleanId}`;
   }
-
-  fallbackUrlPrompt(tipo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3') {
-    const input = prompt('Ingresa la URL directa de la imagen, la URL de Google Drive o el ID del archivo:');
-    if (input) {
-      const trimmed = input.trim();
-      let publicUrl = '';
-      if (trimmed.startsWith('http') && !trimmed.includes('drive.google.com') && !trimmed.includes('googleusercontent.com')) {
-        // Si es una URL directa (http/https) que no pertenece a Google Drive, la usamos tal cual
-        publicUrl = trimmed;
-      } else {
-        const fileId = this.extraerGoogleDriveId(trimmed);
-        publicUrl = this.obtenerGoogleDrivePreviewUrl(fileId);
-      }
-      this.handlePickerUrl(tipo, publicUrl);
-    }
-  }
-
   handlePickerUrl(tipo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3', url: string) {
     const safeUrl = this.sanitizer.bypassSecurityTrustUrl(url);
     if (tipo === 'principal') {
@@ -840,17 +1458,124 @@ export class AdminProductosComponent implements OnInit {
     return false;
   }
 
+  validarArchivoImagen(file: File): boolean {
+    if (!file) return false;
+
+    const validExtensions = ['.jpg', '.jpeg', '.png'];
+    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+
+    const fileName = (file.name || '').toLowerCase();
+    const fileExt = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
+    const fileMime = (file.type || '').toLowerCase();
+
+    const hasValidExt = validExtensions.includes(fileExt);
+    const hasValidMime = validMimeTypes.includes(fileMime);
+
+    // Formato válido: exclusivamente archivos con extensión o tipo MIME de .jpg, .jpeg o .png
+    const esFormatoValido = hasValidExt && (hasValidMime || fileMime === '');
+
+    // Tamaño máximo: 2 MB (2 * 1024 * 1024 = 2,097,152 bytes)
+    const maxBytes = 2 * 1024 * 1024;
+    const esTamanoValido = file.size > 0 && file.size <= maxBytes;
+
+    if (!esFormatoValido || !esTamanoValido) {
+      this.modalAlertaService.warning(
+        'Formato no válido. Solo se admiten archivos .jpg, .jpeg o .png de hasta 2MB.',
+        'Formato no válido'
+      );
+      return false;
+    }
+
+    return true;
+  }
+
   onDragOver(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
+    this.isDraggingMain = true;
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingMain = false;
   }
 
   onDrop(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
+    this.isDraggingMain = false;
     if (event.dataTransfer && event.dataTransfer.files.length > 0) {
       const file = event.dataTransfer.files[0];
       this.handleImageFile(file);
+    }
+  }
+
+  onDragOverMiniatura(event: DragEvent, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingThumb[index] = true;
+  }
+
+  onDragLeaveMiniatura(event: DragEvent, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingThumb[index] = false;
+  }
+
+  onDropMiniatura(event: DragEvent, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingThumb[index] = false;
+    if (event.dataTransfer && event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      this.procesarArchivoMiniatura(file, index);
+    }
+  }
+
+  procesarArchivoMiniatura(file: File, index: number) {
+    if (!this.validarArchivoImagen(file)) {
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const safeUrl = this.sanitizer.bypassSecurityTrustUrl(objectUrl);
+    this.miniaturasTemp[index] = safeUrl;
+    this.miniaturasUrls[index] = objectUrl;
+    this.miniaturaError[index] = false;
+
+    if (this.showEditProductModal && this.editingProduct?.id) {
+      this.productosService.subirImagenProducto(this.editingProduct.id, file).subscribe({
+        next: (res: any) => {
+          const urlGuardada = res.imagenPrincipal || res.imageUrl || res.url;
+          if (urlGuardada) {
+            this.miniaturasUrls[index] = urlGuardada;
+            this.miniaturasTemp[index] = this.sanitizer.bypassSecurityTrustUrl(urlGuardada);
+            this.modalAlertaService.success('Miniatura subida y guardada exitosamente.', 'Miniatura actualizada');
+            this.cdr.detectChanges();
+          }
+        },
+        error: (err: any) => {
+          console.error('Error al subir miniatura:', err);
+          this.modalAlertaService.error('Error al subir la miniatura al servidor.', 'Error de subida');
+        }
+      });
+    }
+    this.cdr.detectChanges();
+  }
+
+  readonly DEFAULT_PLACEHOLDER = '/assets/img/placeholder-producto.png';
+
+  onImgError(event: Event, prod?: any) {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.onerror = null; // Corta la propagación y bucles infinitos
+      target.src = this.DEFAULT_PLACEHOLDER;
+    }
+    if (prod) {
+      prod.imagenPrincipal = this.DEFAULT_PLACEHOLDER;
+      prod.imageUrl = this.DEFAULT_PLACEHOLDER;
+      prod.imagen_principal = this.DEFAULT_PLACEHOLDER;
     }
   }
 
@@ -859,24 +1584,50 @@ export class AdminProductosComponent implements OnInit {
       const file = event.target.files[0];
       this.handleImageFile(file);
     }
+    if (event.target) {
+      event.target.value = '';
+    }
   }
 
   handleImageFile(file: File) {
-    if (file.type.startsWith('image/')) {
-      this.archivoImagen = file;
-      const objectUrl = URL.createObjectURL(file);
-      this.imagenTemporalUrl = this.sanitizer.bypassSecurityTrustUrl(objectUrl);
-      if (this.showEditProductModal) {
-        this.editingProduct.imagenPrincipal = objectUrl;
-        (this.editingProduct as any).imagen_principal = objectUrl;
-      } else {
-        this.newProduct.imagenPrincipal = objectUrl;
-        (this.newProduct as any).imagenUrl = objectUrl;
-      }
-      this.cdr.detectChanges();
-    } else {
-      alert('Por favor selecciona un archivo de imagen válido.');
+    if (!this.validarArchivoImagen(file)) {
+      return;
     }
+
+    this.archivoImagen = file;
+    const objectUrl = URL.createObjectURL(file);
+    this.imagenTemporalUrl = this.sanitizer.bypassSecurityTrustUrl(objectUrl);
+    if (this.showEditProductModal) {
+      this.editingProduct.imagenPrincipal = objectUrl;
+      (this.editingProduct as any).imagen_principal = objectUrl;
+
+      // Subida directa al backend de Spring Boot
+      if (this.editingProduct.id) {
+        this.productosService.subirImagenProducto(this.editingProduct.id, file).subscribe({
+          next: (res: any) => {
+            const urlGuardada = res.imagenPrincipal || res.imageUrl || res.url;
+            if (urlGuardada) {
+              this.editingProduct.imagenPrincipal = urlGuardada;
+              (this.editingProduct as any).imagen_principal = urlGuardada;
+              (this.editingProduct as any).imageUrl = urlGuardada;
+              this.imagenTemporalUrl = this.sanitizer.bypassSecurityTrustUrl(urlGuardada);
+
+              this.cargarProductos();
+              this.modalAlertaService.success('Imagen subida y guardada exitosamente en el servidor.', 'Imagen actualizada');
+              this.cdr.detectChanges();
+            }
+          },
+          error: (err: any) => {
+            console.error('Error al subir imagen al servidor:', err);
+            this.modalAlertaService.error('Error al subir la imagen al servidor.', 'Error de subida');
+          }
+        });
+      }
+    } else {
+      this.newProduct.imagenPrincipal = objectUrl;
+      (this.newProduct as any).imagenUrl = objectUrl;
+    }
+    this.cdr.detectChanges();
   }
 
   removeImage(event: Event) {

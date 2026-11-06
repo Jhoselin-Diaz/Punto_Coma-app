@@ -266,3 +266,15 @@ a {
     padding: 36px 24px 28px;
   }
 }
+
+.error-banner {
+  padding: 10px 14px;
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  font-weight: 500;
+}
+

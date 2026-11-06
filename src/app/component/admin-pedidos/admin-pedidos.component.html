@@ -101,7 +101,7 @@
               <td>{{ pedido.total }}</td>
               <td class="actions-cell" style="display: flex; gap: 8px; align-items: center; justify-content: center; border: none; height: 100%;">
                 <button type="button" (click)="verDetalle(pedido)" style="background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Ver detalle</button>
-                <button type="button" (click)="eliminarPedido(pedido.id, pedido.dbId)" style="background: #fff0f6; color: #ff4d4f; border: 1px solid #ffadd2; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Eliminar</button>
+                <button type="button" (click)="eliminarPedido(pedido)" style="background: #fff0f6; color: #ff4d4f; border: 1px solid #ffadd2; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Eliminar</button>
               </td>
             </tr>
             } @empty {
@@ -138,6 +138,14 @@
         <span>Cliente</span>
         <strong>{{ pedidoSeleccionado.cliente }}</strong>
       </div>
+      <div class="overview-item" *ngIf="pedidoSeleccionado?.dni">
+        <span>DNI</span>
+        <strong>{{ pedidoSeleccionado.dni }}</strong>
+      </div>
+      <div class="overview-item" *ngIf="pedidoSeleccionado?.telefono">
+        <span>Teléfono</span>
+        <strong>{{ pedidoSeleccionado.telefono }}</strong>
+      </div>
       <div class="overview-item">
         <span>Fecha</span>
         <strong>{{ pedidoSeleccionado.fecha }} - {{ pedidoSeleccionado.hora }}</strong>
@@ -155,8 +163,12 @@
         <span class="status validado">✓ Validado </span>
         } @else if (pedidoSeleccionado.estado === 'Rechazado') {
         <span class="status rechazado">× Rechazado</span>
+        } @else if (pedidoSeleccionado.estado === '1er Pendiente') {
+        <span class="status pendiente">⏳ 1er Pendiente</span>
         } @else if (pedidoSeleccionado.estado === 'Pendiente') {
         <span class="status pendiente">⏱ Pendiente</span>
+        } @else if (pedidoSeleccionado.estado === '2do Pendiente') {
+        <span class="status pendiente">⏱ 2do Pendiente</span>
         } @else if (pedidoSeleccionado.estado === 'En revision') {
         <span class="status en-revision">▷ En revisión</span>
         }
@@ -178,12 +190,12 @@
         <span class="step-text">Interpretación del pedido</span>
       </div>
       <div class="step-line active"></div>
-      <div class="step">
+      <div class="step" [class.active]="tieneVoucher(pedidoSeleccionado) || pedidoSeleccionado.estado === 'Validado' || pedidoSeleccionado.estado === 'Rechazado' || pedidoSeleccionado.estado === 'En revision'">
         <span class="step-num">2</span>
         <span class="step-text">Validación del pago (OCR)</span>
       </div>
-      <div class="step-line"></div>
-      <div class="step">
+      <div class="step-line" [class.active]="tieneVoucher(pedidoSeleccionado) || pedidoSeleccionado.estado === 'Validado' || pedidoSeleccionado.estado === 'Rechazado' || pedidoSeleccionado.estado === 'En revision'"></div>
+      <div class="step" [class.active]="tieneVoucher(pedidoSeleccionado) || pedidoSeleccionado.estado === 'Validado' || pedidoSeleccionado.estado === 'Rechazado' || pedidoSeleccionado.estado === 'En revision'">
         <span class="step-num">3</span>
         <span class="step-text">Resultado y comparación</span>
       </div>
@@ -197,9 +209,11 @@
         <h3 class="card-title"><span class="icon-box">📦</span> 1. Pedido interpretado</h3>
 
         <div class="info-row"><span>Cliente</span> <strong>{{ pedidoSeleccionado.cliente }}</strong></div>
+        <div class="info-row" *ngIf="pedidoSeleccionado?.dni"><span>DNI</span> <strong>{{ pedidoSeleccionado.dni }}</strong></div>
+        <div class="info-row"><span>Teléfono</span> <strong>{{ pedidoSeleccionado.telefono || 'No registrado' }}</strong></div>
         <div class="info-row"><span>ID Pedido</span> <strong>{{ pedidoSeleccionado.id }}</strong></div>
 
-        <h4 class="section-subtitle">Productos (Taza)</h4>
+        <h4 class="section-subtitle">Desglose de productos</h4>
         <table class="products-table">
           <thead>
             <tr>
@@ -292,7 +306,7 @@
             <span class="icon check-icon">✓</span>
             <div>
               <p><strong>El monto pagado coincide con el total del pedido.</strong></p>
-              <p>Validado automáticamente por el sistema.</p>
+              <p>Validado por el administrador.</p>
             </div>
           </div>
         } @else if (pedidoSeleccionado.estado === 'Rechazado') {
@@ -303,14 +317,6 @@
               <p>Diferencia: <strong class="red-text">{{ pedidoSeleccionado.diferencia }}</strong></p>
             </div>
           </div>
-        } @else if (pedidoSeleccionado.estado === 'Pendiente') {
-          <div class="alert-box light-gray result-alert">
-            <span class="icon check-icon">⏱</span>
-            <div>
-              <p><strong>Esperando comprobante de pago.</strong></p>
-              <p>Aún no se ha recibido el pago.</p>
-            </div>
-          </div>
         } @else if (pedidoSeleccionado.estado === 'En revision') {
           <div class="alert-box light-orange result-alert">
             <span class="icon check-icon">◷</span>
@@ -319,13 +325,31 @@
               <p>Revisión manual pendiente.</p>
             </div>
           </div>
-        }
-
-        @if (pedidoSeleccionado.estado !== 'Validado') {
-          <div class="quick-validate-container">
-            <button type="button" class="btn-validate-payment" (click)="validarPagoPedido(pedidoSeleccionado)">
-              ⚡ Validar pago
-            </button>
+        } @else if (tieneVoucher(pedidoSeleccionado)) {
+          @if (esPagoCoincidente(pedidoSeleccionado)) {
+            <div class="alert-box light-green result-alert">
+              <span class="icon check-icon">✓</span>
+              <div>
+                <p><strong>Coincide: El monto pagado coincide con el total del pedido.</strong></p>
+                <p>Esperando confirmación del administrador.</p>
+              </div>
+            </div>
+          } @else {
+            <div class="alert-box light-yellow result-alert" style="background-color: #fffbe6; border: 1px solid #ffe58f; color: rgba(0, 0, 0, 0.85); display: flex; gap: 12px; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+              <span class="icon check-icon" style="color: #faad14; font-size: 18px;">⚠</span>
+              <div>
+                <p style="margin: 0; font-weight: 600;"><strong>Se ha detectado un pago parcial. Esperando decisión del administrador.</strong></p>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(0, 0, 0, 0.65);">Diferencia: <strong class="red-text">{{ pedidoSeleccionado.diferencia }}</strong></p>
+              </div>
+            </div>
+          }
+        } @else if (pedidoSeleccionado.estado === '1er Pendiente' || pedidoSeleccionado.estado === 'Pendiente' || pedidoSeleccionado.estado === '2do Pendiente' || pedidoSeleccionado.estado === 'En revision') {
+          <div class="alert-box light-gray result-alert">
+            <span class="icon check-icon">⏱</span>
+            <div>
+              <p><strong>Esperando comprobante de pago.</strong></p>
+              <p>Aún no se ha recibido el pago.</p>
+            </div>
           </div>
         }
 
@@ -345,9 +369,9 @@
         <h4 class="section-subtitle">Acciones recomendadas</h4>
         <div class="recommended-actions">
           <div class="action-row">
-            <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'Validado'" (click)="seleccionarAccion('Validado')"><span class="icon">✓</span> Validado</button>
+            <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'Validado'" (click)="seleccionarAccion('Validar')"><span class="icon">✓</span> Validar</button>
             <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'Rechazado'" (click)="seleccionarAccion('Rechazado')"><span class="icon">×</span> Rechazado</button>
-            <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'Pendiente'" (click)="seleccionarAccion('Pendiente')"><span class="icon">⏱</span> Pendiente</button>
+            <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'Pendiente' || pedidoSeleccionado.estado === '1er Pendiente' || pedidoSeleccionado.estado === '2do Pendiente'" (click)="seleccionarAccion('Pendiente')"><span class="icon">⏱</span> Pendiente</button>
             <button type="button" class="action-tile" [class.selected]="pedidoSeleccionado.estado === 'En revision' && accionSeleccionada !== 'Solicitar monto faltante'" (click)="seleccionarAccion('En revisión')"><span class="icon">◷</span> En revisión</button>
           </div>
           <div class="action-row">
@@ -359,7 +383,7 @@
         <p class="helper-text">✨ El sistema generará un mensaje sugerido para el cliente.</p>
 
         <div class="actions-footer">
-          <button type="button" class="btn-outline">↓ Descargar comprobante</button>
+          <button type="button" class="btn-outline" (click)="verComprobanteCompleto()">↓ Descargar comprobante</button>
           <button type="button" class="btn-primary" (click)="guardarDecision()">Guardar decisión</button>
         </div>
       </article>
@@ -547,6 +571,8 @@
                   <option value="">— Seleccionar producto —</option>
                   @for (p of productosDisponibles; track p.id) {
                     <option [value]="p.id">{{ p.nombre }}</option>
+                  } @empty {
+                    <option value="" disabled>No hay productos registrados en la base de datos</option>
                   }
                 </select>
                 <div class="np-price-display">S/ {{ linea.precio.toFixed(2) }}</div>

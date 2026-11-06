@@ -1,18 +1,41 @@
-import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ContentService, HomeBanner } from '../../../service/content.service';
 import { CategoriasDestacadasService, CategoriaDestacadaDTO } from '../../../service/categorias-destacadas.service';
 import { ProductosService } from '../../../service/productos.service';
+import { ModalAlertaService } from '../../../service/modal-alerta.service';
 
 declare var gapi: any;
 declare var google: any;
 
-export const GOOGLE_DEVELOPER_KEY = 'AIzaSyD5ZBrYA5bMkL4Ds8IzHV4pXhk0gpDsSss';
-export const GOOGLE_CLIENT_ID = '898823253296-uf76fpr6sr435blefbiuongo09g6fk4m.apps.googleusercontent.com';
+export const GOOGLE_DEVELOPER_KEY = 'AIzaSyBqV0Vr1NI8dYU-LE4rE3Fv1GrOdJAh6KU';
+export const GOOGLE_CLIENT_ID = '398851876989-tuuj11fvmmn06uqtouahvo76qagm5ej3.apps.googleusercontent.com';
 
-type InicioTab = 'banner' | 'categorias' | 'productos' | 'config' | 'estadisticas';
+export type InicioTab = 'banner' | 'categorias' | 'productos' | 'config' | 'estadisticas';
+
+export const INICIO_TAB_TO_SLUG: Record<InicioTab, string> = {
+  banner: 'banner-principal',
+  categorias: 'categorias-destacadas',
+  productos: 'productos-destacados',
+  config: 'configuracion-visual',
+  estadisticas: 'estadisticas'
+};
+
+export const INICIO_SLUG_TO_TAB: Record<string, InicioTab> = {
+  'banner-principal': 'banner',
+  'banner': 'banner',
+  'categorias-destacadas': 'categorias',
+  'categorias': 'categorias',
+  'productos-destacados': 'productos',
+  'productos': 'productos',
+  'configuracion-visual': 'config',
+  'config': 'config',
+  'estadisticas': 'estadisticas'
+};
 
 @Component({
   selector: 'app-admin-inicio',
@@ -21,9 +44,11 @@ type InicioTab = 'banner' | 'categorias' | 'productos' | 'config' | 'estadistica
   templateUrl: './admin-inicio.component.html',
   styleUrl: './admin-inicio.component.css'
 })
-export class AdminInicioComponent implements OnInit {
+export class AdminInicioComponent implements OnInit, OnDestroy {
   // Control de sub-pestañas internas de Inicio
   inicioTabActiva: InicioTab = 'banner';
+  private routeSub?: Subscription;
+  pendingEditCategoryId: number | null = null;
 
   // Banner Principal state
   bannerId?: number;
@@ -36,6 +61,9 @@ export class AdminInicioComponent implements OnInit {
   bannerVisible = true;
   imagenSeleccionada: File | null = null;
   isBannerLoading = false;
+  isDraggingBanner = false;
+  isDraggingCategory = false;
+  archivoCategoriaSeleccionada: File | null = null;
 
   // Campo de URL manual (alternativa al Google Drive Picker)
   driveUrlManual = '';
@@ -74,7 +102,10 @@ export class AdminInicioComponent implements OnInit {
     private contentService: ContentService,
     private categoriasService: CategoriasDestacadasService,
     private productosService: ProductosService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private modalAlertaService: ModalAlertaService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
@@ -83,10 +114,80 @@ export class AdminInicioComponent implements OnInit {
     this.cargarEstadisticas();
     this.cargarProductosDisponibles();
     this.loadGooglePicker();
+
+    this.sincronizarConUrl();
+    this.routeSub = this.route.queryParams.subscribe(() => {
+      this.sincronizarConUrl();
+    });
+  }
+
+  ngOnDestroy() {
+    this.routeSub?.unsubscribe();
+  }
+
+  private sincronizarConUrl(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    const tabParam = qp.get('tab');
+    const actionParam = qp.get('action');
+    const idParam = qp.get('id');
+
+    // Revisar si la ruta path contiene la subsección/pestaña
+    const rawUrl = this.router.url;
+    const urlWithoutQuery = rawUrl.split('?')[0];
+    const pathSegments = urlWithoutQuery.split('/').filter(Boolean);
+    const inicioIdx = pathSegments.indexOf('inicio');
+    let pathTab: string | null = null;
+    let pathAction: string | null = null;
+    let pathId: string | null = null;
+
+    if (inicioIdx !== -1 && pathSegments.length > inicioIdx + 1) {
+      pathTab = pathSegments[inicioIdx + 1];
+      if (pathSegments.length > inicioIdx + 3) {
+        pathAction = pathSegments[inicioIdx + 2];
+        pathId = pathSegments[inicioIdx + 3];
+      }
+    }
+
+    const tabKey = tabParam || pathTab;
+    if (tabKey && INICIO_SLUG_TO_TAB[tabKey]) {
+      this.inicioTabActiva = INICIO_SLUG_TO_TAB[tabKey];
+    }
+
+    const action = actionParam || pathAction;
+    const id = idParam || pathId;
+
+    if ((action === 'edit' || action === 'editar') && id) {
+      const numId = Number(id);
+      if (!isNaN(numId)) {
+        this.pendingEditCategoryId = numId;
+        this.verificarAperturaModalEdicion(numId);
+      }
+    } else {
+      this.pendingEditCategoryId = null;
+      if (this.showAddCategoryModal && this.isEditingCategory) {
+        this.showAddCategoryModal = false;
+        this.isEditingCategory = false;
+      }
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  private verificarAperturaModalEdicion(id: number): void {
+    if (this.categorias && this.categorias.length > 0) {
+      const cat = this.categorias.find(c => c.id === id);
+      if (cat) {
+        this.openEditCategory(cat, false);
+      }
+    }
   }
 
   setInicioTab(tab: InicioTab) {
     this.inicioTabActiva = tab;
+    const slug = INICIO_TAB_TO_SLUG[tab] || 'banner-principal';
+    this.router.navigate(['/admin/contenido-web/inicio'], {
+      queryParams: { tab: slug }
+    });
     this.cdr.detectChanges();
   }
 
@@ -94,6 +195,9 @@ export class AdminInicioComponent implements OnInit {
     this.categoriasService.obtenerTodas().subscribe({
       next: (res) => {
         this.categorias = res;
+        if (this.pendingEditCategoryId) {
+          this.verificarAperturaModalEdicion(this.pendingEditCategoryId);
+        }
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Error al cargar categorias', err)
@@ -122,6 +226,8 @@ export class AdminInicioComponent implements OnInit {
 
   openAddCategory() {
     this.isEditingCategory = false;
+    this.isDraggingCategory = false;
+    this.archivoCategoriaSeleccionada = null;
     this.categoriaEnEdicion = {
       nombreCategoria: '',
       tipo: 'MANUAL',
@@ -133,8 +239,10 @@ export class AdminInicioComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  openEditCategory(cat: CategoriaDestacadaDTO) {
+  openEditCategory(cat: CategoriaDestacadaDTO, updateUrl = true) {
     this.isEditingCategory = true;
+    this.isDraggingCategory = false;
+    this.archivoCategoriaSeleccionada = null;
     this.categoriaEnEdicion = {
       id: cat.id,
       nombreCategoria: cat.nombreCategoria,
@@ -145,6 +253,25 @@ export class AdminInicioComponent implements OnInit {
       productosIds: cat.productosIds ? [...cat.productosIds] : []
     };
     this.showAddCategoryModal = true;
+    if (updateUrl && cat.id) {
+      const slug = INICIO_TAB_TO_SLUG[this.inicioTabActiva] || 'categorias-destacadas';
+      this.router.navigate(['/admin/contenido-web/inicio'], {
+        queryParams: { tab: slug, action: 'edit', id: cat.id }
+      });
+    }
+    this.cdr.detectChanges();
+  }
+
+  closeCategoryModal() {
+    this.showAddCategoryModal = false;
+    this.isEditingCategory = false;
+    this.isDraggingCategory = false;
+    this.archivoCategoriaSeleccionada = null;
+    this.pendingEditCategoryId = null;
+    const slug = INICIO_TAB_TO_SLUG[this.inicioTabActiva] || 'categorias-destacadas';
+    this.router.navigate(['/admin/contenido-web/inicio'], {
+      queryParams: { tab: slug }
+    });
     this.cdr.detectChanges();
   }
 
@@ -189,7 +316,7 @@ export class AdminInicioComponent implements OnInit {
     request$.subscribe({
       next: () => {
         alert('Categoría destacada guardada exitosamente.');
-        this.showAddCategoryModal = false;
+        this.closeCategoryModal();
         this.cargarCategorias();
         this.cargarEstadisticas();
       },
@@ -200,15 +327,25 @@ export class AdminInicioComponent implements OnInit {
     });
   }
 
-  borrarCategoria(id?: number) {
+  async borrarCategoria(id?: number) {
     if (!id) return;
-    if (confirm('¿Estás seguro de eliminar esta categoría destacada?')) {
+    const confirmado = await this.modalAlertaService.confirm({
+      titulo: '¿Eliminar categoría?',
+      mensaje: '¿Estás seguro de eliminar esta categoría destacada?',
+      tipo: 'peligro',
+      textoConfirmar: 'Sí, eliminar',
+      textoCancelar: 'Cancelar'
+    });
+    if (confirmado) {
       this.categoriasService.eliminarCategoria(id).subscribe({
         next: () => {
-          alert('Categoría eliminada exitosamente.');
+          this.modalAlertaService.success('Categoría eliminada exitosamente.');
           this.cargarCategorias();
         },
-        error: (err) => console.error('Error al borrar categoria', err)
+        error: (err) => {
+          console.error('Error al borrar categoria', err);
+          this.modalAlertaService.error('Ocurrió un error al intentar eliminar la categoría.');
+        }
       });
     }
   }
@@ -480,21 +617,124 @@ export class AdminInicioComponent implements OnInit {
     });
   }
 
-  onBannerFileSelected(event: any) {
-    if (event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
-      if (file.type.startsWith('image/')) {
-        this.imagenSeleccionada = file;
-        const objectUrl = URL.createObjectURL(file);
-        this.bannerImage = objectUrl;
-        this.ngZone.run(() => {
-          this.bannerPreviewStyle = this.sanitizer.bypassSecurityTrustStyle(`url('${objectUrl}')`);
-          this.cdr.detectChanges();
-        });
-      } else {
-        alert('Por favor selecciona un archivo de imagen válido.');
-      }
+  validarArchivoImagen(file: File): boolean {
+    if (!file) return false;
+
+    const validExtensions = ['.jpg', '.jpeg', '.png'];
+    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+
+    const fileName = (file.name || '').toLowerCase();
+    const fileExt = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
+    const fileMime = (file.type || '').toLowerCase();
+
+    const hasValidExt = validExtensions.includes(fileExt);
+    const hasValidMime = validMimeTypes.includes(fileMime);
+
+    // Formatos válidos: exclusivamente archivos con extensión o tipo MIME de .jpg, .jpeg o .png
+    const esFormatoValido = hasValidExt && (hasValidMime || fileMime === '');
+
+    // Tamaño máximo: 2 MB (2 * 1024 * 1024 = 2,097,152 bytes)
+    const maxBytes = 2 * 1024 * 1024;
+    const esTamanoValido = file.size > 0 && file.size <= maxBytes;
+
+    if (!esFormatoValido || !esTamanoValido) {
+      this.modalAlertaService.warning(
+        'Formato no válido. Solo se admiten archivos .jpg, .jpeg o .png de hasta 2MB.',
+        'Formato no válido'
+      );
+      return false;
     }
+
+    return true;
+  }
+
+  onDragOverBanner(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingBanner = true;
+  }
+
+  onDragLeaveBanner(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingBanner = false;
+  }
+
+  onDropBanner(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingBanner = false;
+    if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      this.procesarArchivoBanner(file);
+    }
+  }
+
+  onBannerFileSelected(event: any) {
+    if (event.target && event.target.files && event.target.files.length > 0) {
+      const file = event.target.files[0];
+      this.procesarArchivoBanner(file);
+      event.target.value = '';
+    }
+  }
+
+  procesarArchivoBanner(file: File) {
+    if (!this.validarArchivoImagen(file)) {
+      return;
+    }
+
+    this.imagenSeleccionada = file;
+    const objectUrl = URL.createObjectURL(file);
+    this.bannerImage = objectUrl;
+    this.driveUrlManual = '';
+    this.ngZone.run(() => {
+      this.bannerPreviewStyle = this.sanitizer.bypassSecurityTrustStyle(`url('${objectUrl}')`);
+      this.cdr.detectChanges();
+    });
+  }
+
+  onDragOverCategory(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingCategory = true;
+  }
+
+  onDragLeaveCategory(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingCategory = false;
+  }
+
+  onDropCategory(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingCategory = false;
+    if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      this.procesarArchivoCategoria(file);
+    }
+  }
+
+  onCategoryFileSelected(event: any) {
+    if (event.target && event.target.files && event.target.files.length > 0) {
+      const file = event.target.files[0];
+      this.procesarArchivoCategoria(file);
+      event.target.value = '';
+    }
+  }
+
+  procesarArchivoCategoria(file: File) {
+    if (!this.validarArchivoImagen(file)) {
+      return;
+    }
+
+    this.archivoCategoriaSeleccionada = file;
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      this.categoriaEnEdicion.imagenUrl = e.target.result;
+      this.cdr.detectChanges();
+    };
+    reader.readAsDataURL(file);
   }
 
   guardarCambios() {

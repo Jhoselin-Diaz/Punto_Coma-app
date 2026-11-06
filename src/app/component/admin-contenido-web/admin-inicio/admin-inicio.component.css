@@ -100,8 +100,30 @@
   cursor: pointer;
   background-color: #fff;
   color: var(--muted);
+  transition: all 0.2s ease;
 }
 
+.uploader-mock:hover,
+.uploader-mock.drag-over {
+  border-color: var(--orange, #ef6737);
+  background-color: rgba(239, 103, 55, 0.05);
+  color: var(--orange, #ef6737);
+}
+
+.uploader-mock.drag-over svg {
+  color: var(--orange, #ef6737);
+  transform: scale(1.08);
+}
+
+.uploader-mock.small-uploader {
+  padding: 16px;
+  gap: 6px;
+}
+
+.uploader-mock.small-uploader svg {
+  width: 24px;
+  height: 24px;
+}
 .uploader-mock svg {
   width: 32px;
   height: 32px;

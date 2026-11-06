@@ -33,7 +33,11 @@ export class ConfiguracionService {
     devolucion_importante: '',
     ofertas_banner_titulo: '',
     ofertas_banner_subtitulo: '',
-    ofertas_banner_img: ''
+    ofertas_banner_img: '',
+    color_principal: '#df6c1b',
+    logo_url: '',
+    url_rastreo_shalom: 'https://rastreo.shalom.pe/',
+    url_rastreo_olva: 'https://tracking.olvacourier.com/'
   };
 
   private configSubject = new BehaviorSubject<any | null>(null);
@@ -73,7 +77,9 @@ export class ConfiguracionService {
               direccion: data.direccion || this.negocio.direccion,
               ofertas_banner_titulo: data.ofertasBannerTitulo || this.negocio.ofertas_banner_titulo,
               ofertas_banner_subtitulo: data.ofertasBannerSubtitulo || this.negocio.ofertas_banner_subtitulo,
-              ofertas_banner_img: data.ofertasBannerImg || this.negocio.ofertas_banner_img
+              ofertas_banner_img: data.ofertasBannerImg || this.negocio.ofertas_banner_img,
+              color_principal: data.colorPrincipal || this.negocio.color_principal || '#df6c1b',
+              logo_url: data.logoUrl || this.negocio.logo_url || ''
             };
             localStorage.setItem('puntoycoma_config_negocio', JSON.stringify(this.negocio));
             this.configSubject.next(this.negocio);
@@ -92,6 +98,10 @@ export class ConfiguracionService {
     return this.configCache$;
   }
 
+  guardarConfiguracion(datos: any) {
+    this.actualizarNegocio(datos);
+  }
+
   actualizarNegocio(datos: any) {
     this.configCache$ = undefined;
     this.negocio = { ...this.negocio, ...datos };
@@ -99,14 +109,12 @@ export class ConfiguracionService {
 
     const payload = {
       nombreTienda: this.negocio.nombreTienda,
-      correo: this.negocio.correo,
-      telefono: this.negocio.telefono,
       whatsapp: this.negocio.whatsapp,
-      instagram: this.negocio.instagram,
-      direccion: this.negocio.direccion,
-      ofertasBannerTitulo: this.negocio.ofertas_banner_titulo,
-      ofertasBannerSubtitulo: this.negocio.ofertas_banner_subtitulo,
-      ofertasBannerImg: this.negocio.ofertas_banner_img
+      telefono: this.negocio.telefono || this.negocio.whatsapp,
+      colorPrincipal: this.negocio.color_principal,
+      logoUrl: this.negocio.logo_url,
+      urlRastreoShalom: this.negocio.url_rastreo_shalom,
+      urlRastreoOlva: this.negocio.url_rastreo_olva
     };
 
     this.http.put(`${this.apiUrl}/configuracion`, payload).subscribe({
@@ -121,30 +129,73 @@ export class ConfiguracionService {
     });
   }
 
+
+  subirLogo(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<any>(`${this.apiUrl}/configuracion/logo`, formData).pipe(
+      tap((res) => {
+        if (res && res.logoUrl) {
+          this.negocio.logo_url = res.logoUrl;
+          localStorage.setItem('puntoycoma_config_negocio', JSON.stringify(this.negocio));
+          this.configSubject.next(this.negocio);
+        }
+      })
+    );
+  }
+
+  guardarApariencia(colorPrincipal: string, logoUrl?: string | null): Observable<any> {
+    this.configCache$ = undefined;
+    this.negocio.color_principal = colorPrincipal;
+    if (logoUrl !== undefined && logoUrl !== null) {
+      this.negocio.logo_url = logoUrl;
+    }
+    localStorage.setItem('puntoycoma_config_negocio', JSON.stringify(this.negocio));
+    const payload: any = {
+      colorPrincipal: colorPrincipal
+    };
+    if (logoUrl !== undefined && logoUrl !== null) {
+      payload.logoUrl = logoUrl;
+    }
+    return this.http.put<any>(`${this.apiUrl}/configuracion`, payload).pipe(
+      tap((res) => {
+        if (res) {
+          this.negocio.color_principal = res.colorPrincipal || colorPrincipal;
+          if (res.logoUrl !== undefined) {
+            this.negocio.logo_url = res.logoUrl || '';
+          }
+          localStorage.setItem('puntoycoma_config_negocio', JSON.stringify(this.negocio));
+          this.configSubject.next(this.negocio);
+        }
+      })
+    );
+  }
+
   obtenerWhatsappUrl(mensaje: string = ''): string {
-    // Leer el enlace o número de WhatsApp configurado
-    const rawVal = this.negocio.whatsapp || this.negocio.telefono || '';
+    // Leer el enlace o número de WhatsApp configurado exclusivamente del campo whatsapp
+    const rawVal = (this.negocio.whatsapp || '').trim();
+    if (!rawVal) {
+      return '';
+    }
     
     // Si ya es un enlace wa.me o api.whatsapp completo, usarlo o adaptarlo
     if (rawVal.includes('wa.me') || rawVal.includes('whatsapp.com')) {
-      // Intentar extraer el número de teléfono o usar el enlace directamente
       try {
         const url = new URL(rawVal);
         const pathPhone = url.pathname.replace(/\//g, '');
-        if (pathPhone) {
+        if (pathPhone && pathPhone.replace(/\D/g, '').length >= 9) {
           return `https://wa.me/${pathPhone}${mensaje ? '?text=' + encodeURIComponent(mensaje) : ''}`;
         }
-        return rawVal;
+        return '';
       } catch (e) {
-        return rawVal;
+        return '';
       }
     }
 
     // Extraer solo dígitos numéricos del campo
     const cleanNum = rawVal.replace(/\D/g, '');
-    if (!cleanNum) {
-      // Fallback seguro si la cadena está vacía
-      return 'https://wa.me/';
+    if (!cleanNum || cleanNum.length < 9) {
+      return '';
     }
 
     // Retornar la URL construida

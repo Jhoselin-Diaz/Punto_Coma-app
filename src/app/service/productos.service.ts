@@ -11,6 +11,7 @@ export interface Producto {
   precioAnterior: number;
   imagen: string;
   etiqueta?: string;
+  stock?: number | string;
 }
 
 export interface ColorProducto {
@@ -27,6 +28,7 @@ export interface DetalleProducto extends Producto {
   resenas: number;
   descuento: string;
   stock: string;
+  stockNumero?: number;
   capacidad: string;
   material: string;
   aptoPara: string;
@@ -73,6 +75,13 @@ export class ProductosService {
   private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
+
+    subirImagenProducto(id: number | string, archivo: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', archivo);
+    formData.append('imagen', archivo);
+    return this.http.post(`${this.apiUrl.replace('/v1', '')}/admin/productos/${id}/imagen`, formData);
+  }
 
   crearProducto(productoData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/productos`, productoData);

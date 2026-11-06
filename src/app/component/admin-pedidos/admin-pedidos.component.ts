@@ -1,20 +1,23 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminLayoutComponent } from '../admin-layout/admin-layout.component';
 import { CartService } from '../../service/cart.service';
 import { AdminPedidoService } from '../../service/admin-pedido.service';
+import { ModalAlertaService } from '../../service/modal-alerta.service';
 
 interface PedidoAdmin {
   id: string;
   cliente: string;
   producto: string;
-  estado: 'Validado' | 'Pendiente' | 'En revision' | 'Rechazado';
+  estado: 'Validado' | '1er Pendiente' | 'Pendiente' | '2do Pendiente' | 'En revision' | 'Rechazado';
   validacion: string;
   fecha: string;
   hora: string;
   total: string;
   telefono?: string;
+  dni?: string;
   direccion?: string;
   direccionEnvio?: string;
   direccionEntrega?: string;
@@ -53,14 +56,26 @@ interface ClienteConocido {
 })
 export class AdminPedidosComponent implements OnInit, OnDestroy {
   private pollingInterval: any = null;
+  targetPedidoId: string | null = null;
 
   constructor(
     public cartService: CartService,
-    private adminPedidoService: AdminPedidoService
+    private adminPedidoService: AdminPedidoService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private modalAlertaService: ModalAlertaService
   ) {}
 
   ngOnInit() {
     this.cargarPedidosReal();
+
+    this.route.queryParams.subscribe(params => {
+      const qId = params['id'] || params['pedidoId'];
+      if (qId) {
+        this.targetPedidoId = qId;
+        this.seleccionarPedidoPorId(qId);
+      }
+    });
 
     // Polling reactivo cada 2 segundos para sincronizar base de datos Supabase
     this.pollingInterval = setInterval(() => {
@@ -77,7 +92,7 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
   cargarPedidosReal() {
     this.adminPedidoService.getPedidos().subscribe({
       next: (data) => {
-        const dbPedidos: PedidoAdmin[] = data.map(p => ({
+        const dbPedidos: PedidoAdmin[] = (data || []).map(p => ({
           id: p.id,
           cliente: p.cliente,
           telefono: p.telefono,
@@ -101,9 +116,28 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
           fechaPago: p.fechaPago || p.fecha_pago
         }));
 
-        // Sincronizar estados locales y pedidos de checkout local que aún no se hayan subido
+        const cartOrders: PedidoAdmin[] = (this.cartService.getAllOrders() || []).map(p => ({
+          id: p.id,
+          cliente: (p as any).cliente || 'Cliente Web',
+          telefono: (p as any).telefono || 'N/A',
+          direccion: (p as any).direccion || 'Dirección registrada',
+          producto: p.productos ? p.productos.map(pr => `${pr.nombre} x${pr.cantidad}`).join(', ') : ((p as any).producto || 'Producto'),
+          estado: (this.cartService.getOrderStatus(p.id, (p as any).estado || 'Pendiente') as any),
+          validacion: (p as any).validacion || 'Pendiente de validación',
+          fecha: p.fecha || 'Hoy',
+          hora: (p as any).hora || 'Reciente',
+          total: typeof p.total === 'number' ? `S/ ${p.total.toFixed(2)}` : (p.total || 'S/ 0.00'),
+          productosDetalle: p.productos ? p.productos.map(pr => ({ nombre: pr.nombre, cantidad: pr.cantidad, precio: (pr as any).precio || 0 })) : []
+        }));
+
         const manualOrders = this.pedidos.filter(p => p.id.startsWith('#ORD-') && !p.id.startsWith('WSP-'));
         const merged = [...dbPedidos];
+
+        cartOrders.forEach(co => {
+          if (!merged.some(d => d.id === co.id)) {
+            merged.push(co);
+          }
+        });
 
         manualOrders.forEach(m => {
           if (!merged.some(d => d.id === m.id)) {
@@ -111,32 +145,120 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
           }
         });
 
-        // Ordenar cronológicamente (los nuevos arriba)
         this.pedidos = merged;
+        if (this.targetPedidoId) {
+          this.seleccionarPedidoPorId(this.targetPedidoId);
+        }
       },
-      error: (err) => console.error('Error al cargar pedidos del backend:', err)
+      error: (err) => {
+        console.error('Error al cargar pedidos del backend:', err);
+        const cartOrders: PedidoAdmin[] = (this.cartService.getAllOrders() || []).map(p => ({
+          id: p.id,
+          cliente: (p as any).cliente || 'Cliente Web',
+          telefono: (p as any).telefono || 'N/A',
+          direccion: (p as any).direccion || 'Dirección registrada',
+          producto: p.productos ? p.productos.map(pr => `${pr.nombre} x${pr.cantidad}`).join(', ') : ((p as any).producto || 'Producto'),
+          estado: (this.cartService.getOrderStatus(p.id, (p as any).estado || 'Pendiente') as any),
+          validacion: (p as any).validacion || 'Pendiente de validación',
+          fecha: p.fecha || 'Hoy',
+          hora: (p as any).hora || 'Reciente',
+          total: typeof p.total === 'number' ? `S/ ${p.total.toFixed(2)}` : (p.total || 'S/ 0.00'),
+          productosDetalle: p.productos ? p.productos.map(pr => ({ nombre: pr.nombre, cantidad: pr.cantidad, precio: (pr as any).precio || 0 })) : []
+        }));
+
+        const manualOrders = this.pedidos.filter(p => p.id.startsWith('#ORD-') && !p.id.startsWith('WSP-'));
+        const merged = [...this.pedidos];
+
+        cartOrders.forEach(co => {
+          if (!merged.some(d => d.id === co.id)) {
+            merged.push(co);
+          }
+        });
+
+        manualOrders.forEach(m => {
+          if (!merged.some(d => d.id === m.id)) {
+            merged.push(m);
+          }
+        });
+
+        this.pedidos = merged;
+        if (this.targetPedidoId) {
+          this.seleccionarPedidoPorId(this.targetPedidoId);
+        }
+      }
     });
   }
 
-  eliminarPedido(id: string, dbId?: number) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este pedido?')) return;
+  async eliminarPedido(param: any, dbIdParam?: number) {
+    const confirmado = await this.modalAlertaService.confirm({
+      titulo: '¿Eliminar pedido?',
+      mensaje: '¿Estás seguro de que deseas eliminar este pedido pendiente? Esta acción no se puede deshacer.',
+      tipo: 'peligro',
+      textoConfirmar: 'Sí, eliminar',
+      textoCancelar: 'Cancelar'
+    });
+    if (!confirmado) return;
 
-    const targetId = dbId ? dbId : (isNaN(Number(id.replace(/[^\d]/g, ''))) ? null : Number(id.replace(/[^\d]/g, '')));
+    let targetId: any = null;
+    let idDisplay = '';
+
+    if (param && typeof param === 'object') {
+      targetId = param.dbId || param.id;
+      idDisplay = param.id || String(targetId);
+    } else {
+      idDisplay = String(param || '');
+      targetId = dbIdParam || param;
+    }
+
+    // Si targetId tiene prefijo #ORD-00X, extraer el número primario si es posible
+    if (typeof targetId === 'string') {
+      const matchOrd = targetId.match(/^#ORD-0*(\d+)$/i);
+      if (matchOrd) {
+        targetId = parseInt(matchOrd[1], 10);
+      }
+    }
+
+    console.log('[ADMIN] Eliminando pedido:', { targetId, idDisplay });
+
+    const mostrarExitoEliminacion = () => {
+      this.modalAlertaService.success(
+        'El pedido ha sido eliminado con éxito y el estado de la conversación asociada ha sido restablecido a INICIAL.',
+        'Pedido eliminado'
+      );
+      this.mostrarToast('El pedido ha sido eliminado con éxito y el estado de la conversación asociada ha sido restablecido a INICIAL.');
+      if (idDisplay) {
+        this.cartService.removeOrder(idDisplay);
+      }
+      this.cargarPedidosReal();
+    };
 
     if (targetId) {
       this.adminPedidoService.deletePedido(targetId).subscribe({
         next: () => {
-          this.pedidos = this.pedidos.filter(p => p.id !== id);
-          this.mostrarToast('✓ Pedido eliminado de Supabase.');
+          this.pedidos = this.pedidos.filter(p => p.id !== idDisplay && p.dbId !== targetId);
+          mostrarExitoEliminacion();
         },
         error: (err) => {
-          console.error('Error al eliminar pedido:', err);
-          alert('Hubo un error al eliminar el pedido del servidor.');
+          console.error('Error al eliminar pedido del servidor:', err);
+          if (idDisplay && idDisplay !== String(targetId)) {
+            this.adminPedidoService.deletePedido(idDisplay).subscribe({
+              next: () => {
+                this.pedidos = this.pedidos.filter(p => p.id !== idDisplay);
+                mostrarExitoEliminacion();
+              },
+              error: (err2) => {
+                console.error('Error al intentar eliminar pedido con ID alternativo:', err2);
+                this.modalAlertaService.error('Hubo un error al eliminar el pedido del servidor.', 'Error');
+              }
+            });
+          } else {
+            this.modalAlertaService.error('Hubo un error al eliminar el pedido del servidor.', 'Error');
+          }
         }
       });
     } else {
-      this.pedidos = this.pedidos.filter(p => p.id !== id);
-      this.mostrarToast('✓ Pedido manual eliminado.');
+      this.pedidos = this.pedidos.filter(p => p.id !== idDisplay);
+      mostrarExitoEliminacion();
     }
   }
 
@@ -145,30 +267,68 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
     return pedido.productosDetalle.reduce((acc, curr) => acc + curr.cantidad, 0);
   }
 
-  validarPagoPedido(pedido: PedidoAdmin) {
-    if (pedido.dbId) {
-      const data = {
-        estado: 'Validado',
-        validacion: 'Pago verificado (Manual)'
-      };
-      this.adminPedidoService.updatePedido(pedido.dbId, data).subscribe({
-        next: () => {
-          pedido.estado = 'Validado';
-          pedido.validacion = 'Pago verificado (Manual)';
-          this.cartService.setOrderStatus(pedido.id, 'Validado');
-          this.mostrarToast(`✓ Pago del pedido ${pedido.id} validado correctamente.`);
-        },
-        error: (err) => {
-          console.error('Error al validar el pago:', err);
-          alert('Hubo un error al validar el pago en el servidor.');
-        }
-      });
-    } else {
-      pedido.estado = 'Validado';
-      pedido.validacion = 'Pago verificado (Manual)';
-      this.cartService.setOrderStatus(pedido.id, 'Validado');
-      this.mostrarToast(`✓ Pago del pedido ${pedido.id} validado localmente.`);
+  validarPedido(pedido?: PedidoAdmin) {
+    const target = pedido || this.pedidoSeleccionado;
+    if (!target) return;
+
+    const idParaValidar = target.dbId || target.id;
+    console.log('[ADMIN] Validando pedido:', idParaValidar, target);
+
+    // Actualización optimista inmediata en UI para feedback instantáneo
+    target.estado = 'Validado';
+    target.validacion = 'Pago verificado (Manual)';
+    target.diferencia = 'S/ 0.00';
+    if (target.id) {
+      this.cartService.setOrderStatus(target.id, 'Validado');
     }
+
+    this.adminPedidoService.validarPedido(idParaValidar).subscribe({
+      next: (res) => {
+        target.estado = 'Validado';
+        target.validacion = 'Pago verificado (Manual)';
+        target.diferencia = 'S/ 0.00';
+        this.mostrarToast(`✓ Pedido ${target.id} validado correctamente.`);
+        this.cargarPedidosReal();
+      },
+      error: (err) => {
+        const errorStock = err?.error?.message || (err?.error?.error === 'STOCK_INSUFICIENTE' ? err?.error?.message : null);
+        if (errorStock || err?.status === 400) {
+          const mensajeAlerta = errorStock || err?.error?.message || 'No se puede validar el pedido: stock insuficiente.';
+          console.error('[ADMIN] Error de validación por stock:', mensajeAlerta);
+          alert(mensajeAlerta);
+          this.cargarPedidosReal();
+          return;
+        }
+
+        console.warn('[ADMIN] Falló endpoint dedicado /validar, intentando fallback con updatePedido...', err);
+        const data = {
+          estado: 'VALIDADO',
+          validacion: 'Pago verificado (Manual)',
+          montoDetectado: target.montoDetectado ? parseFloat(String(target.montoDetectado).replace(/[^\d.-]/g, '')) : null,
+          metodoPago: target.metodoPago,
+          referenciaPago: target.referenciaPago
+        };
+        this.adminPedidoService.updatePedido(idParaValidar, data).subscribe({
+          next: () => {
+            target.estado = 'Validado';
+            target.validacion = 'Pago verificado (Manual)';
+            target.diferencia = 'S/ 0.00';
+            this.mostrarToast(`✓ Pedido ${target.id} validado correctamente.`);
+            this.cargarPedidosReal();
+          },
+          error: (updateErr) => {
+            console.error('Error al validar pedido en servidor:', updateErr);
+            const msg = updateErr?.error?.message || updateErr?.error?.error || 'Hubo un error al validar el pedido en el servidor.';
+            alert(msg);
+            this.cargarPedidosReal();
+          }
+        });
+      }
+    });
+  }
+
+  validarPagoPedido(pedido: PedidoAdmin) {
+    this.validarPedido(pedido);
   }
 
   // ─── ESTADO GENERAL ──────────────────────────────────────────────
@@ -198,9 +358,13 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
       }
       // 2. Filtro estado
       if (this.filtroEstado !== 'todos') {
-        const estadoNorm = p.estado.toLowerCase().replace(' ', '-');
+        const estadoNorm = (p.estado || '').toLowerCase().replace(' ', '-');
         const filtroNorm = this.filtroEstado.toLowerCase().replace(' ', '-');
-        if (estadoNorm !== filtroNorm) return false;
+        if (filtroNorm === 'pendiente') {
+          if (!estadoNorm.includes('pendiente')) return false;
+        } else if (estadoNorm !== filtroNorm) {
+          return false;
+        }
       }
       // 3. Filtro fecha
       if (this.filtroFechaDesde || this.filtroFechaHasta) {
@@ -408,72 +572,189 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
     console.log("Pedido seleccionado en TS:", this.pedidoSeleccionado);
     this.accionSeleccionada = null;
   }
-  cerrarDetalle()                 { this.pedidoSeleccionado = null;   this.accionSeleccionada = null; }
+  cerrarDetalle() {
+    this.pedidoSeleccionado = null;
+    this.accionSeleccionada = null;
+    this.targetPedidoId = null;
+    this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+  }
+
+  tieneVoucher(p: any): boolean {
+    return !!(p && p.voucherUrl);
+  }
+
+  esPagoCoincidente(p: any): boolean {
+    if (!p) return false;
+    const diff = parseFloat(String(p.diferencia || '').replace(/[^\d.-]/g, '')) || 0;
+    return diff === 0;
+  }
+
+  seleccionarPedidoPorId(id: string) {
+    if (!id) return;
+    const cleanTarget = String(id).trim().toLowerCase();
+    let found = (this.pedidos || []).find(p =>
+      String(p.id).trim().toLowerCase() === cleanTarget ||
+      String(p.dbId) === cleanTarget ||
+      (p.id && cleanTarget.replace('#', '') === p.id.replace('#', ''))
+    );
+
+    if (!found) {
+      const localOrd = (this.cartService.getAllOrders() || []).find(lo =>
+        String(lo.id).trim().toLowerCase() === cleanTarget ||
+        String(lo.id).replace('#', '').toLowerCase() === cleanTarget.replace('#', '')
+      );
+      if (localOrd) {
+        found = {
+          id: localOrd.id,
+          cliente: (localOrd as any).cliente || 'Cliente Web',
+          producto: localOrd.productos.map(pr => `${pr.nombre} x${pr.cantidad}`).join(', '),
+          estado: (this.cartService.getOrderStatus(localOrd.id, 'Pendiente') as any),
+          validacion: 'Pendiente de validación',
+          fecha: localOrd.fecha || 'Hoy',
+          hora: (localOrd as any).hora || 'Reciente',
+          total: `S/ ${localOrd.total.toFixed(2)}`,
+          productosDetalle: localOrd.productos.map(pr => ({ nombre: pr.nombre, cantidad: pr.cantidad, precio: 0 }))
+        };
+        this.pedidos.unshift(found);
+      }
+    }
+
+    if (found) {
+      this.verDetalle(found);
+    }
+  }
 
   seleccionarAccion(accion: string) {
     this.accionSeleccionada = accion;
     if (accion === 'Editar pedido') { this.abrirModalEditar(); return; }
     if (this.pedidoSeleccionado) {
-      if (accion === 'Validado') {
+      if (accion === 'Validar' || accion === 'Validado') {
         this.pedidoSeleccionado.estado = 'Validado';
-        this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'Validado');
-      }
-      if (accion === 'Rechazado') {
+        this.pedidoSeleccionado.validacion = 'Pago verificado (Manual)';
+        this.pedidoSeleccionado.diferencia = 'S/ 0.00';
+        if (this.pedidoSeleccionado.id) {
+          this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'Validado');
+        }
+      } else if (accion === 'Rechazado') {
         this.pedidoSeleccionado.estado = 'Rechazado';
-        this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'Rechazado');
-      }
-      if (accion === 'Pendiente') {
+        this.pedidoSeleccionado.validacion = 'Pago rechazado';
+        if (this.pedidoSeleccionado.id) {
+          this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'Rechazado');
+        }
+      } else if (accion === 'Pendiente') {
         this.pedidoSeleccionado.estado = 'Pendiente';
-        this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'Pendiente');
-      }
-      if (accion === 'En revisión' || accion === 'Solicitar monto faltante') {
+        this.pedidoSeleccionado.validacion = 'Esperando comprobante de pago';
+        if (this.pedidoSeleccionado.id) {
+          this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'Pendiente');
+        }
+      } else if (accion === 'En revisión' || accion === 'En revision') {
         this.pedidoSeleccionado.estado = 'En revision';
-        this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'En revision');
+        this.pedidoSeleccionado.validacion = 'Revisión manual pendiente';
+        if (this.pedidoSeleccionado.id) {
+          this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'En revision');
+        }
+      } else if (accion === 'Solicitar monto faltante') {
+        this.pedidoSeleccionado.estado = 'En revision';
+        if (this.pedidoSeleccionado.id) {
+          this.cartService.setOrderStatus(this.pedidoSeleccionado.id, 'En revision');
+        }
       }
     }
   }
 
   guardarDecision() {
-    if (this.pedidoSeleccionado && this.pedidoSeleccionado.dbId) {
-      const data = {
-        estado: this.pedidoSeleccionado.estado,
-        validacion: this.accionSeleccionada === 'Solicitar monto faltante' ? 'Solicitado saldo faltante al cliente' : (this.pedidoSeleccionado.estado === 'Validado' ? 'Pago verificado (Manual)' : this.pedidoSeleccionado.validacion),
-        montoDetectado: this.pedidoSeleccionado.montoDetectado ? parseFloat(this.pedidoSeleccionado.montoDetectado.replace(/[^\d.-]/g, '')) : null,
-        metodoPago: this.pedidoSeleccionado.metodoPago,
-        referenciaPago: this.pedidoSeleccionado.referenciaPago
-      };
-
-      this.adminPedidoService.updatePedido(this.pedidoSeleccionado.dbId, data).subscribe({
-        next: () => {
-          this.mostrarToast(`✓ Decisión guardada correctamente para el pedido ${this.pedidoSeleccionado?.id}.`);
-          
-          if (this.accionSeleccionada === 'Solicitar monto faltante') {
-            this.mostrarToast(`⚡ Generando mensaje sugerido para saldo faltante...`);
-            this.adminPedidoService.solicitarMontoFaltante(this.pedidoSeleccionado!.dbId!).subscribe({
-              next: () => {
-                this.mostrarToast(`✓ Mensaje sugerido generado con éxito en el chat.`);
-                this.cargarPedidosReal();
-                this.cerrarDetalle();
-              },
-              error: (err) => {
-                console.error('Error generando mensaje de saldo faltante:', err);
-                this.cargarPedidosReal();
-                this.cerrarDetalle();
-              }
-            });
-          } else {
-            this.cargarPedidosReal();
-            this.cerrarDetalle();
-          }
-        },
-        error: (err) => {
-          console.error('Error al guardar la decisión del pedido:', err);
-          alert('Hubo un error al guardar la decisión en el servidor.');
-        }
-      });
-    } else {
+    if (!this.pedidoSeleccionado) {
       this.cerrarDetalle();
+      return;
     }
+
+    const targetId = this.pedidoSeleccionado.dbId || this.pedidoSeleccionado.id;
+    let estadoBackend = 'PENDIENTE';
+    let validacionBackend = this.pedidoSeleccionado.validacion;
+
+    if (this.pedidoSeleccionado.estado === 'Validado' || this.accionSeleccionada === 'Validar' || this.accionSeleccionada === 'Validado') {
+      estadoBackend = 'VALIDADO';
+      validacionBackend = 'Pago verificado (Manual)';
+    } else if (this.pedidoSeleccionado.estado === 'Rechazado' || this.accionSeleccionada === 'Rechazado') {
+      estadoBackend = 'RECHAZADO';
+      validacionBackend = 'Pago rechazado';
+    } else if (this.pedidoSeleccionado.estado === 'En revision' || this.accionSeleccionada === 'En revisión' || this.accionSeleccionada === 'Solicitar monto faltante') {
+      estadoBackend = 'EN REVISION';
+      validacionBackend = this.accionSeleccionada === 'Solicitar monto faltante'
+        ? 'Solicitado saldo faltante al cliente'
+        : (this.pedidoSeleccionado.validacion || 'Revisión manual pendiente');
+    } else {
+      estadoBackend = 'PENDIENTE';
+      validacionBackend = 'Esperando comprobante de pago';
+    }
+
+    const data = {
+      estado: estadoBackend,
+      validacion: validacionBackend,
+      montoDetectado: this.pedidoSeleccionado.montoDetectado ? parseFloat(String(this.pedidoSeleccionado.montoDetectado).replace(/[^\d.-]/g, '')) : null,
+      metodoPago: this.pedidoSeleccionado.metodoPago,
+      referenciaPago: this.pedidoSeleccionado.referenciaPago
+    };
+
+    const pedidoIdStr = this.pedidoSeleccionado.id;
+
+    if (this.pedidoSeleccionado.id) {
+      const estadoUI = estadoBackend === 'VALIDADO' ? 'Validado' : (estadoBackend === 'RECHAZADO' ? 'Rechazado' : (estadoBackend === 'EN REVISION' ? 'En revision' : 'Pendiente'));
+      this.cartService.setOrderStatus(this.pedidoSeleccionado.id, estadoUI as any);
+    }
+
+    this.adminPedidoService.updatePedido(targetId, data).subscribe({
+      next: (resp) => {
+        this.mostrarToast(`✓ Decisión guardada correctamente para el pedido ${pedidoIdStr}.`);
+
+        if (this.accionSeleccionada === 'Solicitar monto faltante') {
+          this.mostrarToast(`⚡ Generando mensaje sugerido para saldo faltante...`);
+          this.adminPedidoService.solicitarMontoFaltante(this.pedidoSeleccionado?.dbId || targetId).subscribe({
+            next: () => {
+              this.mostrarToast(`✓ Mensaje sugerido generado con éxito en el chat.`);
+              this.cerrarDetalle();
+              this.cargarPedidosReal();
+            },
+            error: (err) => {
+              console.error('Error generando mensaje de saldo faltante:', err);
+              this.cerrarDetalle();
+              this.cargarPedidosReal();
+            }
+          });
+        } else {
+          this.cerrarDetalle();
+          this.cargarPedidosReal();
+        }
+      },
+      error: (err) => {
+        console.error('Error al guardar la decisión del pedido:', err);
+        const errorStock = err?.error?.message || (err?.error?.error === 'STOCK_INSUFICIENTE' ? err?.error?.message : null);
+        if (errorStock || err?.status === 400) {
+          const msg = errorStock || err?.error?.message || 'No se puede validar el pedido: stock insuficiente.';
+          alert(msg);
+          this.cargarPedidosReal();
+          return;
+        }
+
+        if (estadoBackend === 'VALIDADO') {
+          this.adminPedidoService.validarPedido(targetId).subscribe({
+            next: () => {
+              this.mostrarToast(`✓ Pedido ${pedidoIdStr} validado correctamente.`);
+              this.cerrarDetalle();
+              this.cargarPedidosReal();
+            },
+            error: (valErr) => {
+              console.error('Error al validar pedido en servidor:', valErr);
+              const msg = valErr?.error?.message || valErr?.error?.error || 'Hubo un error al guardar la decisión en el servidor.';
+              alert(msg);
+            }
+          });
+        } else {
+          const msg = err?.error?.message || err?.error?.error || 'Hubo un error al guardar la decisión en el servidor.';
+          alert(msg);
+        }
+      }
+    });
   }
 
   verComprobanteCompleto() {
@@ -535,10 +816,22 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
     this.mostrarToast('✓ Pedido actualizado. Estado restablecido a Pendiente.');
   }
 
-  estadoClase(estado: PedidoAdmin['estado']): string { return estado.toLowerCase().replace(' ', '-'); }
+  estadoClase(estado: PedidoAdmin['estado']): string {
+    if (estado === '1er Pendiente' || estado === '2do Pendiente') {
+      return 'pendiente';
+    }
+    return estado ? estado.toLowerCase().replace(' ', '-') : 'pendiente';
+  }
 
   estadoIcono(estado: PedidoAdmin['estado']): string {
-    const m: Record<string, string> = { Validado: '✓', Pendiente: '⏱', 'En revision': '◷', Rechazado: '×' };
-    return m[estado] ?? '';
+    const m: Record<string, string> = {
+      Validado: '✓',
+      '1er Pendiente': '⏳',
+      Pendiente: '⏱',
+      '2do Pendiente': '⏱',
+      'En revision': '◷',
+      Rechazado: '×'
+    };
+    return m[estado] ?? '⏱';
   }
 }

@@ -13,24 +13,25 @@
 }
 
 .orders-page {
-  padding: 38px 16px 0 8px;
+  padding: 16px 22px 28px 22px;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .orders-card {
   min-height: calc(100vh - 120px);
-  padding: 18px 14px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 9px;
   background: #fff;
 }
 
 .filters {
   display: grid;
-  grid-template-columns: 288px 158px 185px 1fr;
+  grid-template-columns: 240px 138px 165px 1fr;
   align-items: center;
-  gap: 26px;
-  margin-bottom: 22px;
+  gap: 13px;
+  margin-bottom: 15px;
 }
 
 /* Wrapper posiciona el dropdown relativo al botón */
@@ -143,16 +144,17 @@
 .search-filter,
 .select-filter,
 .date-filter {
-  height: 42px;
+  height: 32px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 15px;
+  gap: 8px;
+  padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 7px;
   background: #fff;
   color: #57382d;
   font-weight: 700;
+  font-size: 12px;
 }
 
 .search-filter input {
@@ -161,6 +163,7 @@
   border: 0;
   outline: 0;
   background: transparent;
+  font-size: 12px;
 }
 
 .search-filter input::placeholder {
@@ -176,25 +179,26 @@
 
 .new-order {
   justify-self: end;
-  height: 40px;
-  padding: 0 18px;
+  height: 32px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 6px;
   background: linear-gradient(180deg, #ff7144, var(--orange));
   color: #fff;
   font-weight: 800;
-  box-shadow: 0 8px 18px rgba(239, 103, 55, 0.25);
+  font-size: 12px;
+  box-shadow: 0 4px 10px rgba(239, 103, 55, 0.2);
 }
 
 .new-order span {
-  margin-left: 9px;
-  font-size: 19px;
+  margin-left: 6px;
+  font-size: 15px;
 }
 
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 7px;
 }
 
 table {
@@ -208,18 +212,18 @@ thead {
 }
 
 th {
-  padding: 16px 14px;
+  padding: 9px 10px;
   color: #211d1b;
   text-align: left;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
 }
 
 td {
-  padding: 17px 14px;
+  padding: 8px 10px;
   border-top: 1px solid var(--line);
   color: #1f1c1a;
-  font-size: 13px;
+  font-size: 12px;
   vertical-align: middle;
 }
 
@@ -387,7 +391,7 @@ td small {
 
 .dynamic-title h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 20px;
   color: var(--ink);
 }
 

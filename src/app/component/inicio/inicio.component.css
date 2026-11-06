@@ -3,7 +3,9 @@
    =================================================== */
 
 :host {
-  --orange:  #df6c1b;
+  --orange: var(--primary-color, #df6c1b);
+  --primary-color: var(--orange);
+  --primary-hover: color-mix(in srgb, var(--orange) 82%, #000);
   --ink:     #2b1b16;
   --muted:   #766c67;
   --line:    #eee4dd;
@@ -14,18 +16,18 @@
 
 /* ── CONTENIDO PRINCIPAL ──────────────────────────── */
 .content {
-  max-width: 1280px;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 0 40px 64px;
+  padding: 0 24px 42px;
 }
 
 /* ── HERO BANNER ──────────────────────────────────── */
 .hero {
   position: relative;
   width: 100%;
-  min-height: 240px;
-  margin: 20px 0 40px;
-  border-radius: 18px;
+  min-height: 180px;
+  margin: 14px 0 26px;
+  border-radius: 12px;
   overflow: hidden;
 
   /* Fallback beige mientras carga la imagen real */
@@ -54,20 +56,20 @@
     rgba(247, 237, 227, 0.10) 65%,
     rgba(247, 237, 227, 0.00) 100%
   );
-  border-radius: 18px;
+  border-radius: 12px;
 }
 
 .hero-content {
   position: relative;
   z-index: 2;
-  padding: 28px 48px;
-  max-width: 460px;
+  padding: 18px 30px;
+  max-width: 390px;
 }
 
 .hero-title {
-  margin: 0 0 8px;
+  margin: 0 0 5px;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(22px, 3vw, 36px);
+  font-size: clamp(18px, 2.3vw, 26px);
   font-weight: 700;
   color: var(--ink);
   line-height: 1.18;
@@ -75,21 +77,21 @@
 }
 
 .hero-subtitle {
-  margin: 0 0 20px;
-  font-size: 14.5px;
+  margin: 0 0 14px;
+  font-size: 12.5px;
   color: var(--muted);
-  line-height: 1.5;
+  line-height: 1.45;
   font-family: 'Inter', sans-serif;
 }
 
 .btn-hero-client {
   display: inline-block;
-  padding: 13px 28px;
+  padding: 9px 20px;
   border-radius: 100px;
   background-color: var(--orange);
   color: #fff;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 12.5px;
   font-family: 'Inter', sans-serif;
   text-decoration: none;
   letter-spacing: 0.2px;
@@ -106,9 +108,9 @@
 /* Skeleton mientras carga el banner */
 .hero-skeleton {
   width: 100%;
-  min-height: 240px;
-  margin: 20px 0 40px;
-  border-radius: 18px;
+  min-height: 180px;
+  margin: 14px 0 26px;
+  border-radius: 12px;
   background: linear-gradient(90deg, #ecddd4 25%, #f4e7de 50%, #ecddd4 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite linear;
@@ -121,27 +123,27 @@
 
 /* ── SECCIONES GENERALES ──────────────────────────── */
 .section {
-  margin-bottom: 48px;
+  margin-bottom: 30px;
 }
 
 .section-title {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .section-title h2 {
   margin: 0;
   font-family: Georgia, serif;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.2px;
 }
 
 .section-title a {
-  font-size: 13.5px;
+  font-size: 12px;
   color: var(--orange);
   font-weight: 600;
   text-decoration: none;
@@ -150,26 +152,26 @@
 
 .section-title a:hover { opacity: 0.75; }
 
-.section-title a span { font-size: 11px; }
+.section-title a span { font-size: 10.5px; }
 
 /* ── GRIDS DE PRODUCTOS ───────────────────────────── */
 .grid {
   display: grid;
-  gap: 20px;
+  gap: 14px;
 }
 
 .recent-grid {
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
 }
 
 .category-grid {
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
 }
 
 .offer-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 14px;
 }
 
 /* ── TARJETA DE PRODUCTO ──────────────────────────── */
@@ -187,6 +189,42 @@
   box-shadow: 0 12px 28px rgba(43, 27, 22, 0.09);
 }
 
+.image-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.stock-badge-agotado {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+  z-index: 5;
+}
+
+.card-agotado img {
+  filter: grayscale(25%);
+  opacity: 0.9;
+}
+
+.home-tag-agotado {
+  display: inline-block;
+  margin-left: 8px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
 .product-card img,
 .category-card img {
   width: 100%;
@@ -197,12 +235,12 @@
 }
 
 .card-info {
-  padding: 12px 14px 16px;
+  padding: 10px 12px 14px;
 }
 
 .card-info h3 {
-  margin: 0 0 6px;
-  font-size: 14px;
+  margin: 0 0 5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink);
   line-height: 1.3;
@@ -210,7 +248,7 @@
 
 .card-info p {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -223,7 +261,7 @@
 .category-card {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   transition: transform 0.22s, box-shadow 0.22s;
 }
@@ -234,12 +272,12 @@
 }
 
 .category-info {
-  padding: 12px 14px 16px;
+  padding: 10px 12px 14px;
 }
 
 .category-info h3 {
   margin: 0 0 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink);
 }
@@ -316,25 +354,25 @@
 .whatsapp-banner {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 24px 32px;
+  gap: 14px;
+  padding: 14px 20px;
   background-color: #fff;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(43, 27, 22, 0.04);
-  margin-top: 24px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(43, 27, 22, 0.03);
+  margin-top: 18px;
 }
 
 .whatsapp-badge {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background-color: #25d366;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 900;
   flex-shrink: 0;
 }
@@ -345,7 +383,7 @@
 
 .whatsapp-text h2 {
   margin: 0 0 4px;
-  font-size: 18px;
+  font-size: 16.5px;
   font-weight: 700;
   color: var(--ink);
   font-family: Georgia, serif;
@@ -353,20 +391,20 @@
 
 .whatsapp-text p {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 
 .whatsapp-banner a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
+  gap: 7px;
+  padding: 9px 20px;
   border-radius: 100px;
   background-color: #25d366;
   color: #fff;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   text-decoration: none;
   white-space: nowrap;
   transition: opacity 0.2s, transform 0.15s;

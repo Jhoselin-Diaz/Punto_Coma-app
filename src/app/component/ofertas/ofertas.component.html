@@ -23,20 +23,42 @@
     @defer (when !isLoading) {
       <section class="products-grid" aria-label="Lista de productos en oferta">
         @for (oferta of productosEnOferta; track oferta.id) {
-          <article class="product-card">
+          <article class="product-card" [class.card-agotado]="esAgotado(oferta)">
             <div class="image-wrap">
+              <button 
+                type="button" 
+                class="btn-favorito-card" 
+                [class.favorito-activo]="esFavorito(oferta.id)"
+                (click)="toggleFavorito($event, oferta)"
+                [attr.aria-label]="esFavorito(oferta.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+                title="Favorito">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+              </button>
               <img [src]="obtenerImagenUrl(oferta.imagenPrincipal || oferta.imageUrl || oferta.imagenUrl || '')" [alt]="oferta.nombre" />
-              <span class="offer-tag">{{ obtenerPorcentajeDescuento(oferta.precioAnterior || oferta.precioOriginal || oferta.precio, oferta.precioOferta) }}% OFF</span>
+              @if (esAgotado(oferta)) {
+                <span class="stock-badge-agotado">SIN STOCK</span>
+              } @else {
+                <span class="offer-tag">{{ obtenerPorcentajeDescuento(oferta.precioAnterior || oferta.precioOriginal || oferta.precio, oferta.precioOferta) }}% OFF</span>
+              }
             </div>
             <div class="product-info">
               <h2>{{ oferta.nombre }}</h2>
               <p>
                 <strong>S/ {{ oferta.precioOferta }}</strong>
                 <s>S/ {{ oferta.precioAnterior || oferta.precioOriginal || oferta.precio }}</s>
+                @if (esAgotado(oferta)) {
+                  <span class="label-agotado">Agotado</span>
+                }
               </p>
               <div class="buttons">
                 <a class="detail-link" [routerLink]="['/productos', oferta.id]">Ver detalles</a>
-                <a (click)="agregarAlCarrito(oferta)" class="btn-buy-wa" style="text-decoration: none; text-align: center; display: inline-block; cursor: pointer;">Agregar al carrito</a>
+                @if (!esAgotado(oferta)) {
+                  <a (click)="agregarAlCarrito(oferta)" class="btn-buy-wa" style="text-decoration: none; text-align: center; display: inline-block; cursor: pointer;">Agregar al carrito</a>
+                } @else {
+                  <span class="btn-disabled-agotado" title="Producto sin stock disponible">Agotado</span>
+                }
               </div>
             </div>
           </article>

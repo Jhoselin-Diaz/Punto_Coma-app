@@ -5,6 +5,7 @@ import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.compone
 import { ProductosService } from '../../service/productos.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
 import { CartService } from '../../service/cart.service';
+import { ClienteAuthService } from '../../service/cliente-auth.service';
 import { DomSanitizer, SafeUrl, SafeStyle } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -32,13 +33,29 @@ export class OfertasComponent implements OnInit, OnDestroy {
     private productosService: ProductosService,
     public configService: ConfiguracionService,
     private cartService: CartService,
+    public clienteAuthService: ClienteAuthService,
     private sanitizer: DomSanitizer,
     private router: Router
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = () => false;
   }
 
+  esAgotado(producto: any): boolean {
+    return producto && producto.stock !== undefined && producto.stock !== null && Number(producto.stock) <= 0;
+  }
+
+  toggleFavorito(event: Event, producto: any): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.clienteAuthService.toggleFavorito(producto);
+  }
+
+  esFavorito(id: number | string): boolean {
+    return this.clienteAuthService.esFavorito(id);
+  }
+
   agregarAlCarrito(producto: any) {
+    if (this.esAgotado(producto)) return;
     this.cartService.addItem(producto);
   }
 

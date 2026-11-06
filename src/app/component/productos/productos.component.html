@@ -6,6 +6,13 @@
       <p>Selecciona tu favorito y pidelo en segundos por WhatsApp.</p>
     </section>
 
+    @if (terminoBusqueda) {
+      <div class="search-feedback-bar">
+        <span>Resultados de búsqueda para: "<strong>{{ terminoBusqueda }}</strong>" ({{ productos.length }} {{ productos.length === 1 ? 'coincidencia' : 'coincidencias' }})</span>
+        <button class="btn-clear-filter" (click)="limpiarBusqueda()" type="button">Ver todos los productos</button>
+      </div>
+    }
+
     @if (isLoading) {
       <div class="products-grid" aria-label="Cargando catálogo...">
         <div class="skeleton-card"></div>
@@ -20,14 +27,27 @@
     } @else {
       <section class="products-grid" aria-label="Lista de productos">
         @for (producto of productos; track producto.id) {
-          <article class="product-card">
+          <article class="product-card" [class.card-agotado]="esAgotado(producto)">
             <div class="image-wrap">
-              @if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
+              <button 
+                type="button" 
+                class="btn-favorito-card" 
+                [class.favorito-activo]="esFavorito(producto.id)"
+                (click)="toggleFavorito($event, producto)"
+                [attr.aria-label]="esFavorito(producto.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+                title="Favorito">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+              </button>
+              @if (esAgotado(producto)) {
+                <span class="stock-badge-agotado">SIN STOCK</span>
+              } @else if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
                 <span class="offer-tag">OFERTA</span>
               } @else if (producto.nuevo || producto.esNuevo) {
                 <span class="offer-tag" style="background: var(--green);">NUEVO</span>
               }
-              <img [src]="obtenerImagenUrl(producto.imagenPrincipal || producto.imageUrl)" [alt]="producto.nombre" />
+              <img [src]="obtenerImagenUrl(producto.imagenPrincipal || producto.imageUrl)" (error)="onImgError($event, producto)" [alt]="producto.nombre" />
             </div>
             <div class="product-info">
               <h2>{{ producto.nombre }}</h2>
@@ -36,18 +56,32 @@
                 @if (producto.precioAnterior && producto.precioAnterior > producto.precio) {
                   <s>S/ {{ producto.precioAnterior }}</s>
                 }
+                @if (esAgotado(producto)) {
+                  <span class="label-agotado">Agotado</span>
+                }
               </p>
               <div class="buttons">
                 <a class="detail-link" [routerLink]="['/productos', producto.id]">Ver detalles</a>
-                <a (click)="agregarAlCarrito(producto)" style="cursor: pointer;">Agregar al carrito</a>
+                @if (!esAgotado(producto)) {
+                  <a (click)="agregarAlCarrito(producto)" style="cursor: pointer;">Agregar al carrito</a>
+                } @else {
+                  <span class="btn-disabled-agotado" title="Producto sin stock disponible">Agotado</span>
+                }
               </div>
             </div>
           </article>
         } @empty {
           <div class="empty-client-placeholder large-placeholder">
-            <span class="placeholder-icon">🏺</span>
-            <h3>Catálogo en actualización</h3>
-            <p>Nuestras piezas de cerámica artesanal y cristalería están en proceso de horneado y selección. ¡Vuelve pronto!</p>
+            @if (terminoBusqueda) {
+              <span class="placeholder-icon">🔍</span>
+              <h3>No se encontraron productos coincidentes</h3>
+              <p>No encontramos ningún producto disponible que coincida con "<strong>{{ terminoBusqueda }}</strong>". Revisa la ortografía o intenta con términos más generales.</p>
+              <button class="btn-ver-todos" (click)="limpiarBusqueda()" type="button">Ver todos los productos</button>
+            } @else {
+              <span class="placeholder-icon">🏺</span>
+              <h3>Catálogo en actualización</h3>
+              <p>Nuestras piezas de cerámica artesanal y cristalería están en proceso de horneado y selección. ¡Vuelve pronto!</p>
+            }
           </div>
         }
       </section>

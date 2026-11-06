@@ -209,7 +209,7 @@
 /* Split layout for cupones */
 .cupones-split-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 350px minmax(0, 1fr);
   gap: 32px;
   align-items: start;
 }
@@ -226,6 +226,7 @@
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 4px 12px rgba(43, 27, 22, 0.01);
+  min-width: 0;
 }
 
 .cupones-form-card h3, .cupones-list-card h3 {
@@ -441,4 +442,543 @@ input:checked + .slider:before {
   font-size: 14px;
   color: #2b1b16;
   font-weight: 600;
+}
+
+.optional-tag {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #9c8e87;
+  margin-left: 4px;
+}
+
+.field-hint {
+  display: block;
+  font-size: 12px;
+  color: #8c7b74;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.form-group-dates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.form-group-dates-grid .form-group {
+  margin-bottom: 0;
+}
+
+.discount-badge {
+  color: #df6c1b;
+  font-size: 14.5px;
+}
+
+.min-amount-badge {
+  display: inline-block;
+  background-color: #fff4ec;
+  color: #df6c1b;
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #fedbc5;
+  white-space: nowrap;
+}
+
+.no-limit-text {
+  color: #9c8e87;
+  font-size: 13px;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.date-range-text {
+  font-size: 12.5px;
+  color: #4a3e39;
+  display: block;
+  white-space: nowrap;
+}
+
+.badge-vencido {
+  display: inline-block;
+  background-color: #fef2f2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #fee2e2;
+  margin-top: 3px;
+}
+
+/* Usos y límites de cupones */
+.usage-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.usage-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a3e39;
+}
+
+.usage-count.usage-exhausted {
+  color: #dc2626;
+}
+
+.badge-agotado {
+  display: inline-block;
+  background-color: #fef2f2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #fee2e2;
+}
+
+.usage-unlimited {
+  font-size: 12.5px;
+  color: #5a4b43;
+}
+
+.text-muted {
+  color: #9c8e87;
+  font-size: 11.5px;
+}
+
+/* Acciones en tabla */
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-icon {
+  background: #fbf0e8;
+  color: #df6c1b;
+  border: 1px solid #fedbc5;
+}
+
+.btn-edit-icon:hover {
+  background: #fde2d0;
+  transform: translateY(-1px);
+}
+
+.btn-delete-icon {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-icon:hover {
+  background: #fee2e2;
+  transform: translateY(-1px);
+}
+
+/* Modal de Edición de Cupón */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(30, 18, 12, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 20px;
+  animation: modalFadeIn 0.2s ease;
+}
+
+.modal-card-cupon {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 45px rgba(43, 27, 22, 0.2);
+  border: 1px solid #ede8e3;
+  padding: 24px;
+  animation: modalSlideUp 0.25s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #f0eae5;
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+}
+
+.modal-header-info h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2b1b16;
+}
+
+.modal-header-info p {
+  margin: 4px 0 0 0;
+  font-size: 12.5px;
+  color: #8c7b74;
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #8c7b74;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-close-modal:hover {
+  background: #f3efe9;
+  color: #2b1b16;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0eae5;
+}
+
+.btn-cancel {
+  background: #f3efe9;
+  color: #5a3c28;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background: #e8e1d9;
+}
+
+.btn-save {
+  background: #df6c1b;
+  color: #ffffff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save:hover {
+  background: #c85a10;
+  box-shadow: 0 4px 12px rgba(223, 108, 27, 0.25);
+}
+
+.btn-save:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* CP076 - Estilos de validación */
+.form-group input.is-invalid,
+input.is-invalid,
+select.is-invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2) !important;
+}
+
+/* Tipos de Cupones */
+.tipo-cupon-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #dfd7d0;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #33231b;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tipo-cupon-select:focus {
+  border-color: #df6c1b;
+  box-shadow: 0 0 0 3px rgba(223, 108, 27, 0.15);
+}
+
+.tipo-info-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-top: -6px;
+  margin-bottom: 14px;
+}
+
+.tipo-info-box .info-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tipo-info-box .info-content strong {
+  display: block;
+  font-size: 13.5px;
+  margin-bottom: 2px;
+}
+
+.tipo-info-box .info-content p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.welcome-info-box {
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  color: #5b21b6;
+}
+
+.offer-info-box {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  color: #92400e;
+}
+
+/* Selección de productos para Liquidación */
+.productos-seleccion-group {
+  margin-top: -4px;
+}
+
+.prods-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.search-prods-box {
+  margin-bottom: 8px;
+}
+
+.input-filtro-prods {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #dfd7d0;
+  border-radius: 6px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.prods-checklist-container {
+  max-height: 170px;
+  overflow-y: auto;
+  border: 1px solid #e7ded7;
+  border-radius: 8px;
+  padding: 6px;
+  background: #faf7f5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prod-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #ede5df;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.prod-checklist-item:hover {
+  background: #fbf0ea;
+  border-color: #df6c1b;
+}
+
+.prod-checklist-item.selected {
+  background: #fef4ee;
+  border-color: #df6c1b;
+  font-weight: 600;
+}
+
+.prod-checklist-item .prod-name {
+  flex: 1;
+  color: #2b1b16;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prod-checklist-item .prod-price {
+  font-size: 12px;
+  color: #7b655d;
+  font-weight: 600;
+}
+
+.empty-prods-msg {
+  padding: 12px;
+  text-align: center;
+  color: #8c766e;
+  font-size: 12.5px;
+}
+
+/* Badges de Tipo de Cupón en Tabla */
+.tipo-cupon-badge {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-tipo-general {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.badge-tipo-bienvenida {
+  background: #eef2ff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+}
+
+.badge-tipo-categoria {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-tipo-oferta,
+.badge-tipo-ofertas {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-tipo-liquidacion {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+/* Toast Flotante de Notificación (CP081) */
+.cupon-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: #1f1d1b;
+  color: #ffffff;
+  padding: 14px 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 3000;
+  max-width: 420px;
+  animation: cuponToastIn 0.3s ease, cuponToastOut 0.4s 2.5s ease forwards;
+}
+
+.cupon-toast .toast-icon {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cupon-toast .toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cupon-toast .toast-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.cupon-toast .toast-message {
+  font-size: 13px;
+  color: #e5ded9;
+  line-height: 1.35;
+}
+
+@keyframes cuponToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cuponToastOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
 }

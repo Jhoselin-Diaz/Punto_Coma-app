@@ -1,5 +1,5 @@
 <app-cliente-layout>
-  @if (producto) {
+  @if (!cargando && producto && productoDisponible && !productoNoEncontrado) {
     <main class="detail-page">
       <nav class="breadcrumb" aria-label="Ruta de producto">
         <a routerLink="/inicio">Inicio</a>
@@ -37,7 +37,16 @@
           <h1>{{ producto.nombre }}</h1>
           <p class="subtitle">{{ producto.subtitulo }}</p>
           <div class="rating">
-            <button type="button">♡ Favorito</button>
+            <button 
+              type="button" 
+              class="btn-favorito-detail"
+              [class.favorito-activo]="esFavorito(producto.id)"
+              (click)="toggleFavorito(producto)">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+              <span>{{ esFavorito(producto.id) ? 'En Favoritos' : 'Añadir a Favoritos' }}</span>
+            </button>
           </div>
           <div class="price">
             @if (producto.precio_oferta && producto.precio_original && producto.precio_oferta < producto.precio_original) {
@@ -63,9 +72,9 @@
           <button class="cart" type="button">Agregar al carrito</button>
 
           <div class="benefits">
-            <span>Envio a todo el Peru</span>
+            <span>Envío a todo el Perú</span>
             <span>Pago seguro</span>
-            <span>Devolucion 7 dias</span>
+            <span>Devolución 7 días</span>
           </div>
         </div>
       </section>
@@ -74,7 +83,7 @@
         <div class="tab-buttons" role="tablist">
           <button [class.active]="tabActivo === 'detalles'" type="button" (click)="cambiarTab('detalles')">Detalles del producto</button>
           <button [class.active]="tabActivo === 'material'" type="button" (click)="cambiarTab('material')">Material y Cuidados</button>
-          <button [class.active]="tabActivo === 'envios'" type="button" (click)="cambiarTab('envios')">Envios y Devoluciones</button>
+          <button [class.active]="tabActivo === 'envios'" type="button" (click)="cambiarTab('envios')">Envíos y Devoluciones</button>
         </div>
 
         @if (tabActivo === 'detalles') {
@@ -87,10 +96,10 @@
               <p><strong>Diseno:</strong> {{ producto.diseno }}</p>
             </div>
             <div class="description">
-              <h2>Descripcion</h2>
+              <h2>Descripción</h2>
               <p>{{ producto.descripcion }}</p>
               @if (producto.caracteristicas && producto.caracteristicas.length > 0) {
-                <h2>Caracteristicas</h2>
+                <h2>Características</h2>
                 <ul>
                   @for (item of producto.caracteristicas; track item) {
                     <li>{{ item }}</li>
@@ -99,7 +108,7 @@
               }
               <h2>Incluye</h2>
               <p>{{ producto.incluye }}</p>
-              <h2>Garantia</h2>
+              <h2>Garantía</h2>
               <p>{{ producto.garantia }}</p>
             </div>
           </div>
@@ -401,7 +410,7 @@
           <span></span>
           <h2>Productos que combinan</h2>
           <span></span>
-          <a routerLink="/productos">Ver mas -></a>
+          <a routerLink="/productos">Ver más -></a>
         </div>
         <div class="related-row">
           <button class="circle" type="button">&lt;</button>
@@ -409,7 +418,17 @@
             <article class="related-card" [routerLink]="['/productos', item.id]" style="cursor: pointer;">
               <img [src]="obtenerImagenUrl(item.imagenPrincipal || item.imageUrl)" [alt]="item.nombre" />
               <div>
-                <button type="button" aria-label="Favorito" (click)="$event.stopPropagation();">♡</button>
+                <button 
+                  type="button" 
+                  class="btn-favorito-card" 
+                  [class.favorito-activo]="esFavorito(item.id)" 
+                  (click)="toggleFavorito(item); $event.stopPropagation();" 
+                  aria-label="Favorito" 
+                  title="Favorito">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </button>
                 <h3>{{ item.nombre }}</h3>
                 <p>S/ {{ item.precio }}</p>
               </div>
@@ -419,9 +438,32 @@
         </div>
       </section>
     </main>
+  } @else if (cargando) {
+    <main class="detail-page state-container">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando detalle de producto...</p>
+      </div>
+    </main>
   } @else {
-    <main class="detail-page">
-      <p>Cargando detalle de producto...</p>
+    <main class="detail-page state-container">
+      <div class="not-found-card">
+        <div class="not-found-icon-wrap">
+          <svg class="not-found-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h1 class="not-found-title">Producto no disponible</h1>
+        <p class="not-found-subtitle">Este producto no se encuentra disponible temporalmente.</p>
+        <div class="not-found-actions">
+          <button type="button" class="btn-catalog" (click)="irAlCatalogo()">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Volver al catálogo</span>
+          </button>
+        </div>
+      </div>
     </main>
   }
 </app-cliente-layout>

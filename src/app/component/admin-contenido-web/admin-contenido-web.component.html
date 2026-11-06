@@ -17,6 +17,7 @@
           @else if (seccionActiva === 'ofertas') { Módulo: Ofertas }
           @else if (seccionActiva === 'shop-video') { Módulo: Shop Video }
           @else if (seccionActiva === 'contacto') { Módulo: Contacto }
+          @else if (seccionActiva === 'rastreo') { Módulo: Rastreo y Envíos }
         </h2>
         <p class="active-sec-desc">
           @if (seccionActiva === 'main') { Selecciona uno de los módulos para administrar el contenido visual de la tienda online. }
@@ -25,6 +26,7 @@
           @else if (seccionActiva === 'ofertas') { Crea y supervisa descuentos vigentes en la web. }
           @else if (seccionActiva === 'shop-video') { Gestione contenido multimedia de TikTok/Instagram e indexa productos. }
           @else if (seccionActiva === 'contacto') { Configura las tarjetas sociales, horarios e información de atención al cliente. }
+          @else if (seccionActiva === 'rastreo') { Configura URLs oficiales de agencias, despacha pedidos asignando guías y monitorea entregas activas. }
         </p>
       </div>
 
@@ -122,6 +124,22 @@
           <p>Configura URL de WhatsApp, textos de beneficios y administra cupones de descuento.</p>
           <a class="btn-admin-module" routerLink="/admin/carrito" style="text-decoration: none; text-align: center; display: inline-block;">Administrar</a>
         </div>
+
+        <!-- 7. RASTREO Y ENVÍOS -->
+        <div class="module-card highlight-glow">
+          <div class="card-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+          </div>
+          <div class="badge-hot">LOGÍSTICA</div>
+          <h3>Rastreo y Envíos</h3>
+          <p>Configura las URLs de rastreo de Olva y Shalom, asigna guías a pedidos validados y gestiona envíos activos.</p>
+          <button class="btn-admin-module" (click)="navegarA('rastreo')" type="button">Administrar</button>
+        </div>
       </div>
     }
 
@@ -140,6 +158,9 @@
     }
     @else if (seccionActiva === 'contacto') {
       <app-admin-contacto></app-admin-contacto>
+    }
+    @else if (seccionActiva === 'rastreo') {
+      <app-admin-rastreo></app-admin-rastreo>
     }
   </div>
 </app-admin-layout>

@@ -1,8 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ProductosService } from '../../../service/productos.service';
 import { ConfiguracionService } from '../../../service/configuracion.service';
+import { ModalAlertaService } from '../../../service/modal-alerta.service';
 import { GOOGLE_DEVELOPER_KEY, GOOGLE_CLIENT_ID } from '../admin-contenido-web.component';
 
 declare var google: any;
@@ -15,9 +18,11 @@ declare var gapi: any;
   templateUrl: './admin-ofertas.component.html',
   styleUrl: './admin-ofertas.component.css'
 })
-export class AdminOfertasComponent implements OnInit {
+export class AdminOfertasComponent implements OnInit, OnDestroy {
   pestanaActiva = 'descuentos';
   isLoading = true;
+  private routeSub?: Subscription;
+  pendingEditOfferId: number | null = null;
 
   statsOfertas = {
     activas: 0,
@@ -32,6 +37,12 @@ export class AdminOfertasComponent implements OnInit {
 
   showAddOfferModal = false;
   showEditOfferModal = false;
+
+  // Errores de validación CP076
+  errorDescuentoNuevo = false;
+  errorPrecioOfertaNuevo = false;
+  errorDescuentoEdit = false;
+  errorPrecioOfertaEdit = false;
 
   // Formulario AGREGAR OFERTA
   newOffer = {
@@ -73,13 +84,56 @@ export class AdminOfertasComponent implements OnInit {
 
   constructor(
     private productosService: ProductosService,
-    public configService: ConfiguracionService
+    public configService: ConfiguracionService,
+    private modalAlertaService: ModalAlertaService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
     this.cargarOfertas();
     this.cargarConfiguracionBannerOfertas();
     this.loadGooglePicker();
+
+    this.routeSub = this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'edit' && params['id']) {
+        const numId = Number(params['id']);
+        if (!isNaN(numId)) {
+          this.pendingEditOfferId = numId;
+          this.verificarAperturaModalEdicion(numId);
+        }
+      } else {
+        this.pendingEditOfferId = null;
+        if (this.showEditOfferModal) {
+          this.showEditOfferModal = false;
+        }
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.routeSub?.unsubscribe();
+  }
+
+  private verificarAperturaModalEdicion(id: number): void {
+    if (this.ofertasList && this.ofertasList.length > 0) {
+      const of = this.ofertasList.find(o => o.id === id) || this.productosDisponibles.find(p => p.id === id);
+      if (of) {
+        this.openEditOffer(of, false);
+      }
+    }
+  }
+
+  closeEditOfferModal() {
+    this.showEditOfferModal = false;
+    this.pendingEditOfferId = null;
+    this.errorDescuentoEdit = false;
+    this.errorPrecioOfertaEdit = false;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { action: null, id: null },
+      queryParamsHandling: 'merge'
+    });
   }
 
   parseBackendDate(dateVal: any): any {
@@ -127,6 +181,9 @@ export class AdminOfertasComponent implements OnInit {
           });
           
         this.recalcularStats();
+        if (this.pendingEditOfferId) {
+          this.verificarAperturaModalEdicion(this.pendingEditOfferId);
+        }
         this.isLoading = false;
       },
       error: (err) => {
@@ -201,8 +258,15 @@ export class AdminOfertasComponent implements OnInit {
     });
   }
 
-  eliminarOferta(of: any) {
-    if (confirm(`¿Estás seguro de que deseas eliminar la oferta del producto "${of.producto}"?`)) {
+  async eliminarOferta(of: any) {
+    const confirmado = await this.modalAlertaService.confirm({
+      titulo: '¿Eliminar oferta?',
+      mensaje: `¿Estás seguro de que deseas eliminar la oferta del producto "${of.producto}"?`,
+      tipo: 'peligro',
+      textoConfirmar: 'Sí, eliminar',
+      textoCancelar: 'Cancelar'
+    });
+    if (confirmado) {
       const prod = this.productosDisponibles.find(p => p.id === of.id);
       if (prod) {
         // Restauramos el producto a su precio original y limpiamos los campos de oferta
@@ -225,16 +289,16 @@ export class AdminOfertasComponent implements OnInit {
         this.productosService.actualizarProducto(prod.id, payload).subscribe({
           next: () => {
             this.productosService.obtenerProductosPublicos(true).subscribe(); // Pre-cargar cache fresco
-            alert('¡Oferta eliminada con éxito!');
+            this.modalAlertaService.success('¡Oferta eliminada con éxito!');
             this.cargarOfertas();
           },
           error: (err) => {
             console.error('Error al eliminar la oferta:', err);
-            alert('Ocurrió un error al intentar eliminar la oferta.');
+            this.modalAlertaService.error('Ocurrió un error al intentar eliminar la oferta.');
           }
         });
       } else {
-        alert('No se pudo encontrar el producto en la base de datos.');
+        this.modalAlertaService.error('No se pudo encontrar el producto en la base de datos.');
       }
     }
   }
@@ -253,33 +317,59 @@ export class AdminOfertasComponent implements OnInit {
   }
 
   onPrecioOriginalOrOfertaChange() {
+    if (this.newOffer.precioOferta != null && !isNaN(Number(this.newOffer.precioOferta)) && Number(this.newOffer.precioOferta) >= 0) {
+      this.errorPrecioOfertaNuevo = false;
+    }
     if (this.newOffer.precioOriginal && this.newOffer.precioOferta) {
       this.newOffer.descuento = this.getDescuentoPorcentaje(this.newOffer.precioOriginal, this.newOffer.precioOferta);
+      if (this.newOffer.descuento >= 1 && this.newOffer.descuento <= 99) {
+        this.errorDescuentoNuevo = false;
+      }
     }
   }
 
   onDescuentoChange() {
+    if (this.newOffer.descuento != null && !isNaN(Number(this.newOffer.descuento)) && Number(this.newOffer.descuento) >= 1 && Number(this.newOffer.descuento) <= 99) {
+      this.errorDescuentoNuevo = false;
+    }
     if (this.newOffer.precioOriginal) {
       const desc = this.newOffer.descuento || 0;
       this.newOffer.precioOferta = Math.round(this.newOffer.precioOriginal * (1 - desc / 100) * 100) / 100;
+      if (this.newOffer.precioOferta >= 0) {
+        this.errorPrecioOfertaNuevo = false;
+      }
     }
   }
 
   onPrecioOriginalOrOfertaChangeEdit() {
+    if (this.editingOffer.precioOferta != null && !isNaN(Number(this.editingOffer.precioOferta)) && Number(this.editingOffer.precioOferta) >= 0) {
+      this.errorPrecioOfertaEdit = false;
+    }
     if (this.editingOffer.precioOriginal && this.editingOffer.precioOferta) {
       this.editingOffer.descuento = this.getDescuentoPorcentaje(this.editingOffer.precioOriginal, this.editingOffer.precioOferta);
+      if (this.editingOffer.descuento >= 1 && this.editingOffer.descuento <= 99) {
+        this.errorDescuentoEdit = false;
+      }
     }
   }
 
   onDescuentoChangeEdit() {
+    if (this.editingOffer.descuento != null && !isNaN(Number(this.editingOffer.descuento)) && Number(this.editingOffer.descuento) >= 1 && Number(this.editingOffer.descuento) <= 99) {
+      this.errorDescuentoEdit = false;
+    }
     if (this.editingOffer.precioOriginal) {
       const desc = this.editingOffer.descuento || 0;
       this.editingOffer.precioOferta = Math.round(this.editingOffer.precioOriginal * (1 - desc / 100) * 100) / 100;
+      if (this.editingOffer.precioOferta >= 0) {
+        this.errorPrecioOfertaEdit = false;
+      }
     }
   }
 
   openAddOffer() {
     this.productoSeleccionado = null;
+    this.errorDescuentoNuevo = false;
+    this.errorPrecioOfertaNuevo = false;
     this.newOffer = {
       id: '',
       producto: '',
@@ -294,14 +384,32 @@ export class AdminOfertasComponent implements OnInit {
   }
 
   guardarNuevaOferta() {
-    if (!this.productoSeleccionado || !this.newOffer.precioOriginal || !this.newOffer.precioOferta) {
-      alert('Por favor complete los campos obligatorios: Producto y Precios.');
+    if (!this.productoSeleccionado) {
+      this.modalAlertaService.warning('Por favor seleccione un producto para la oferta.', 'Alerta de validación');
       return;
     }
+
+    const desc = Number(this.newOffer.descuento);
+    const oferta = Number(this.newOffer.precioOferta);
+
+    const descInvalido = this.newOffer.descuento == null || this.newOffer.descuento === ('' as any) || isNaN(desc) || desc < 1 || desc > 99;
+    const precioInvalido = this.newOffer.precioOferta == null || this.newOffer.precioOferta === ('' as any) || isNaN(oferta) || oferta < 0;
+
+    if (descInvalido || precioInvalido) {
+      this.errorDescuentoNuevo = descInvalido;
+      this.errorPrecioOfertaNuevo = precioInvalido;
+      this.modalAlertaService.warning(
+        'El descuento debe situarse entre el 1% y el 99%, y el precio no puede ser negativo.',
+        'Alerta de validación'
+      );
+      return;
+    }
+
+    this.errorDescuentoNuevo = false;
+    this.errorPrecioOfertaNuevo = false;
  
     const prod = this.productoSeleccionado;
     const original = this.newOffer.precioOriginal;
-    const oferta = this.newOffer.precioOferta;
  
     const payload = {
       ...prod,
@@ -321,18 +429,20 @@ export class AdminOfertasComponent implements OnInit {
     this.productosService.actualizarProducto(prod.id, payload).subscribe({
       next: () => {
         this.productosService.obtenerProductosPublicos(true).subscribe(); // Pre-cargar cache fresco
-        alert('¡Oferta creada y guardada con éxito!');
+        this.modalAlertaService.success('¡Oferta creada y guardada con éxito!');
         this.showAddOfferModal = false;
         this.cargarOfertas();
       },
       error: (err) => {
         console.error('Error al guardar la oferta:', err);
-        alert('Ocurrió un error al guardar la oferta.');
+        this.modalAlertaService.error('Ocurrió un error al guardar la oferta.');
       }
     });
   }
 
-  openEditOffer(of: any) {
+  openEditOffer(of: any, updateUrl = true) {
+    this.errorDescuentoEdit = false;
+    this.errorPrecioOfertaEdit = false;
     this.editingOffer = {
       ...of,
       fechaInicio: this.formatDateToYYYYMMDD(of.fechaInicioOferta || of.fechaInicio),
@@ -340,17 +450,42 @@ export class AdminOfertasComponent implements OnInit {
     };
     this.productoSeleccionadoEdit = this.productosDisponibles.find(p => p.id === of.id);
     this.showEditOfferModal = true;
+    if (updateUrl && of?.id) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { action: 'edit', id: of.id },
+        queryParamsHandling: 'merge'
+      });
+    }
   }
  
   guardarCambiosOferta() {
-    if (!this.productoSeleccionadoEdit || !this.editingOffer.precioOriginal || !this.editingOffer.precioOferta) {
-      alert('Por favor complete los campos obligatorios.');
+    if (!this.productoSeleccionadoEdit) {
+      this.modalAlertaService.warning('Por favor seleccione un producto para la oferta.', 'Alerta de validación');
       return;
     }
+
+    const desc = Number(this.editingOffer.descuento);
+    const oferta = Number(this.editingOffer.precioOferta);
+
+    const descInvalido = this.editingOffer.descuento == null || this.editingOffer.descuento === ('' as any) || isNaN(desc) || desc < 1 || desc > 99;
+    const precioInvalido = this.editingOffer.precioOferta == null || this.editingOffer.precioOferta === ('' as any) || isNaN(oferta) || oferta < 0;
+
+    if (descInvalido || precioInvalido) {
+      this.errorDescuentoEdit = descInvalido;
+      this.errorPrecioOfertaEdit = precioInvalido;
+      this.modalAlertaService.warning(
+        'El descuento debe situarse entre el 1% y el 99%, y el precio no puede ser negativo.',
+        'Alerta de validación'
+      );
+      return;
+    }
+
+    this.errorDescuentoEdit = false;
+    this.errorPrecioOfertaEdit = false;
  
     const prod = this.productoSeleccionadoEdit;
     const original = this.editingOffer.precioOriginal;
-    const oferta = this.editingOffer.precioOferta;
  
     const payload = {
       ...prod,
@@ -370,13 +505,13 @@ export class AdminOfertasComponent implements OnInit {
     this.productosService.actualizarProducto(prod.id, payload).subscribe({
       next: () => {
         this.productosService.obtenerProductosPublicos(true).subscribe(); // Pre-cargar cache fresco
-        alert('¡Cambios guardados con éxito!');
-        this.showEditOfferModal = false;
+        this.modalAlertaService.success('¡Cambios guardados con éxito!');
+        this.closeEditOfferModal();
         this.cargarOfertas();
       },
       error: (err) => {
         console.error('Error al actualizar la oferta:', err);
-        alert('Ocurrió un error al actualizar la oferta.');
+        this.modalAlertaService.error('Ocurrió un error al actualizar la oferta.');
       }
     });
   }

@@ -14,40 +14,50 @@
       </svg>
     </div>
     <h1>Admin</h1>
-    <p class="intro">Inicia sesion para continuar</p>
+    <p class="intro">Inicia sesión para continuar</p>
 
-    <form class="auth-form">
+    <form class="auth-form" (ngSubmit)="iniciarSesion()">
+      @if (errorMessage) {
+        <div class="error-banner">{{ errorMessage }}</div>
+      }
+
       <label>
-        Correo electronico
+        Correo electrónico
         <span class="field">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4.75 6.5h14.5c.96 0 1.75.79 1.75 1.75v7.5c0 .96-.79 1.75-1.75 1.75H4.75A1.75 1.75 0 0 1 3 15.75v-7.5c0-.96.79-1.75 1.75-1.75Zm.18 1.5 7.07 4.8L19.07 8H4.93Zm14.57 1.38-7.08 4.8a.75.75 0 0 1-.84 0L4.5 9.38v6.37c0 .14.11.25.25.25h14.5c.14 0 .25-.11.25-.25V9.38Z" />
           </svg>
-          <input type="email" placeholder="ejemplo@correo.com" />
+          <input type="email" name="correo" [(ngModel)]="correo" placeholder="ejemplo@correo.com" required autocomplete="email" />
         </span>
       </label>
 
       <label>
-        Contrasena
+        Contraseña
         <span class="field">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7.5 10V8a4.5 4.5 0 1 1 9 0v2h.75c.96 0 1.75.79 1.75 1.75v6.5c0 .96-.79 1.75-1.75 1.75H6.75A1.75 1.75 0 0 1 5 18.25v-6.5c0-.96.79-1.75 1.75-1.75h.75Zm1.5 0h6V8a3 3 0 0 0-6 0v2Zm-2.25 1.5a.25.25 0 0 0-.25.25v6.5c0 .14.11.25.25.25h10.5c.14 0 .25-.11.25-.25v-6.5a.25.25 0 0 0-.25-.25H6.75Z" />
           </svg>
-          <input type="password" placeholder="••••••••••" />
-          <span class="eye">◌</span>
+          <input [type]="showPassword ? 'text' : 'password'" name="password" [(ngModel)]="password" placeholder="••••••••••" required autocomplete="current-password" />
+          <span class="eye" (click)="togglePasswordVisibility()" style="cursor: pointer;" [title]="showPassword ? 'Ocultar contraseña' : 'Ver contraseña'">
+            {{ showPassword ? '👁️' : '🔒' }}
+          </span>
         </span>
       </label>
 
       <div class="options">
-        <label class="remember"><input type="checkbox" /> Recordarme</label>
-        <a href="#">¿Olvidaste tu contrasena?</a>
+        <label class="remember">
+          <input type="checkbox" name="recordarme" [(ngModel)]="recordarme" /> Recordarme
+        </label>
+        <a href="javascript:void(0)">¿Olvidaste tu contraseña?</a>
       </div>
 
-      <button class="primary" type="button">Iniciar sesion</button>
+      <button class="primary" type="submit" [disabled]="isLoading">
+        {{ isLoading ? 'Iniciando sesión...' : 'Iniciar sesión' }}
+      </button>
     </form>
 
-    <div class="separator"><span></span><small>o continua con</small><span></span></div>
+    <div class="separator"><span></span><small>o continúa con</small><span></span></div>
     <button class="google" type="button"><strong>G</strong> Continuar con Google</button>
-    <div class="switch">¿No tienes cuenta? <a routerLink="/admin/crear-cuenta">Registrate</a></div>
+    <div class="switch">¿No tienes cuenta? <a routerLink="/admin/crear-cuenta">Regístrate</a></div>
   </section>
 </main>

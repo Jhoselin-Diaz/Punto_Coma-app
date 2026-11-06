@@ -94,7 +94,24 @@
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar producto por nombre, SKU o categoría..." />
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (keydown.escape)="limpiarBusqueda()"
+              placeholder="Buscar producto por nombre, SKU o categoría..." />
+            @if (searchTerm) {
+              <button
+                type="button"
+                class="btn-clear-search"
+                (click)="limpiarBusqueda()"
+                title="Borrar búsqueda"
+                aria-label="Borrar búsqueda">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            }
           </div>
 
           <div class="tabs-visual-filters">
@@ -255,10 +272,10 @@
           </span>
         </div>
         <div class="widget-body-flex">
-          <div>
-            <h5>{{ summaryData.bestSeller.nombre }}</h5>
-            <span class="widget-sku-lbl">SKU: {{ summaryData.bestSeller.sku }} • <strong>{{
-                summaryData.bestSeller.ventas }} u. vendidas</strong></span>
+                    <div>
+            <h5>{{ productoEstrella?.nombre || summaryData.bestSeller.nombre || 'Sin ventas registradas' }}</h5>
+            <span class="widget-sku-lbl">SKU: {{ productoEstrella?.sku || summaryData.bestSeller.sku || '-' }} • <strong>{{
+                (productoEstrella?.ventas !== undefined ? productoEstrella.ventas : summaryData.bestSeller.ventas) || 0 }} u. vendidas</strong></span>
           </div>
         </div>
       </div>
@@ -445,7 +462,18 @@
                 <label>
                   {{ editingStockItem.tipoMovimiento === 'ajuste' ? 'Nuevo Stock Final' : 'Cantidad a mover' }}
                 </label>
-                <input type="number" [(ngModel)]="editingStockItem.cantidadMovimiento" min="1" />
+                <input
+                  type="number"
+                  [(ngModel)]="editingStockItem.cantidadMovimiento"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  (keydown)="validarSoloEnterosMovimiento($event)"
+                  (input)="sanitizarCantidadMovimiento($event)"
+                  (paste)="validarPegadoMovimiento($event)"
+                  (drop)="$event.preventDefault()"
+                />
               </div>
             </div>
 
@@ -477,13 +505,18 @@
                     <strong>
                       {{
                       editingStockItem.tipoMovimiento === 'entrada' ? (editingStockItem.stockActual +
-                      editingStockItem.cantidadMovimiento) :
+                      (editingStockItem.cantidadMovimiento || 0)) :
                       editingStockItem.tipoMovimiento === 'salida' ? Math.max(0, (editingStockItem.stockActual -
-                      editingStockItem.cantidadMovimiento)) :
-                      editingStockItem.cantidadMovimiento
+                      (editingStockItem.cantidadMovimiento || 0))) :
+                      (editingStockItem.cantidadMovimiento || 0)
                       }}
                     </strong> u.
                   </span>
+                  @if (editingStockItem.tipoMovimiento === 'salida' && (editingStockItem.cantidadMovimiento || 0) > editingStockItem.stockActual) {
+                    <div style="color: #dc2626; font-size: 11.5px; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                      <span>⚠️ Supera el stock actual ({{ editingStockItem.stockActual }} u.)</span>
+                    </div>
+                  }
                 </div>
               </div>
             </div>
@@ -523,7 +556,18 @@
           <div class="form-grid-3">
             <div class="form-group">
               <label>Cantidad a Ingresar</label>
-              <input type="number" [(ngModel)]="newStockIngreso.cantidad" min="1" />
+              <input
+                type="number"
+                [(ngModel)]="newStockIngreso.cantidad"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                (keydown)="validarSoloEnteros($event)"
+                (input)="sanitizarCantidad($event)"
+                (paste)="validarPegado($event)"
+                (drop)="$event.preventDefault()"
+              />
             </div>
             <div class="form-group">
               <label>Proveedor Opcional</label>
@@ -546,6 +590,150 @@
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showAddStockModal = false" type="button">Cancelar</button>
         <button class="btn-save" (click)="saveAddStock()" type="button">Registrar ingreso</button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- MODAL 3: HISTORIAL DE MOVIMIENTOS POR PRODUCTO -->
+  @if (showProductHistoryModal) {
+  <div class="modal-backdrop" (click)="cerrarModalHistorial($event)">
+    <div class="modal-card-large modal-history-card">
+      <div class="modal-header history-modal-header">
+        <div class="history-header-left">
+          <div class="history-icon-bubble">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h3>Historial de Movimientos</h3>
+            <div class="history-product-subline">
+              <span class="history-prod-name">{{ selectedProductForHistory?.nombre }}</span>
+              <span class="sku-code">{{ selectedProductForHistory?.sku }}</span>
+              <span class="history-stock-pill"
+                [class.stock-danger]="selectedProductForHistory?.stock === 0"
+                [class.stock-warn]="(selectedProductForHistory?.stock || 0) > 0 && (selectedProductForHistory?.stock || 0) <= 5">
+                Stock actual: <strong>{{ selectedProductForHistory?.stock }} u.</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="showProductHistoryModal = false" type="button" aria-label="Cerrar modal">×</button>
+      </div>
+
+      <div class="modal-body-content history-modal-body">
+        <!-- Barra de herramientas del historial -->
+        <div class="history-toolbar">
+          <div class="history-stat-chips">
+            <div class="stat-chip">
+              <span class="chip-label">Total movimientos:</span>
+              <strong class="chip-val">{{ productMovementsList.length }}</strong>
+            </div>
+            <div class="stat-chip chip-in">
+              <span class="chip-label">Entradas:</span>
+              <strong class="chip-val">+{{ getTotalEntradas() }} u.</strong>
+            </div>
+            <div class="stat-chip chip-out">
+              <span class="chip-label">Salidas:</span>
+              <strong class="chip-val">-{{ getTotalSalidas() }} u.</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de movimientos con columnas -->
+        <div class="history-table-container">
+          @if (productMovementsList.length > 0) {
+            <table class="history-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 170px;">Fecha y Hora</th>
+                  <th style="width: 135px;">Tipo</th>
+                  <th style="width: 110px;" class="txt-center">Cantidad</th>
+                  <th style="width: 155px;">Responsable</th>
+                  <th>Motivo / Nota</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (mov of productMovementsList; track $index) {
+                  <tr>
+                    <td class="history-date-cell">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>{{ mov.fecha }}</span>
+                    </td>
+                    <td>
+                      <span class="mov-type-badge"
+                        [class.type-in]="mov.tipo === 'entrada'"
+                        [class.type-out]="mov.tipo === 'salida'"
+                        [class.type-adj]="mov.tipo === 'ajuste'">
+                        @if (mov.tipo === 'entrada') {
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="19" x2="12" y2="5"></line>
+                            <polyline points="5 12 12 5 19 12"></polyline>
+                          </svg>
+                          <span>Entrada</span>
+                        } @else if (mov.tipo === 'salida') {
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <polyline points="19 12 12 19 5 12"></polyline>
+                          </svg>
+                          <span>Salida</span>
+                        } @else {
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                          <span>Ajuste</span>
+                        }
+                      </span>
+                    </td>
+                    <td class="txt-center">
+                      <span class="qty-movement-tag" [class.qty-in]="mov.cantidad > 0" [class.qty-out]="mov.cantidad < 0">
+                        {{ mov.cantidad > 0 ? '+' : '' }}{{ mov.cantidad }} u.
+                      </span>
+                    </td>
+                    <td>
+                      <div class="user-inline-chip">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span>{{ mov.usuario || 'Admin' }}</span>
+                      </div>
+                    </td>
+                    <td class="history-note-cell">
+                      <span class="note-text" [title]="mov.observacion || 'Sin notas'">
+                        {{ mov.observacion || 'Sin notas adicionales' }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="history-empty-box">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <h4>Sin movimientos registrados</h4>
+              <p>Aún no se han generado entradas, salidas o ajustes de inventario para este producto.</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer history-modal-footer">
+        <button class="btn-cancel" (click)="showProductHistoryModal = false" type="button">Cerrar</button>
+        <button class="btn-excel-export-primary" (click)="exportarHistorialProductoExcel()" type="button" [disabled]="productMovementsList.length === 0">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          <span>Descargar Excel</span>
+        </button>
       </div>
     </div>
   </div>

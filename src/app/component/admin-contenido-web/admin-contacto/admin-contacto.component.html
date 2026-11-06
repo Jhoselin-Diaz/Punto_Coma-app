@@ -92,7 +92,7 @@
     <div class="modal-card-large">
       <div class="modal-header">
         <h3>Editar Bloque Informativo</h3>
-        <button class="btn-close-modal" (click)="showBlockModal = false" type="button">×</button>
+        <button class="btn-close-modal" (click)="closeBlockModal()" type="button">×</button>
       </div>
 
       <div class="modal-body-content">
@@ -107,10 +107,106 @@
             <input type="text" [(ngModel)]="editingBlock.description" />
           </div>
 
-          @if (editingBlock.id === 'block-email') {
+          @if (editingBlock.id === 'block-wa') {
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Texto del Botón / Valor</label>
+                <input type="text" [(ngModel)]="editingBlock.btnText" />
+              </div>
+              <div class="form-group">
+                <label>Teléfono de WhatsApp</label>
+                <input type="text" [(ngModel)]="editingBlock.btnLink" (input)="validarTelefonoWa()" placeholder="Ej. 987654321" />
+                @if (phoneError) {
+                  <span class="field-error-text">{{ phoneError }}</span>
+                }
+              </div>
+            </div>
+          } @else if (editingBlock.id === 'block-email') {
             <div class="form-group">
               <label>Correo Electrónico (Valor visible)</label>
-              <input type="text" [(ngModel)]="editingBlock.btnText" />
+              <input type="text" [(ngModel)]="editingBlock.btnText" (input)="validarEmail()" placeholder="correo@ejemplo.com" />
+              @if (emailError) {
+                <span class="field-error-text">{{ emailError }}</span>
+              }
+            </div>
+          } @else if (editingBlock.id === 'block-support') {
+            <!-- Selector estructurado para Horario de Atención (Sin enlace de redirección) -->
+            <div class="schedule-editor-section">
+              <label class="schedule-section-label">Configuración del Horario de Atención</label>
+
+              <div class="form-grid-2 mb-12">
+                <div class="form-group">
+                  <label>Día inicial</label>
+                  <select [(ngModel)]="diaInicio" (change)="onHorarioChange()" class="form-select">
+                    @for (d of diasSemana; track d) {
+                      <option [value]="d">{{ d }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Día final</label>
+                  <select [(ngModel)]="diaFin" (change)="onHorarioChange()" class="form-select">
+                    @for (d of diasSemana; track d) {
+                      <option [value]="d">{{ d }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid-2 mb-12">
+                <div class="form-group">
+                  <label>Hora de inicio</label>
+                  <div class="time-picker-row">
+                    <select [(ngModel)]="horaInicio" (change)="onHorarioChange()" class="form-select time-select">
+                      @for (h of horasList; track h) {
+                        <option [value]="h">{{ h }}</option>
+                      }
+                    </select>
+                    <span class="time-separator">:</span>
+                    <select [(ngModel)]="minInicio" (change)="onHorarioChange()" class="form-select time-select">
+                      @for (m of minutosList; track m) {
+                        <option [value]="m">{{ m }}</option>
+                      }
+                    </select>
+                    <select [(ngModel)]="ampmInicio" (change)="onHorarioChange()" class="form-select time-select">
+                      @for (ap of ampmList; track ap) {
+                        <option [value]="ap">{{ ap }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Hora de fin</label>
+                  <div class="time-picker-row">
+                    <select [(ngModel)]="horaFin" (change)="onHorarioChange()" class="form-select time-select">
+                      @for (h of horasList; track h) {
+                        <option [value]="h">{{ h }}</option>
+                      }
+                    </select>
+                    <span class="time-separator">:</span>
+                    <select [(ngModel)]="minFin" (change)="onHorarioChange()" class="form-select time-select">
+                      @for (m of minutosList; track m) {
+                        <option [value]="m">{{ m }}</option>
+                      }
+                    </select>
+                    <select [(ngModel)]="ampmFin" (change)="onHorarioChange()" class="form-select time-select">
+                      @for (ap of ampmList; track ap) {
+                        <option [value]="ap">{{ ap }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="schedule-preview-box">
+                <span>Horario generado: </span>
+                <strong>{{ editingBlock.btnText }}</strong>
+              </div>
+
+              @if (horarioError) {
+                <span class="field-error-text mt-8">{{ horarioError }}</span>
+              }
             </div>
           } @else if (editingBlock.id === 'block-info') {
             <!-- Bloque puramente informativo, no requiere botón ni enlace de redirección -->
@@ -137,11 +233,9 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" (click)="showBlockModal = false" type="button">Cancelar</button>
+        <button class="btn-cancel" (click)="closeBlockModal()" type="button">Cancelar</button>
         <button class="btn-save" (click)="saveBlock()" type="button">Guardar cambios</button>
       </div>
     </div>
   </div>
 }
-
-

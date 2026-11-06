@@ -87,7 +87,7 @@
             <div class="social-info">
               <h2>{{ blockWa.title }}</h2>
               <p>{{ blockWa.description }}</p>
-              <a class="btn-wa-action" [href]="blockWa.btnLink" target="_blank">
+              <a class="btn-wa-action" [href]="getWaLink(blockWa.btnLink)" target="_blank">
                 {{ blockWa.btnText }}
               </a>
             </div>

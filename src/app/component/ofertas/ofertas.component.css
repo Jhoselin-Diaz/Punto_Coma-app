@@ -9,9 +9,9 @@
 }
 
 .products-page {
-  width: min(1328px, calc(100% - 112px));
-  margin: 0 auto 38px;
-  padding-top: 20px;
+  width: min(1080px, calc(100% - 40px));
+  margin: 0 auto 28px;
+  padding-top: 14px;
 }
 
 /* --- BANNER HERO DE OFERTAS --- */
@@ -20,10 +20,10 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 240px;
-  margin-bottom: 52px;
-  padding: 24px 60px;
-  border-radius: 18px;
+  min-height: 180px;
+  margin-bottom: 32px;
+  padding: 20px 40px;
+  border-radius: 12px;
   background-color: #f7ede3; /* Color arena suave */
   /* Recreación del estilo de imagen de fondo (opcional/decorativo) */
   background-image: url('https://images.unsplash.com/photo-1577918349257-2e1d7fbebf96?q=80&w=2940&auto=format&fit=crop');
@@ -38,13 +38,13 @@
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  border-radius: 18px;
+  border-radius: 12px;
   background: linear-gradient(90deg, rgba(247,237,227,0.3) 20%, #f7ede3 65%);
 }
 
 .skeleton-banner {
-  min-height: 240px;
-  margin-bottom: 52px;
+  min-height: 180px;
+  margin-bottom: 32px;
   background: linear-gradient(90deg, #f3efe9 25%, #eadecc 50%, #f3efe9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -103,7 +103,7 @@
 }
 
 .btn-whatsapp:hover {
-  background-color: #c45b14;
+  background-color: var(--primary-hover, #c45b14);
   transform: translateY(-2px);
 }
 
@@ -144,7 +144,7 @@
   position: absolute;
   top: 0;
   left: -10px;
-  border-bottom: 10px solid #a8480c;
+  border-bottom: 10px solid var(--primary-shadow, #a8480c);
   border-left: 10px solid transparent;
 }
 
@@ -163,13 +163,13 @@
 .products-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 48px 20px;
+  gap: 22px 14px;
 }
 
 .product-card {
   display: flex;
   flex-direction: column;
-  min-height: 407px;
+  min-height: 300px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -184,7 +184,7 @@
 
 .image-wrap {
   position: relative;
-  height: 260px;
+  height: 185px;
   overflow: hidden;
   background: #f8eee8;
 }
@@ -209,6 +209,54 @@
   font-weight: 800;
   line-height: 1;
   letter-spacing: 1px;
+}
+
+.stock-badge-agotado {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.8px;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+  z-index: 5;
+}
+
+.card-agotado .image-wrap img {
+  filter: grayscale(25%);
+  opacity: 0.9;
+}
+
+.label-agotado {
+  display: inline-block;
+  margin-left: 10px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.btn-disabled-agotado {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5deda;
+  border-radius: 5px;
+  background: #f5f0ed;
+  color: #a3958e;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: not-allowed;
+  user-select: none;
 }
 
 .product-info {
