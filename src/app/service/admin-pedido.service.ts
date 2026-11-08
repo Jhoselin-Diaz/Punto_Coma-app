@@ -47,6 +47,10 @@ export class AdminPedidoService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
+  eliminarPedidosMultiples(ids: (number | string)[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/eliminar-multiple`, ids);
+  }
+
   getPedidosDeCliente(telefono: string): Observable<any[]> {
     const cleanTelefono = telefono.replace(/[^\d]/g, '');
     return this.http.get<any[]>(`${this.pedidosUrl}/cliente/${cleanTelefono}`);

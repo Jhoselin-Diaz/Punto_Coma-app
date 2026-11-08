@@ -536,3 +536,11 @@ select.is-invalid {
   border-color: #dc3545 !important;
   box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2) !important;
 }
+
+.error-text {
+  color: #dc3545;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: block;
+  font-weight: 500;
+}

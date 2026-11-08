@@ -179,15 +179,24 @@
             <div class="form-grid-3">
               <div class="form-group">
                 <label>Precio Original (S/)</label>
-                <input type="number" [(ngModel)]="newOffer.precioOriginal" (input)="onPrecioOriginalOrOfertaChange()" />
+                <input type="number" min="0.01" step="0.01" (keydown)="bloquearSimbolos($event)" [(ngModel)]="newOffer.precioOriginal" (input)="onPrecioOriginalOrOfertaChange()" [class.is-invalid]="errorPrecioOriginalNuevo" />
+                @if (errorPrecioOriginalNuevo) {
+                  <span class="error-text">El valor debe ser mayor a 0</span>
+                }
               </div>
               <div class="form-group">
                 <label>Precio de Oferta (S/)</label>
-                <input type="number" [(ngModel)]="newOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChange()" [class.is-invalid]="errorPrecioOfertaNuevo" />
+                <input type="number" min="0.01" step="0.01" (keydown)="bloquearSimbolos($event)" [(ngModel)]="newOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChange()" [class.is-invalid]="errorPrecioOfertaNuevo" />
+                @if (errorPrecioOfertaNuevo) {
+                  <span class="error-text">El valor debe ser mayor a 0</span>
+                }
               </div>
               <div class="form-group">
                 <label>Descuento (%)</label>
-                <input type="number" [(ngModel)]="newOffer.descuento" (input)="onDescuentoChange()" placeholder="Ej: 20" [class.is-invalid]="errorDescuentoNuevo" />
+                <input type="number" min="0.01" step="0.01" (keydown)="bloquearSimbolos($event)" [(ngModel)]="newOffer.descuento" (input)="onDescuentoChange()" placeholder="Ej: 20" [class.is-invalid]="errorDescuentoNuevo" />
+                @if (errorDescuentoNuevo) {
+                  <span class="error-text">El valor debe ser mayor a 0</span>
+                }
               </div>
             </div>
 
@@ -262,15 +271,24 @@
             <div class="form-grid-3">
               <div class="form-group">
                 <label>Precio Original (S/)</label>
-                <input type="number" [(ngModel)]="editingOffer.precioOriginal" (input)="onPrecioOriginalOrOfertaChangeEdit()" />
+                <input type="number" min="0.01" step="0.01" (keydown)="bloquearSimbolos($event)" [(ngModel)]="editingOffer.precioOriginal" (input)="onPrecioOriginalOrOfertaChangeEdit()" [class.is-invalid]="errorPrecioOriginalEdit" />
+                @if (errorPrecioOriginalEdit) {
+                  <span class="error-text">El valor debe ser mayor a 0</span>
+                }
               </div>
               <div class="form-group">
                 <label>Precio de Oferta (S/)</label>
-                <input type="number" [(ngModel)]="editingOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChangeEdit()" [class.is-invalid]="errorPrecioOfertaEdit" />
+                <input type="number" min="0.01" step="0.01" (keydown)="bloquearSimbolos($event)" [(ngModel)]="editingOffer.precioOferta" (input)="onPrecioOriginalOrOfertaChangeEdit()" [class.is-invalid]="errorPrecioOfertaEdit" />
+                @if (errorPrecioOfertaEdit) {
+                  <span class="error-text">El valor debe ser mayor a 0</span>
+                }
               </div>
               <div class="form-group">
                 <label>Descuento (%)</label>
-                <input type="number" [(ngModel)]="editingOffer.descuento" (input)="onDescuentoChangeEdit()" placeholder="Ej: 20" [class.is-invalid]="errorDescuentoEdit" />
+                <input type="number" min="0.01" step="0.01" (keydown)="bloquearSimbolos($event)" [(ngModel)]="editingOffer.descuento" (input)="onDescuentoChangeEdit()" placeholder="Ej: 20" [class.is-invalid]="errorDescuentoEdit" />
+                @if (errorDescuentoEdit) {
+                  <span class="error-text">El valor debe ser mayor a 0</span>
+                }
               </div>
             </div>
 

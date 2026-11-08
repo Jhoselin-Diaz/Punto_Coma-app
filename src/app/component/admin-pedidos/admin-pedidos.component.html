@@ -61,10 +61,26 @@
         <button class="new-order" type="button" (click)="abrirModalNuevo()">Nuevo pedido <span>+</span></button>
       </div>
 
+            <!-- BARRA DE ACCIONES MÚLTIPLES -->
+      @if (pedidosSeleccionados.length > 0) {
+        <div class="bulk-actions-bar">
+          <div class="bulk-info">
+            <span class="bulk-count-badge">{{ pedidosSeleccionados.length }}</span>
+            <span>{{ pedidosSeleccionados.length === 1 ? 'pedido seleccionado' : 'pedidos seleccionados' }}</span>
+          </div>
+          <button type="button" class="btn-bulk-delete" (click)="confirmarEliminarSeleccionados()">
+            🗑️ Eliminar seleccionados
+          </button>
+        </div>
+      }
+
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th style="width: 44px; text-align: center;">
+                <input type="checkbox" [checked]="todosSeleccionadosEnPagina" (change)="toggleSeleccionarTodos($event)" title="Seleccionar todos en esta página" />
+              </th>
               <th>ID Pedido</th>
               <th>Cliente</th>
               <th>Teléfono</th>
@@ -79,6 +95,9 @@
           <tbody>
             @for (pedido of pedidosPaginados; track pedido.id) {
             <tr>
+              <td style="text-align: center;">
+                <input type="checkbox" [checked]="estaSeleccionado(pedido)" (change)="toggleSeleccionPedido(pedido, $event)" />
+              </td>
               <td class="order-id">{{ pedido.id }}</td>
               <td>{{ pedido.cliente }}</td>
               <td>{{ pedido.telefono || 'N/A' }}</td>
@@ -106,7 +125,7 @@
             </tr>
             } @empty {
               <tr>
-                <td colspan="9" class="empty-row" style="text-align: center; padding: 32px; color: #8f827c; font-style: italic;">
+                <td colspan="10" class="empty-row" style="text-align: center; padding: 32px; color: #8f827c; font-style: italic;">
                   No hay registros de pedidos disponibles.
                 </td>
               </tr>
@@ -125,8 +144,8 @@
             <label for="pageSizeSelect">Ver:</label>
             <select id="pageSizeSelect" [(ngModel)]="pedidosPorPagina" (ngModelChange)="cambiarPedidosPorPagina($event)" class="select-page-size">
               <option [value]="10">10 por pág.</option>
+              <option [value]="15">15 por pág.</option>
               <option [value]="20">20 por pág.</option>
-              <option [value]="50">50 por pág.</option>
             </select>
           </div>
         </div>

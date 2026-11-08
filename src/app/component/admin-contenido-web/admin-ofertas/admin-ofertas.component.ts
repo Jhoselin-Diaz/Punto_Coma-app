@@ -39,8 +39,10 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
   showEditOfferModal = false;
 
   // Errores de validación CP076
+  errorPrecioOriginalNuevo = false;
   errorDescuentoNuevo = false;
   errorPrecioOfertaNuevo = false;
+  errorPrecioOriginalEdit = false;
   errorDescuentoEdit = false;
   errorPrecioOfertaEdit = false;
 
@@ -127,6 +129,7 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
   closeEditOfferModal() {
     this.showEditOfferModal = false;
     this.pendingEditOfferId = null;
+    this.errorPrecioOriginalEdit = false;
     this.errorDescuentoEdit = false;
     this.errorPrecioOfertaEdit = false;
     this.router.navigate([], {
@@ -316,58 +319,65 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
     }
   }
 
-  onPrecioOriginalOrOfertaChange() {
-    if (this.newOffer.precioOferta != null && !isNaN(Number(this.newOffer.precioOferta)) && Number(this.newOffer.precioOferta) >= 0) {
-      this.errorPrecioOfertaNuevo = false;
+  bloquearSimbolos(event: KeyboardEvent): void {
+    if (['-', '+', 'e', 'E'].includes(event.key)) {
+      event.preventDefault();
     }
-    if (this.newOffer.precioOriginal && this.newOffer.precioOferta) {
+  }
+
+  onPrecioOriginalOrOfertaChange() {
+    const orig = Number(this.newOffer.precioOriginal);
+    const ofr = Number(this.newOffer.precioOferta);
+
+    this.errorPrecioOriginalNuevo = this.newOffer.precioOriginal == null || isNaN(orig) || orig <= 0;
+    this.errorPrecioOfertaNuevo = this.newOffer.precioOferta == null || isNaN(ofr) || ofr <= 0;
+
+    if (this.newOffer.precioOriginal && this.newOffer.precioOferta && !this.errorPrecioOriginalNuevo && !this.errorPrecioOfertaNuevo) {
       this.newOffer.descuento = this.getDescuentoPorcentaje(this.newOffer.precioOriginal, this.newOffer.precioOferta);
-      if (this.newOffer.descuento >= 1 && this.newOffer.descuento <= 99) {
-        this.errorDescuentoNuevo = false;
-      }
+      this.errorDescuentoNuevo = this.newOffer.descuento < 1 || this.newOffer.descuento > 99;
     }
   }
 
   onDescuentoChange() {
-    if (this.newOffer.descuento != null && !isNaN(Number(this.newOffer.descuento)) && Number(this.newOffer.descuento) >= 1 && Number(this.newOffer.descuento) <= 99) {
-      this.errorDescuentoNuevo = false;
-    }
-    if (this.newOffer.precioOriginal) {
-      const desc = this.newOffer.descuento || 0;
-      this.newOffer.precioOferta = Math.round(this.newOffer.precioOriginal * (1 - desc / 100) * 100) / 100;
-      if (this.newOffer.precioOferta >= 0) {
-        this.errorPrecioOfertaNuevo = false;
-      }
+    const desc = Number(this.newOffer.descuento);
+    this.errorDescuentoNuevo = this.newOffer.descuento == null || isNaN(desc) || desc < 1 || desc > 99;
+
+    if (this.newOffer.precioOriginal && !this.errorPrecioOriginalNuevo) {
+      const dVal = this.newOffer.descuento || 0;
+      this.newOffer.precioOferta = Math.round(this.newOffer.precioOriginal * (1 - dVal / 100) * 100) / 100;
+      const ofr = Number(this.newOffer.precioOferta);
+      this.errorPrecioOfertaNuevo = ofr <= 0;
     }
   }
 
   onPrecioOriginalOrOfertaChangeEdit() {
-    if (this.editingOffer.precioOferta != null && !isNaN(Number(this.editingOffer.precioOferta)) && Number(this.editingOffer.precioOferta) >= 0) {
-      this.errorPrecioOfertaEdit = false;
-    }
-    if (this.editingOffer.precioOriginal && this.editingOffer.precioOferta) {
+    const orig = Number(this.editingOffer.precioOriginal);
+    const ofr = Number(this.editingOffer.precioOferta);
+
+    this.errorPrecioOriginalEdit = this.editingOffer.precioOriginal == null || isNaN(orig) || orig <= 0;
+    this.errorPrecioOfertaEdit = this.editingOffer.precioOferta == null || isNaN(ofr) || ofr <= 0;
+
+    if (this.editingOffer.precioOriginal && this.editingOffer.precioOferta && !this.errorPrecioOriginalEdit && !this.errorPrecioOfertaEdit) {
       this.editingOffer.descuento = this.getDescuentoPorcentaje(this.editingOffer.precioOriginal, this.editingOffer.precioOferta);
-      if (this.editingOffer.descuento >= 1 && this.editingOffer.descuento <= 99) {
-        this.errorDescuentoEdit = false;
-      }
+      this.errorDescuentoEdit = this.editingOffer.descuento < 1 || this.editingOffer.descuento > 99;
     }
   }
 
   onDescuentoChangeEdit() {
-    if (this.editingOffer.descuento != null && !isNaN(Number(this.editingOffer.descuento)) && Number(this.editingOffer.descuento) >= 1 && Number(this.editingOffer.descuento) <= 99) {
-      this.errorDescuentoEdit = false;
-    }
-    if (this.editingOffer.precioOriginal) {
-      const desc = this.editingOffer.descuento || 0;
-      this.editingOffer.precioOferta = Math.round(this.editingOffer.precioOriginal * (1 - desc / 100) * 100) / 100;
-      if (this.editingOffer.precioOferta >= 0) {
-        this.errorPrecioOfertaEdit = false;
-      }
+    const desc = Number(this.editingOffer.descuento);
+    this.errorDescuentoEdit = this.editingOffer.descuento == null || isNaN(desc) || desc < 1 || desc > 99;
+
+    if (this.editingOffer.precioOriginal && !this.errorPrecioOriginalEdit) {
+      const dVal = this.editingOffer.descuento || 0;
+      this.editingOffer.precioOferta = Math.round(this.editingOffer.precioOriginal * (1 - dVal / 100) * 100) / 100;
+      const ofr = Number(this.editingOffer.precioOferta);
+      this.errorPrecioOfertaEdit = ofr <= 0;
     }
   }
 
   openAddOffer() {
     this.productoSeleccionado = null;
+    this.errorPrecioOriginalNuevo = false;
     this.errorDescuentoNuevo = false;
     this.errorPrecioOfertaNuevo = false;
     this.newOffer = {
@@ -389,22 +399,27 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const desc = Number(this.newOffer.descuento);
+    const orig = Number(this.newOffer.precioOriginal);
     const oferta = Number(this.newOffer.precioOferta);
+    const desc = Number(this.newOffer.descuento);
 
+    const origInvalido = this.newOffer.precioOriginal == null || this.newOffer.precioOriginal === ('' as any) || isNaN(orig) || orig <= 0;
+    const precioInvalido = this.newOffer.precioOferta == null || this.newOffer.precioOferta === ('' as any) || isNaN(oferta) || oferta <= 0;
     const descInvalido = this.newOffer.descuento == null || this.newOffer.descuento === ('' as any) || isNaN(desc) || desc < 1 || desc > 99;
-    const precioInvalido = this.newOffer.precioOferta == null || this.newOffer.precioOferta === ('' as any) || isNaN(oferta) || oferta < 0;
 
-    if (descInvalido || precioInvalido) {
-      this.errorDescuentoNuevo = descInvalido;
-      this.errorPrecioOfertaNuevo = precioInvalido;
+    this.errorPrecioOriginalNuevo = origInvalido;
+    this.errorPrecioOfertaNuevo = precioInvalido;
+    this.errorDescuentoNuevo = descInvalido;
+
+    if (origInvalido || precioInvalido || descInvalido) {
       this.modalAlertaService.warning(
-        'El descuento debe situarse entre el 1% y el 99%, y el precio no puede ser negativo.',
+        'Todos los valores deben ser estrictamente mayores a 0 (> 0). El descuento debe situarse entre el 1% y el 99%.',
         'Alerta de validación'
       );
       return;
     }
 
+    this.errorPrecioOriginalNuevo = false;
     this.errorDescuentoNuevo = false;
     this.errorPrecioOfertaNuevo = false;
  
@@ -441,6 +456,7 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
   }
 
   openEditOffer(of: any, updateUrl = true) {
+    this.errorPrecioOriginalEdit = false;
     this.errorDescuentoEdit = false;
     this.errorPrecioOfertaEdit = false;
     this.editingOffer = {
@@ -465,22 +481,27 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const desc = Number(this.editingOffer.descuento);
+    const orig = Number(this.editingOffer.precioOriginal);
     const oferta = Number(this.editingOffer.precioOferta);
+    const desc = Number(this.editingOffer.descuento);
 
+    const origInvalido = this.editingOffer.precioOriginal == null || this.editingOffer.precioOriginal === ('' as any) || isNaN(orig) || orig <= 0;
+    const precioInvalido = this.editingOffer.precioOferta == null || this.editingOffer.precioOferta === ('' as any) || isNaN(oferta) || oferta <= 0;
     const descInvalido = this.editingOffer.descuento == null || this.editingOffer.descuento === ('' as any) || isNaN(desc) || desc < 1 || desc > 99;
-    const precioInvalido = this.editingOffer.precioOferta == null || this.editingOffer.precioOferta === ('' as any) || isNaN(oferta) || oferta < 0;
 
-    if (descInvalido || precioInvalido) {
-      this.errorDescuentoEdit = descInvalido;
-      this.errorPrecioOfertaEdit = precioInvalido;
+    this.errorPrecioOriginalEdit = origInvalido;
+    this.errorPrecioOfertaEdit = precioInvalido;
+    this.errorDescuentoEdit = descInvalido;
+
+    if (origInvalido || precioInvalido || descInvalido) {
       this.modalAlertaService.warning(
-        'El descuento debe situarse entre el 1% y el 99%, y el precio no puede ser negativo.',
+        'Todos los valores deben ser estrictamente mayores a 0 (> 0). El descuento debe situarse entre el 1% y el 99%.',
         'Alerta de validación'
       );
       return;
     }
 
+    this.errorPrecioOriginalEdit = false;
     this.errorDescuentoEdit = false;
     this.errorPrecioOfertaEdit = false;
  

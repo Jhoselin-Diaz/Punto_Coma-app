@@ -324,13 +324,66 @@ td small {
   font-weight: 800;
 }
 
+/* ─── BARRA DE SELECCIÓN MÚLTIPLE DE PEDIDOS ─── */
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.bulk-actions-bar .bulk-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #cf1322;
+}
+
+.bulk-count-badge {
+  background: #ff4d4f;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.btn-bulk-delete {
+  background: #ff4d4f;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-bulk-delete:hover {
+  background: #d9363e;
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3);
+}
+
 /* ─── CONTROLES DE PAGINACIÓN (CP035 / MantisBT #0002699) ─── */
 .table-footer.pagination-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 1.5rem;
-  padding: 1rem 1.25rem;
+  margin-bottom: 3.5rem;
+  padding: 1rem 1.25rem 1.5rem 1.25rem;
+  padding-bottom: 1.5rem;
   background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 12px;

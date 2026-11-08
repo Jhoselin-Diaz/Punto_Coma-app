@@ -339,7 +339,82 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
 
   // ─── PAGINACIÓN REACTIVA (CP035 / MantisBT #0002699) ───────────────
   paginaActual: number = 1;
-  pedidosPorPagina: number = 10; // Límite por defecto
+  pedidosPorPagina: number = 10; // Límite por defecto (10, 15, 20)
+
+  // ─── SELECCIÓN MÚLTIPLE DE PEDIDOS ─────────────────────────────────
+  pedidosSeleccionados: string[] = [];
+
+  get todosSeleccionadosEnPagina(): boolean {
+    if (!this.pedidosPaginados || this.pedidosPaginados.length === 0) return false;
+    return this.pedidosPaginados.every(p => this.estaSeleccionado(p));
+  }
+
+  estaSeleccionado(pedido: PedidoAdmin): boolean {
+    const idStr = String(pedido.dbId || pedido.id);
+    return this.pedidosSeleccionados.includes(idStr);
+  }
+
+  toggleSeleccionPedido(pedido: PedidoAdmin, event: Event): void {
+    const checkbox = event.target as HTMLInputElement;
+    const idStr = String(pedido.dbId || pedido.id);
+    if (checkbox.checked) {
+      if (!this.pedidosSeleccionados.includes(idStr)) {
+        this.pedidosSeleccionados.push(idStr);
+      }
+    } else {
+      this.pedidosSeleccionados = this.pedidosSeleccionados.filter(id => id !== idStr);
+    }
+  }
+
+  toggleSeleccionarTodos(event: Event): void {
+    const checkbox = event.target as HTMLInputElement;
+    const idsPagina = this.pedidosPaginados.map(p => String(p.dbId || p.id));
+    if (checkbox.checked) {
+      for (const id of idsPagina) {
+        if (!this.pedidosSeleccionados.includes(id)) {
+          this.pedidosSeleccionados.push(id);
+        }
+      }
+    } else {
+      this.pedidosSeleccionados = this.pedidosSeleccionados.filter(id => !idsPagina.includes(id));
+    }
+  }
+
+  deseleccionarTodos(): void {
+    this.pedidosSeleccionados = [];
+  }
+
+  async confirmarEliminarSeleccionados(): Promise<void> {
+    const cantidad = this.pedidosSeleccionados.length;
+    if (cantidad === 0) return;
+
+    const confirmado = await this.modalAlertaService.confirm({
+      titulo: '¿Eliminar pedidos seleccionados?',
+      mensaje: `¿Estás seguro de que deseas eliminar permanentemente los ${cantidad} pedidos seleccionados? Esta acción no se puede deshacer.`,
+      tipo: 'peligro',
+      textoConfirmar: 'Sí, eliminar seleccionados',
+      textoCancelar: 'Cancelar'
+    });
+
+    if (confirmado) {
+      const idsAEliminar = [...this.pedidosSeleccionados];
+      this.adminPedidoService.eliminarPedidosMultiples(idsAEliminar).subscribe({
+        next: () => {
+          idsAEliminar.forEach(id => {
+            this.cartService.removeOrder(id);
+          });
+          this.pedidos = this.pedidos.filter(p => !idsAEliminar.includes(String(p.dbId || p.id)));
+          this.pedidosSeleccionados = [];
+          this.modalAlertaService.success(`Se eliminaron ${cantidad} pedidos con éxito.`, 'Pedidos Eliminados');
+          this.cargarPedidosReal();
+        },
+        error: (err) => {
+          console.error('Error al eliminar pedidos múltiples:', err);
+          this.modalAlertaService.error('Ocurrió un error al intentar eliminar los pedidos seleccionados.', 'Error');
+        }
+      });
+    }
+  }
 
   get totalPaginas(): number {
     const total = Math.ceil(this.pedidosFiltrados.length / this.pedidosPorPagina);
