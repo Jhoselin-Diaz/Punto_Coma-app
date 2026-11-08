@@ -26,6 +26,7 @@ interface Chat {
   telefono: string;
   avatar: string;
   ultimaVez: string;
+  fechaUltimaActualizacion?: string;
   noLeidos: number;
   mensajes: Mensaje[];
   primeraCompra: string;
@@ -53,7 +54,8 @@ interface Chat {
 })
 export class AdminChatsComponent implements OnInit, OnDestroy {
   chatSeleccionado: Chat | null = null;
-  filtroActivo: 'Todas' | 'No leídas' | 'Pendientes' = 'Todas';
+  filtroActivo: 'todas' | 'no_leidas' | 'pendientes' = 'todas';
+  busquedaTexto: string = '';
   tabInfoActiva: 'Información' | 'Historial' = 'Información';
   private pollingInterval: any = null;
   private generalPollingInterval: any = null;
@@ -87,24 +89,58 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) { }
 
-  get chatsOrdenados(): Chat[] {
-    return [...this.chats].sort((a, b) => {
-      const pesoPrioridad = (p?: string) => {
-        if (p === 'ALTA') return 1;
-        if (p === 'INTERMEDIA') return 2;
-        if (p === 'BAJA') return 3;
-        return 4;
-      };
+  cambiarFiltro(filtro: 'todas' | 'no_leidas' | 'pendientes'): void {
+    this.filtroActivo = filtro;
+    this.cdr.detectChanges();
+  }
 
-      const pesoA = pesoPrioridad(a.prioridad);
-      const pesoB = pesoPrioridad(b.prioridad);
+  filtrarChats(): void {
+    this.cdr.detectChanges();
+  }
 
-      if (pesoA !== pesoB) {
-        return pesoA - pesoB;
+  ordenarPorFechaReciente(chatsArray: Chat[]): Chat[] {
+    return [...chatsArray].sort((a, b) => {
+      const timeA = a.fechaUltimaActualizacion ? new Date(a.fechaUltimaActualizacion).getTime() : 0;
+      const timeB = b.fechaUltimaActualizacion ? new Date(b.fechaUltimaActualizacion).getTime() : 0;
+      if (timeB !== timeA) {
+        return timeB - timeA;
       }
-
       return b.id - a.id;
     });
+  }
+
+  get chatsMostrados(): Chat[] {
+    let lista = this.ordenarPorFechaReciente(this.chats);
+
+    // 1. Filtrar por categoría
+    if (this.filtroActivo === 'no_leidas') {
+      lista = lista.filter(c => (c.noLeidos || 0) > 0);
+    } else if (this.filtroActivo === 'pendientes') {
+      lista = lista.filter(c =>
+        c.prioridad === 'ALTA' ||
+        c.estado === 'En revision' ||
+        c.fasePedido === 'CONCILIACION' ||
+        c.fasePedido === 'INICIAL' ||
+        !!c.pedidoIdentificado ||
+        (c.sugerenciaIa && c.sugerenciaIa.length > 0)
+      );
+    }
+
+    // 2. Buscador predictivo en tiempo real
+    if (this.busquedaTexto && this.busquedaTexto.trim()) {
+      const q = this.busquedaTexto.toLowerCase().trim();
+      lista = lista.filter(c =>
+        (c.nombre && c.nombre.toLowerCase().includes(q)) ||
+        (c.telefono && c.telefono.toLowerCase().includes(q)) ||
+        (c.ultimoMensaje && c.ultimoMensaje.toLowerCase().includes(q))
+      );
+    }
+
+    return lista;
+  }
+
+  get chatsOrdenados(): Chat[] {
+    return this.chatsMostrados;
   }
 
   actualizarEstadosAsistente(chat: Chat) {
@@ -144,7 +180,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   cargarChatsReales(seleccionarId?: number) {
     this.adminChatService.getChats().subscribe({
       next: (dtos) => {
-        this.chats = dtos.map(dto => this.mapChatDtoToChat(dto));
+        this.chats = this.ordenarPorFechaReciente(dtos.map(dto => this.mapChatDtoToChat(dto)));
         if (this.chats.length > 0) {
           if (seleccionarId) {
             const found = this.chats.find(c => c.id === seleccionarId);
@@ -170,6 +206,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
       telefono: dto.telefonoCliente || '',
       avatar: dto.nombreCliente ? dto.nombreCliente.charAt(0).toUpperCase() : '👤',
       ultimaVez: formattedTime,
+      fechaUltimaActualizacion: dto.fechaUltimaActualizacion,
       noLeidos: dto.unreadCount || 0,
       mensajes: [],
       primeraCompra: 'No registrada',
@@ -247,6 +284,9 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   seleccionarChat(chat: Chat) {
     this.chatSeleccionado = chat;
     chat.noLeidos = 0;
+    this.adminChatService.marcarComoLeido(chat.id).subscribe({
+      error: (e) => console.warn('Error al marcar chat como leído en servidor:', e)
+    });
     this.editandoMensajeGenerado = false;
     this.mostrarMenuOpciones = false;
     this.mostrarPanelEmojis = false;
@@ -382,6 +422,15 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
           this.chatSeleccionado.mensajes.push(nuevoMsg);
           this.chatSeleccionado.ultimoMensaje = texto;
           this.chatSeleccionado.ultimaVez = nuevoMsg.hora;
+          this.chatSeleccionado.fechaUltimaActualizacion = creadoDto.fechaEnvio || new Date().toISOString();
+
+          // Mover inmediatamente al primer lugar (índice 0) tipo WhatsApp
+          const cIndex = this.chats.findIndex(c => c.id === chatId);
+          if (cIndex > 0) {
+            const [cMoved] = this.chats.splice(cIndex, 1);
+            this.chats.unshift(cMoved);
+          }
+
           this.scrollToBottom();
           this.refrescarMensajesSilencioso();
         }
@@ -694,14 +743,16 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
               this.chatSeleccionado.fasePedido = nuevo.fasePedido;
               this.chatSeleccionado.ultimoMensaje = nuevo.ultimoMensaje;
               this.chatSeleccionado.ultimaVez = nuevo.ultimaVez;
-              this.chatSeleccionado.noLeidos = nuevo.noLeidos;
+              this.chatSeleccionado.fechaUltimaActualizacion = nuevo.fechaUltimaActualizacion;
+              this.chatSeleccionado.noLeidos = 0;
+              nuevo.noLeidos = 0;
 
               this.actualizarEstadosAsistente(this.chatSeleccionado);
             }
           }
         });
 
-        this.chats = nuevosChats;
+        this.chats = this.ordenarPorFechaReciente(nuevosChats);
         this.cdr.detectChanges();
       },
       error: (err) => {

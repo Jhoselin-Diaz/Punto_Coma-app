@@ -9,18 +9,18 @@
       <div class="sidebar-header">
         <h3 class="panel-title">Conversaciones <span class="icon">≡</span></h3>
         <div class="search-box">
-          <input type="text" placeholder="Buscar conversación..." />
+          <input type="text" placeholder="Buscar conversación..." [(ngModel)]="busquedaTexto" (input)="filtrarChats()" />
           <span class="icon">⌕</span>
         </div>
         <div class="chat-filters">
-          <button type="button" [class.active]="filtroActivo === 'Todas'" (click)="filtroActivo = 'Todas'">Todas</button>
-          <button type="button" [class.active]="filtroActivo === 'No leídas'" (click)="filtroActivo = 'No leídas'">No leídas</button>
-          <button type="button" [class.active]="filtroActivo === 'Pendientes'" (click)="filtroActivo = 'Pendientes'">Pendientes</button>
+          <button type="button" [class.active]="filtroActivo === 'todas'" (click)="cambiarFiltro('todas')">Todas</button>
+          <button type="button" [class.active]="filtroActivo === 'no_leidas'" (click)="cambiarFiltro('no_leidas')">No leídas</button>
+          <button type="button" [class.active]="filtroActivo === 'pendientes'" (click)="cambiarFiltro('pendientes')">Pendientes</button>
         </div>
       </div>
 
       <div class="chat-list">
-        @for (chat of chatsOrdenados; track trackByChatId($index, chat)) {
+        @for (chat of chatsMostrados; track trackByChatId($index, chat)) {
           <div class="chat-item" 
                [class.active]="chatSeleccionado?.id === chat.id" 
                [class.en-revision]="chat.estado === 'En revision'"

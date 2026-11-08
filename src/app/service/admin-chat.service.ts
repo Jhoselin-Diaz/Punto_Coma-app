@@ -50,6 +50,10 @@ export class AdminChatService {
     return this.http.post<MensajeDTO>(`${this.baseUrl}/${chatId}/enviar`, { mensaje: texto });
   }
 
+  marcarComoLeido(chatId: number): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/${chatId}/leer`, {});
+  }
+
   deleteChat(chatId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${chatId}`);
   }
