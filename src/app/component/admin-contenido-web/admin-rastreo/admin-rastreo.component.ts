@@ -12,6 +12,12 @@ export interface PedidoValido {
   telefono: string;
   total: string;
   estado: string;
+  fecha?: string;
+  hora?: string;
+  fechaPago?: string;
+  fechaOriginal?: string;
+  itemsResumen?: string;
+  productosDetalle?: any[];
   direccion?: string;
   agencia?: string;
   numeroGuia?: string;
@@ -41,7 +47,101 @@ export class AdminRastreoComponent implements OnInit {
   // Pestaña 2: Asignación de Guías
   pedidosDisponibles: PedidoValido[] = [];
   pedidoSeleccionadoId: string = '';
+  busquedaPedido: string = '';
   agenciaSeleccionada: 'SHALOM' | 'OLVA' | 'MOTORIZADO' = 'SHALOM';
+
+  get pedidosFiltrados(): PedidoValido[] {
+    const q = (this.busquedaPedido || '').trim().toLowerCase();
+    if (!q) {
+      return this.pedidosDisponibles;
+    }
+    return this.pedidosDisponibles.filter(p => {
+      const matchId = (p.id || '').toLowerCase().includes(q);
+      const matchCliente = (p.cliente || '').toLowerCase().includes(q);
+      const matchTel = (p.telefono || '').replace(/\D/g, '').includes(q.replace(/\D/g, '')) || (p.telefono || '').toLowerCase().includes(q);
+      const matchTotal = (p.total || '').toLowerCase().includes(q);
+      const matchItems = (p.itemsResumen || '').toLowerCase().includes(q);
+      const matchFecha = this.formatearFechaHora(p).toLowerCase().includes(q);
+      return matchId || matchCliente || matchTel || matchTotal || matchItems || matchFecha;
+    });
+  }
+
+  get pedidoSeleccionado(): PedidoValido | undefined {
+    if (!this.pedidoSeleccionadoId) return undefined;
+    return this.pedidosDisponibles.find(p => p.id === this.pedidoSeleccionadoId || String(p.dbId) === this.pedidoSeleccionadoId);
+  }
+
+  seleccionarPedido(pedido: PedidoValido): void {
+    if (!pedido) return;
+    this.pedidoSeleccionadoId = pedido.id;
+    setTimeout(() => {
+      const el = document.getElementById('seccionAgencia');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 100);
+  }
+
+  onSelectChange(id: string): void {
+    this.pedidoSeleccionadoId = id;
+    const found = this.pedidosDisponibles.find(p => p.id === id || String(p.dbId) === id);
+    if (found) {
+      this.seleccionarPedido(found);
+    }
+  }
+
+  ordenarPedidosDescendente(a: PedidoValido, b: PedidoValido): number {
+    const fechaA = a.fechaPago || a.fechaOriginal;
+    const fechaB = b.fechaPago || b.fechaOriginal;
+    const timeA = fechaA ? new Date(fechaA).getTime() : NaN;
+    const timeB = fechaB ? new Date(fechaB).getTime() : NaN;
+
+    if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
+      return timeB - timeA;
+    }
+
+    const numIdA = Number(a.dbId || (String(a.id).replace(/\D/g, ''))) || 0;
+    const numIdB = Number(b.dbId || (String(b.id).replace(/\D/g, ''))) || 0;
+    if (numIdA !== numIdB) {
+      return numIdB - numIdA;
+    }
+
+    return (b.id || '').localeCompare(a.id || '');
+  }
+
+  formatearFechaHora(p: PedidoValido | null | undefined): string {
+    if (!p) return 'Fecha no disponible';
+
+    if (p.fecha && p.hora) {
+      const prefijo = p.fecha.toLowerCase() === 'hoy' ? 'Hoy' : p.fecha;
+      return `${prefijo}, ${p.hora}`;
+    }
+    if (p.fecha) {
+      return p.fecha;
+    }
+
+    const isoDate = p.fechaPago || p.fechaOriginal;
+    if (isoDate) {
+      try {
+        const d = new Date(isoDate);
+        if (!isNaN(d.getTime())) {
+          const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
+          const dia = String(d.getDate()).padStart(2, '0');
+          const mes = meses[d.getMonth()];
+          const anio = d.getFullYear();
+          let horas = d.getHours();
+          const minutos = String(d.getMinutes()).padStart(2, '0');
+          const ampm = horas >= 12 ? 'PM' : 'AM';
+          horas = horas % 12;
+          horas = horas ? horas : 12;
+          const strHoras = String(horas).padStart(2, '0');
+          return `${dia} ${mes} ${anio}, ${strHoras}:${minutos} ${ampm}`;
+        }
+      } catch (ignored) {}
+    }
+
+    return 'Reciente';
+  }
 
   // Campos independientes Shalom / Olva
   numeroGuia: string = '';           // N° de Orden Shalom o Guía Olva
@@ -117,21 +217,23 @@ export class AdminRastreoComponent implements OnInit {
         this.cargandoPedidos = false;
         if (!pedidos) pedidos = [];
 
-        // 1. Pedidos para Asignación: estado VALIDADO o EN PREPARACION
+        // 1. Pedidos para Asignación: estado VALIDADO o EN PREPARACION (orden descendente)
         this.pedidosDisponibles = pedidos
           .filter(p => {
             const est = (p.estado || '').toUpperCase();
             return est === 'VALIDADO' || est === 'PAGO_VALIDADO' || est === 'EN_PREPARACION' || est === 'EN PREPARACION';
           })
-          .map(p => this.mapearPedido(p));
+          .map(p => this.mapearPedido(p))
+          .sort((a, b) => this.ordenarPedidosDescendente(a, b));
 
-        // 2. Pedidos en Tránsito: estado EN_CAMINO
+        // 2. Pedidos en Tránsito: estado EN_CAMINO (orden descendente)
         this.enviosEnTransito = pedidos
           .filter(p => {
             const est = (p.estado || '').toUpperCase();
             return est === 'EN_CAMINO' || est === 'EN CAMINO';
           })
-          .map(p => this.mapearPedido(p));
+          .map(p => this.mapearPedido(p))
+          .sort((a, b) => this.ordenarPedidosDescendente(a, b));
 
         this.cdr.detectChanges();
       },
@@ -244,7 +346,7 @@ export class AdminRastreoComponent implements OnInit {
         this.vigenciaDias = 5;
 
         // 4. Feedback visual claro
-        this.modalAlertaService.success(`Pedido despachado con éxito. El pedido ${pedido.id} está ahora en tránsito con ${pedidoActualizado.agencia}.`, 'Pedido Despachado con Éxito');
+        this.modalAlertaService.success(`Pedido despachado con éxito. El pedido ${pedido.id} (${this.formatearFechaHora(pedido)}) está ahora en tránsito con ${pedidoActualizado.agencia}.`, 'Pedido Despachado con Éxito');
 
         this.tabActiva = 'monitor';
         this.cdr.detectChanges();
@@ -464,7 +566,8 @@ export class AdminRastreoComponent implements OnInit {
           fechaDespacho: undefined,
           fechaExpiracionRastreo: undefined
         };
-        this.pedidosDisponibles = [pedidoRevertido, ...this.pedidosDisponibles.filter(p => p.id !== pedido.id && p.dbId !== pedido.dbId)];
+        this.pedidosDisponibles = [pedidoRevertido, ...this.pedidosDisponibles.filter(p => p.id !== pedido.id && p.dbId !== pedido.dbId)]
+          .sort((a, b) => this.ordenarPedidosDescendente(a, b));
 
         this.modalAlertaService.success(`Despacho anulado. El pedido ${pedido.id} ha vuelto a la lista de pedidos pendientes para asignarle una nueva guía.`, 'Despacho Anulado');
         this.cdr.detectChanges();
@@ -493,6 +596,15 @@ export class AdminRastreoComponent implements OnInit {
   }
 
   private mapearPedido(p: any): PedidoValido {
+    let itemsResumen = '';
+    if (p.productosDetalle && Array.isArray(p.productosDetalle) && p.productosDetalle.length > 0) {
+      const nombres = p.productosDetalle.map((d: any) => `${d.cantidad || 1}x ${d.nombre || 'Producto'}`);
+      itemsResumen = nombres.slice(0, 2).join(', ');
+      if (p.productosDetalle.length > 2) {
+        itemsResumen += ` y +${p.productosDetalle.length - 2} más`;
+      }
+    }
+
     return {
       id: p.id || '',
       dbId: p.dbId || p.id,
@@ -500,6 +612,12 @@ export class AdminRastreoComponent implements OnInit {
       telefono: p.telefono || '',
       total: p.total || 'S/ 0.00',
       estado: p.estado || '',
+      fecha: p.fecha || '',
+      hora: p.hora || '',
+      fechaPago: p.fechaPago || p.fecha_pago || '',
+      fechaOriginal: p.fechaOriginal || p.createdAt || p.fechaPago || p.fecha_pago || '',
+      itemsResumen: itemsResumen,
+      productosDetalle: p.productosDetalle || [],
       direccion: p.direccion || p.direccionEnvio || '',
       agencia: p.agencia || p.agenciaEnvio || 'SHALOM',
       numeroGuia: p.numeroGuia || p.guia || '',

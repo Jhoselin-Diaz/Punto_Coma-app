@@ -992,3 +992,339 @@
   color: #0369a1;
   border-color: #bae6fd;
 }
+
+
+/* ========================================================================== */
+/* SELECCIÓN RÁPIDA DE PEDIDOS VALIDADOS (PICKER CARDS)                      */
+/* ========================================================================== */
+.order-picker-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fbf9f7;
+  border: 1.5px solid #eee4dd;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 6px;
+}
+
+.picker-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.picker-title-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.picker-main-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2b1b16;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.picker-counter-badge {
+  background-color: #ea580c;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 100px;
+}
+
+.picker-help-text {
+  font-size: 12px;
+  color: #766c67;
+  margin: 0;
+}
+
+/* BUSCADOR DE PEDIDOS */
+.search-picker-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 13px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.search-input-wrapper .search-input {
+  width: 100%;
+  padding: 9px 34px 9px 34px;
+  border: 1.5px solid #eee4dd;
+  border-radius: 8px;
+  font-size: 13px;
+  background-color: #ffffff;
+  color: #2b1b16;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-input-wrapper .search-input:focus {
+  border-color: #df6c1b;
+  box-shadow: 0 0 0 3px rgba(223, 108, 27, 0.12);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #8c827c;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.clear-search-btn:hover {
+  color: #e30613;
+}
+
+.search-count {
+  font-size: 11.5px;
+  color: #8c827c;
+  font-weight: 600;
+}
+
+/* CONTENEDOR CON SCROLL LIMITADO A 280PX */
+.order-picker-container {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 6px 4px 2px;
+  overscroll-behavior: contain;
+}
+
+/* Scrollbar estilizada */
+.order-picker-container::-webkit-scrollbar {
+  width: 6px;
+}
+.order-picker-container::-webkit-scrollbar-track {
+  background: #f1ede9;
+  border-radius: 6px;
+}
+.order-picker-container::-webkit-scrollbar-thumb {
+  background: #d4a373;
+  border-radius: 6px;
+}
+.order-picker-container::-webkit-scrollbar-thumb:hover {
+  background: #df6c1b;
+}
+
+/* TARJETA INTERACTIVA DE PEDIDO */
+.order-picker-card {
+  background-color: #ffffff;
+  border: 1.5px solid #eee4dd;
+  border-radius: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.order-picker-card:hover {
+  border-color: #df6c1b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.order-picker-card.selected {
+  border-color: #ea580c;
+  background-color: #fffbf9;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.2), 0 4px 12px rgba(234, 88, 12, 0.08);
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.order-date-badge {
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.2px;
+}
+
+.order-code-pill {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #2b1b16;
+}
+
+.selected-badge {
+  background-color: #ea580c;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 100px;
+  margin-left: auto;
+}
+
+.card-body-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.client-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.client-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #2b1b16;
+}
+
+.client-phone {
+  font-size: 12px;
+  color: #766c67;
+}
+
+.order-amount {
+  font-size: 14px;
+  font-weight: 800;
+  color: #df6c1b;
+  white-space: nowrap;
+}
+
+.card-items-row {
+  font-size: 12px;
+  color: #6b7280;
+  background-color: #f8fafc;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-footer-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.btn-select-order {
+  border: none;
+  background-color: #f3ece6;
+  color: #2b1b16;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.order-picker-card:hover .btn-select-order {
+  background-color: #eee4dd;
+}
+
+.btn-select-order.active {
+  background-color: #ea580c;
+  color: #ffffff;
+}
+
+.picker-no-results {
+  background: #ffffff;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #6b7280;
+}
+
+/* MENÚ DESPLEGABLE ALTERNATIVO */
+.select-fallback-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.sub-label {
+  font-size: 12px;
+  color: #766c67;
+  font-weight: 600;
+}
+
+/* RESUMEN DEL PEDIDO SELECCIONADO */
+.selected-order-summary {
+  background: #fff8f5;
+  border: 1.5px solid #ea580c;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeInSummary 0.25s ease-out;
+}
+
+@keyframes fadeInSummary {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.summary-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ea580c;
+  font-size: 13px;
+}
+
+.summary-check {
+  font-weight: 800;
+}
+
+.summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: #2b1b16;
+}
+
+.text-orange {
+  color: #ea580c;
+}
