@@ -105,11 +105,19 @@
 }
 
 /* FORMULARIOS */
-.urls-form, .assign-form {
+.urls-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
   max-width: 680px;
+}
+
+.assign-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .form-group {
@@ -1108,7 +1116,7 @@
 
 /* CONTENEDOR CON SCROLL LIMITADO A 280PX */
 .order-picker-container {
-  max-height: 280px;
+  max-height: 560px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1327,4 +1335,70 @@
 
 .text-orange {
   color: #ea580c;
+}
+
+
+/* ========================================================================== */
+/* SPLIT-VIEW MASTER-DETAIL LAYOUT (ASIGNAR GUÍA)                             */
+/* ========================================================================== */
+.despacho-split-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 1.5rem;
+  align-items: start;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .despacho-split-layout {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.order-picker-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.despacho-form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: #ffffff;
+  border: 1.5px solid #eee4dd;
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 4px 16px rgba(43, 27, 22, 0.03);
+}
+
+.unselected-order-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fbf9f7;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: #475569;
+}
+
+.unselected-order-notice .notice-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.unselected-order-notice strong {
+  display: block;
+  font-size: 13.5px;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.unselected-order-notice p {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
 }

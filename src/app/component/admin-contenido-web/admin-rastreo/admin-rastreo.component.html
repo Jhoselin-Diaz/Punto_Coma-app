@@ -114,261 +114,263 @@
       </div>
 
       <form *ngIf="pedidosDisponibles.length > 0" (ngSubmit)="despacharYPublicar()" class="assign-form">
-        <!-- SECCIÓN DE SELECCIÓN RÁPIDA DE PEDIDOS VALIDADOS -->
-        <div class="order-picker-section">
-          <div class="picker-header">
-            <div class="picker-title-group">
-              <label class="picker-main-label">
-                <span>📦</span> Selección Rápida de Pedidos Validados (*):
-              </label>
-              <span class="picker-counter-badge">{{ pedidosDisponibles.length }} listos para despacho</span>
-            </div>
-            <p class="picker-help-text">
-              Haz clic en cualquier tarjeta para seleccionarla y proceder con el registro de guía.
-            </p>
-          </div>
-
-          <!-- BARRA DE BÚSQUEDA RÁPIDA -->
-          <div class="search-picker-box">
-            <div class="search-input-wrapper">
-              <span class="search-icon">🔍</span>
-              <input
-                type="text"
-                class="search-input"
-                placeholder="Buscar por cliente, teléfono o código WSP..."
-                [(ngModel)]="busquedaPedido"
-                name="busquedaPedido"
-              />
-              <button
-                *ngIf="busquedaPedido"
-                type="button"
-                class="clear-search-btn"
-                (click)="busquedaPedido = ''"
-                title="Limpiar búsqueda">✕</button>
-            </div>
-            <div class="search-count" *ngIf="busquedaPedido">
-              Mostrando {{ pedidosFiltrados.length }} de {{ pedidosDisponibles.length }} pedidos
-            </div>
-          </div>
-
-          <!-- CUADRÍCULA / LISTA DE TARJETAS COMPACTAS INTERACTIVAS -->
-          <div class="order-picker-container" *ngIf="pedidosFiltrados.length > 0">
-            <div
-              *ngFor="let p of pedidosFiltrados"
-              class="order-picker-card"
-              [class.selected]="pedidoSeleccionadoId === p.id"
-              (click)="seleccionarPedido(p)">
-              <!-- ENCABEZADO DE LA TARJETA -->
-              <div class="card-top-row">
-                <span class="order-date-badge">📅 {{ formatearFechaHora(p) }}</span>
-                <span class="order-code-pill font-mono">{{ p.id }}</span>
-                <span class="selected-badge" *ngIf="pedidoSeleccionadoId === p.id">✓ Seleccionado</span>
-              </div>
-
-              <!-- CUERPO DE LA TARJETA -->
-              <div class="card-body-row">
-                <div class="client-info">
-                  <span class="client-name">👤 {{ p.cliente }}</span>
-                  <span class="client-phone">📱 {{ p.telefono }}</span>
+        <div class="despacho-split-layout">
+          <!-- ========================================================= -->
+          <!-- COLUMNA IZQUIERDA: SELECCIÓN RÁPIDA DE PEDIDOS VALIDADOS  -->
+          <!-- ========================================================= -->
+          <div class="order-picker-column">
+            <div class="order-picker-section">
+              <div class="picker-header">
+                <div class="picker-title-group">
+                  <label class="picker-main-label">
+                    <span>📦</span> Selección Rápida de Pedidos:
+                  </label>
+                  <span class="picker-counter-badge">{{ pedidosDisponibles.length }} listos para despacho</span>
                 </div>
-                <div class="order-amount">{{ p.total }}</div>
+                <p class="picker-help-text">
+                  Haz clic en cualquier tarjeta para cargar el pedido en el panel de despacho.
+                </p>
               </div>
 
-              <!-- RESUMEN DE ÍTEMS -->
-              <div class="card-items-row" *ngIf="p.itemsResumen">
-                <span class="items-summary">📦 {{ p.itemsResumen }}</span>
+              <!-- BARRA DE BÚSQUEDA RÁPIDA -->
+              <div class="search-picker-box">
+                <div class="search-input-wrapper">
+                  <span class="search-icon">🔍</span>
+                  <input
+                    type="text"
+                    class="search-input"
+                    placeholder="Buscar por cliente, teléfono o código..."
+                    [(ngModel)]="busquedaPedido"
+                    name="busquedaPedido"
+                  />
+                  <button
+                    *ngIf="busquedaPedido"
+                    type="button"
+                    class="clear-search-btn"
+                    (click)="busquedaPedido = ''"
+                    title="Limpiar búsqueda">✕</button>
+                </div>
+                <div class="search-count" *ngIf="busquedaPedido">
+                  Mostrando {{ pedidosFiltrados.length }} de {{ pedidosDisponibles.length }} pedidos
+                </div>
               </div>
 
-              <!-- PIE / ACCIÓN -->
-              <div class="card-footer-row">
-                <button
-                  type="button"
-                  class="btn-select-order"
-                  [class.active]="pedidoSeleccionadoId === p.id">
-                  {{ pedidoSeleccionadoId === p.id ? '✓ Pedido Seleccionado' : 'Seleccionar para Despacho' }}
-                </button>
+              <!-- CONTENEDOR SCROLLEABLE DE TARJETAS (max-height ~560px) -->
+              <div class="order-picker-container" *ngIf="pedidosFiltrados.length > 0">
+                <div
+                  *ngFor="let p of pedidosFiltrados"
+                  class="order-picker-card"
+                  [class.selected]="pedidoSeleccionadoId === p.id"
+                  (click)="seleccionarPedido(p)">
+                  <!-- ENCABEZADO DE LA TARJETA -->
+                  <div class="card-top-row">
+                    <span class="order-date-badge">📅 {{ formatearFechaHora(p) }}</span>
+                    <span class="order-code-pill font-mono">{{ p.id }}</span>
+                    <span class="selected-badge" *ngIf="pedidoSeleccionadoId === p.id">✓ Seleccionado</span>
+                  </div>
+
+                  <!-- CUERPO DE LA TARJETA -->
+                  <div class="card-body-row">
+                    <div class="client-info">
+                      <span class="client-name">👤 {{ p.cliente }}</span>
+                      <span class="client-phone">📱 {{ p.telefono }}</span>
+                    </div>
+                    <div class="order-amount">{{ p.total }}</div>
+                  </div>
+
+                  <!-- RESUMEN DE ÍTEMS -->
+                  <div class="card-items-row" *ngIf="p.itemsResumen">
+                    <span class="items-summary">📦 {{ p.itemsResumen }}</span>
+                  </div>
+
+                  <!-- PIE / ACCIÓN -->
+                  <div class="card-footer-row">
+                    <button
+                      type="button"
+                      class="btn-select-order"
+                      [class.active]="pedidoSeleccionadoId === p.id">
+                      {{ pedidoSeleccionadoId === p.id ? '✓ Pedido Seleccionado' : 'Seleccionar para Despacho' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SIN COINCIDENCIAS DE BÚSQUEDA -->
+              <div class="picker-no-results" *ngIf="pedidosFiltrados.length === 0">
+                <span>🔎 No se encontraron pedidos con el criterio "{{ busquedaPedido }}".</span>
               </div>
             </div>
           </div>
 
-          <!-- SIN COINCIDENCIAS DE BÚSQUEDA -->
-          <div class="picker-no-results" *ngIf="pedidosFiltrados.length === 0">
-            <span>🔎 No se encontraron pedidos con el criterio "{{ busquedaPedido }}".</span>
-          </div>
-
-          <!-- MENÚ DESPLEGABLE ESTRUCTURADO ALTERNATIVO -->
-          <div class="select-fallback-group">
-            <label for="pedidoSelect" class="sub-label">O selecciona directamente del menú desplegable:</label>
-            <select
-              id="pedidoSelect"
-              [(ngModel)]="pedidoSeleccionadoId"
-              (ngModelChange)="onSelectChange($event)"
-              name="pedidoSelect"
-              required
-              class="select-control">
-              <option value="" disabled selected>-- Selecciona un pedido validado --</option>
-              <option *ngFor="let p of pedidosDisponibles" [value]="p.id">
-                [{{ formatearFechaHora(p) }}] {{ p.id }} | {{ p.cliente }} ({{ p.telefono }}) - {{ p.total }}
-              </option>
-            </select>
-          </div>
-
-          <!-- TARJETA RESUMEN DEL PEDIDO SELECCIONADO -->
-          <div *ngIf="pedidoSeleccionado" class="selected-order-summary">
-            <div class="summary-header">
-              <span class="summary-check">✓</span>
-              <strong>Pedido Seleccionado para Asignación</strong>
+          <!-- ========================================================= -->
+          <!-- COLUMNA DERECHA: FORMULARIO DE ASIGNACIÓN DE DESPACHO     -->
+          <!-- ========================================================= -->
+          <div class="despacho-form-column" id="seccionAgencia">
+            <!-- TARJETA RESUMEN DEL PEDIDO SELECCIONADO O AVISO SI NO HAY SELECCIÓN -->
+            <div *ngIf="pedidoSeleccionado" class="selected-order-summary">
+              <div class="summary-header">
+                <span class="summary-check">✓</span>
+                <strong>Pedido Seleccionado para Asignación</strong>
+              </div>
+              <div class="summary-details">
+                <div><strong>Código:</strong> <code class="font-mono">{{ pedidoSeleccionado.id }}</code></div>
+                <div><strong>Cliente:</strong> {{ pedidoSeleccionado.cliente }} (📱 {{ pedidoSeleccionado.telefono }})</div>
+                <div><strong>Fecha y Hora de Compra:</strong> 📅 {{ formatearFechaHora(pedidoSeleccionado) }}</div>
+                <div><strong>Monto Total:</strong> <strong class="text-orange">{{ pedidoSeleccionado.total }}</strong></div>
+                <div *ngIf="pedidoSeleccionado.itemsResumen"><strong>Productos:</strong> {{ pedidoSeleccionado.itemsResumen }}</div>
+              </div>
             </div>
-            <div class="summary-details">
-              <div><strong>Código:</strong> <code class="font-mono">{{ pedidoSeleccionado.id }}</code></div>
-              <div><strong>Cliente:</strong> {{ pedidoSeleccionado.cliente }} (📱 {{ pedidoSeleccionado.telefono }})</div>
-              <div><strong>Fecha y Hora de Compra:</strong> 📅 {{ formatearFechaHora(pedidoSeleccionado) }}</div>
-              <div><strong>Monto Total:</strong> <strong class="text-orange">{{ pedidoSeleccionado.total }}</strong></div>
-              <div *ngIf="pedidoSeleccionado.itemsResumen"><strong>Productos:</strong> {{ pedidoSeleccionado.itemsResumen }}</div>
+
+            <div *ngIf="!pedidoSeleccionado" class="unselected-order-notice">
+              <span class="notice-icon">👈</span>
+              <div>
+                <strong>Ningún pedido seleccionado</strong>
+                <p>Haz clic en cualquier tarjeta de la columna izquierda para cargar el pedido e ingresar sus credenciales de despacho.</p>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <!-- SELECTOR DE MÉTODO DE ENVÍO / AGENCIA -->
-        <div class="form-group" id="seccionAgencia">
-          <label>Agencia de Envío / Modalidad (*):</label>
-          <div class="agency-selector-row">
-            <label class="radio-card" [class.selected]="agenciaSeleccionada === 'SHALOM'">
-              <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="SHALOM" />
-              <strong style="color: #e30613;">SHALOM</strong>
-              <small>Agencia a agencia</small>
-            </label>
-            <label class="radio-card" [class.selected]="agenciaSeleccionada === 'OLVA'">
-              <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="OLVA" />
-              <strong style="color: #002a5c;">OLVA COURIER</strong>
-              <small>Domicilio / Tienda</small>
-            </label>
-            <label class="radio-card" [class.selected]="agenciaSeleccionada === 'MOTORIZADO'">
-              <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="MOTORIZADO" />
-              <strong style="color: #0891b2;">MOTORIZADO LOCAL</strong>
-              <small>Delivery directo</small>
-            </label>
-          </div>
-        </div>
-
-        <!-- CAMPOS ESPECÍFICOS PARA SHALOM: 4 CASILLAS INDEPENDIENTES -->
-        <div *ngIf="agenciaSeleccionada === 'SHALOM'" class="agency-fields-box shalom-box">
-          <div class="agency-box-header">
-            <span class="box-badge shalom-badge">Credenciales de Rastreo y Entrega Shalom</span>
-            <small>Los datos se dividen para la consulta en el portal web y el retiro presencial en agencia.</small>
-          </div>
-
-          <div class="fields-two-cols">
-            <!-- CASILLA 1: N° DE ORDEN SHALOM -->
+            <!-- SELECTOR DE MÉTODO DE ENVÍO / AGENCIA -->
             <div class="form-group">
-              <label for="numeroGuiaShalom">1. N° de Orden Shalom (*):</label>
-              <input
-                type="text"
-                id="numeroGuiaShalom"
-                [(ngModel)]="numeroGuia"
-                name="numeroGuiaShalom"
-                placeholder="ej. 9560819"
-                required
-                class="input-control font-mono"
-              />
-              <small class="helper-text">Para búsqueda de guía en web de Shalom.</small>
+              <label>Agencia de Envío / Modalidad (*):</label>
+              <div class="agency-selector-row">
+                <label class="radio-card" [class.selected]="agenciaSeleccionada === 'SHALOM'">
+                  <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="SHALOM" />
+                  <strong style="color: #e30613;">SHALOM</strong>
+                  <small>Agencia a agencia</small>
+                </label>
+                <label class="radio-card" [class.selected]="agenciaSeleccionada === 'OLVA'">
+                  <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="OLVA" />
+                  <strong style="color: #002a5c;">OLVA COURIER</strong>
+                  <small>Domicilio / Tienda</small>
+                </label>
+                <label class="radio-card" [class.selected]="agenciaSeleccionada === 'MOTORIZADO'">
+                  <input type="radio" name="agencia" [(ngModel)]="agenciaSeleccionada" value="MOTORIZADO" />
+                  <strong style="color: #0891b2;">MOTORIZADO LOCAL</strong>
+                  <small>Delivery directo</small>
+                </label>
+              </div>
             </div>
 
-            <!-- CASILLA 2: CÓDIGO DE ORDEN SHALOM -->
+            <!-- CAMPOS ESPECÍFICOS PARA SHALOM: 4 CASILLAS INDEPENDIENTES -->
+            <div *ngIf="agenciaSeleccionada === 'SHALOM'" class="agency-fields-box shalom-box">
+              <div class="agency-box-header">
+                <span class="box-badge shalom-badge">Credenciales de Rastreo y Entrega Shalom</span>
+                <small>Los datos se dividen para la consulta en el portal web y el retiro presencial en agencia.</small>
+              </div>
+
+              <div class="fields-two-cols">
+                <!-- CASILLA 1: N° DE ORDEN SHALOM -->
+                <div class="form-group">
+                  <label for="numeroGuiaShalom">1. N° de Orden Shalom (*):</label>
+                  <input
+                    type="text"
+                    id="numeroGuiaShalom"
+                    [(ngModel)]="numeroGuia"
+                    name="numeroGuiaShalom"
+                    placeholder="ej. 9560819"
+                    required
+                    class="input-control font-mono"
+                  />
+                  <small class="helper-text">Para búsqueda de guía en web de Shalom.</small>
+                </div>
+
+                <!-- CASILLA 2: CÓDIGO DE ORDEN SHALOM -->
+                <div class="form-group">
+                  <label for="codigoOrdenShalom">2. Código de Orden Shalom (*):</label>
+                  <input
+                    type="text"
+                    id="codigoOrdenShalom"
+                    [(ngModel)]="codigoOrdenShalom"
+                    name="codigoOrdenShalom"
+                    placeholder="ej. C7P9"
+                    maxlength="20"
+                    required
+                    class="input-control font-mono uppercase-input"
+                  />
+                  <small class="helper-text">Código de verificación para rastreo en su web.</small>
+                </div>
+              </div>
+
+              <div class="fields-two-cols" style="margin-top: 10px;">
+                <!-- CASILLA 3: CLAVE DE RECOJO EN TIENDA -->
+                <div class="form-group">
+                  <label for="claveRecojoShalom">3. Clave de Recojo en Tienda (*):</label>
+                  <input
+                    type="text"
+                    id="claveRecojoShalom"
+                    [(ngModel)]="claveRecojo"
+                    name="claveRecojoShalom"
+                    placeholder="ej. 4545 o PIN"
+                    maxlength="20"
+                    required
+                    class="input-control font-mono uppercase-input"
+                  />
+                  <small class="helper-text">Código/clave para retiro en ventanilla física.</small>
+                </div>
+
+                <!-- CASILLA 4: FLETE EN DESTINO -->
+                <div class="form-group">
+                  <label for="fleteDestinoShalom">4. Flete a pagar en destino (S/):</label>
+                  <input
+                    type="number"
+                    step="0.50"
+                    min="0"
+                    id="fleteDestinoShalom"
+                    [(ngModel)]="fleteDestino"
+                    name="fleteDestinoShalom"
+                    placeholder="0.00"
+                    class="input-control"
+                  />
+                  <small class="helper-text">Monto en ventanilla. Dejar en 0 si está pagado.</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPOS ESPECÍFICOS PARA OLVA COURIER -->
+            <div *ngIf="agenciaSeleccionada === 'OLVA'" class="agency-fields-box olva-box">
+              <div class="form-group">
+                <label for="numeroGuiaOlva">Número de Guía / Tracking Olva (*):</label>
+                <input
+                  type="text"
+                  id="numeroGuiaOlva"
+                  [(ngModel)]="numeroGuia"
+                  name="numeroGuiaOlva"
+                  placeholder="Ej. 77894210"
+                  required
+                  class="input-control font-mono"
+                />
+                <small class="helper-text">Código único de seguimiento para consultar el recorrido del paquete en el tracking oficial de Olva.</small>
+              </div>
+            </div>
+
+            <!-- AVISO PARA MOTORIZADO LOCAL -->
+            <div class="notice-box notice-motorizado" *ngIf="agenciaSeleccionada === 'MOTORIZADO'">
+              🛵 <strong>Envío directo por Motorizado:</strong> La entrega se gestiona localmente sin código de tracking externo. El cliente verá un aviso informativo para coordinar en tiempo real.
+            </div>
+
+            <!-- VIGENCIA TEMPORAL DE RASTREO -->
             <div class="form-group">
-              <label for="codigoOrdenShalom">2. Código de Orden Shalom (*):</label>
-              <input
-                type="text"
-                id="codigoOrdenShalom"
-                [(ngModel)]="codigoOrdenShalom"
-                name="codigoOrdenShalom"
-                placeholder="ej. C7P9"
-                maxlength="20"
-                required
-                class="input-control font-mono uppercase-input"
-              />
-              <small class="helper-text">Código de verificación para rastreo en su web.</small>
-            </div>
-          </div>
-
-          <div class="fields-two-cols" style="margin-top: 10px;">
-            <!-- CASILLA 3: CLAVE DE RECOJO EN TIENDA -->
-            <div class="form-group">
-              <label for="claveRecojoShalom">3. Clave de Recojo en Tienda (*):</label>
-              <input
-                type="text"
-                id="claveRecojoShalom"
-                [(ngModel)]="claveRecojo"
-                name="claveRecojoShalom"
-                placeholder="ej. 4545 o PIN"
-                maxlength="20"
-                required
-                class="input-control font-mono uppercase-input"
-              />
-              <small class="helper-text">Código/clave para retiro en ventanilla física.</small>
+              <label>Vigencia de Consulta para el Cliente (*):</label>
+              <div class="vigencia-options">
+                <label class="radio-chip" [class.selected]="vigenciaDias === 5">
+                  <input type="radio" name="vigencia" [(ngModel)]="vigenciaDias" [value]="5" />
+                  <span>Local / Lima (5 días)</span>
+                </label>
+                <label class="radio-chip" [class.selected]="vigenciaDias === 14">
+                  <input type="radio" name="vigencia" [(ngModel)]="vigenciaDias" [value]="14" />
+                  <span>Provincia (14 días / 2 semanas)</span>
+                </label>
+              </div>
+              <small class="helper-text">Transcurrido este plazo, la guía expira para evitar colisiones con futuras compras del mismo número telefónico.</small>
             </div>
 
-            <!-- CASILLA 4: FLETE EN DESTINO -->
-            <div class="form-group">
-              <label for="fleteDestinoShalom">4. Flete a pagar en destino (S/):</label>
-              <input
-                type="number"
-                step="0.50"
-                min="0"
-                id="fleteDestinoShalom"
-                [(ngModel)]="fleteDestino"
-                name="fleteDestinoShalom"
-                placeholder="0.00"
-                class="input-control"
-              />
-              <small class="helper-text">Monto en ventanilla. Dejar en 0 si está pagado.</small>
+            <div class="form-actions">
+              <button type="submit" class="btn-primary" [disabled]="guardandoDespacho">
+                <span class="spinner-mini" *ngIf="guardandoDespacho"></span>
+                {{ guardandoDespacho ? 'Registrando despacho...' : 'Registrar Despacho y Poner en Tránsito' }}
+              </button>
             </div>
           </div>
-        </div>
-
-        <!-- CAMPOS ESPECÍFICOS PARA OLVA COURIER -->
-        <div *ngIf="agenciaSeleccionada === 'OLVA'" class="agency-fields-box olva-box">
-          <div class="form-group">
-            <label for="numeroGuiaOlva">Número de Guía / Tracking Olva (*):</label>
-            <input
-              type="text"
-              id="numeroGuiaOlva"
-              [(ngModel)]="numeroGuia"
-              name="numeroGuiaOlva"
-              placeholder="Ej. 77894210"
-              required
-              class="input-control font-mono"
-            />
-            <small class="helper-text">Código único de seguimiento para consultar el recorrido del paquete en el tracking oficial de Olva.</small>
-          </div>
-        </div>
-
-        <!-- AVISO PARA MOTORIZADO LOCAL -->
-        <div class="notice-box notice-motorizado" *ngIf="agenciaSeleccionada === 'MOTORIZADO'">
-          🛵 <strong>Envío directo por Motorizado:</strong> La entrega se gestiona localmente sin código de tracking externo. El cliente verá un aviso informativo para coordinar en tiempo real.
-        </div>
-
-        <!-- VIGENCIA TEMPORAL DE RASTREO -->
-        <div class="form-group">
-          <label>Vigencia de Consulta para el Cliente (*):</label>
-          <div class="vigencia-options">
-            <label class="radio-chip" [class.selected]="vigenciaDias === 5">
-              <input type="radio" name="vigencia" [(ngModel)]="vigenciaDias" [value]="5" />
-              <span>Local / Lima (5 días)</span>
-            </label>
-            <label class="radio-chip" [class.selected]="vigenciaDias === 14">
-              <input type="radio" name="vigencia" [(ngModel)]="vigenciaDias" [value]="14" />
-              <span>Provincia (14 días / 2 semanas)</span>
-            </label>
-          </div>
-          <small class="helper-text">Transcurrido este plazo, la guía expira para evitar colisiones con futuras compras del mismo número telefónico.</small>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn-primary" [disabled]="guardandoDespacho">
-            <span class="spinner-mini" *ngIf="guardandoDespacho"></span>
-            {{ guardandoDespacho ? 'Publicando despacho...' : 'Despachar y Publicar Rastreo' }}
-          </button>
         </div>
       </form>
     </div>
