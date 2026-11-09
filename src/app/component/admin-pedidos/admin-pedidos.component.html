@@ -58,6 +58,14 @@
           }
         </div>
 
+        <!-- ORDENAMIENTO FECHA -->
+        <div class="filter-dropdown-wrapper">
+          <select class="select-filter-orden" [(ngModel)]="ordenFecha" (ngModelChange)="reiniciarPaginacion()" aria-label="Ordenar pedidos por fecha">
+            <option value="recientes">Más recientes primero</option>
+            <option value="antiguos">Más antiguos primero</option>
+          </select>
+        </div>
+
         <button class="new-order" type="button" (click)="abrirModalNuevo()">Nuevo pedido <span>+</span></button>
       </div>
 

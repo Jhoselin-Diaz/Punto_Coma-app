@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminPedidoService } from '../../../service/admin-pedido.service';
+import { AdminPedidoService, obtenerTimestampReal } from '../../../service/admin-pedido.service';
 import { ConfiguracionService } from '../../../service/configuracion.service';
 import { ModalAlertaService } from '../../../service/modal-alerta.service';
 
@@ -91,13 +91,10 @@ export class AdminRastreoComponent implements OnInit {
   }
 
   ordenarPedidosDescendente(a: PedidoValido, b: PedidoValido): number {
-    const fechaA = a.fechaPago || a.fechaOriginal;
-    const fechaB = b.fechaPago || b.fechaOriginal;
-    const timeA = fechaA ? new Date(fechaA).getTime() : NaN;
-    const timeB = fechaB ? new Date(fechaB).getTime() : NaN;
-
-    if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
-      return timeB - timeA;
+    const tsA = obtenerTimestampReal(a);
+    const tsB = obtenerTimestampReal(b);
+    if (tsA !== tsB && !isNaN(tsA) && !isNaN(tsB) && (tsA > 0 || tsB > 0)) {
+      return tsB - tsA;
     }
 
     const numIdA = Number(a.dbId || (String(a.id).replace(/\D/g, ''))) || 0;

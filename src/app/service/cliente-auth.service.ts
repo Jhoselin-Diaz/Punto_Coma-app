@@ -365,7 +365,11 @@ export class ClienteAuthService {
       map(pedidos => {
         if (!Array.isArray(pedidos) || pedidos.length === 0) return [];
 
-        const estadosPermitidos = ['validado', 'concretado', 'entregado', 'completado', 'aprobado', 'en camino', 'en_camino'];
+        const estadosPermitidos = [
+          'pendiente', '1er pendiente', '2do pendiente',
+          'en validacion', 'en validación', 'en revision', 'en_revision', 'en revisión',
+          'validado', 'concretado', 'entregado', 'completado', 'aprobado', 'en camino', 'en_camino'
+        ];
 
         return pedidos
           .filter(p => {
@@ -385,12 +389,15 @@ export class ClienteAuthService {
           })
           .map(p => ({
             id: p.id,
-            numeroOrden: p.numeroOrden || `ORD-${p.id}`,
-            fecha: p.fecha || p.fechaPago || 'Reciente',
-            total: p.total || 0,
-            estado: p.estado || 'Validado',
+            numeroOrden: p.numeroOrden || p.id || `ORD-${p.dbId || p.id}`,
+            fecha: p.fechaOriginal || p.fecha || p.fechaPago || 'Reciente',
+            total: p.totalNumerico !== undefined ? p.totalNumerico : (typeof p.total === 'number' ? p.total : (parseFloat(String(p.total).replace(/[^0-9.]/g, '')) || 0)),
+            estado: p.estado || 'Pendiente',
             metodoPago: p.metodoPago || 'WhatsApp',
-            nombreCompleto: p.nombreCompleto || p.cliente || 'Cliente'
+            nombreCompleto: p.nombreCompleto || p.cliente || 'Cliente',
+            direccion: p.direccion || p.direccionEnvio || '',
+            agencia: p.agencia || p.agenciaEnvio || '',
+            productos: p.producto || ''
           }));
       }),
       catchError(err => {
@@ -398,6 +405,24 @@ export class ClienteAuthService {
         return of([]);
       })
     );
+  }
+
+  // Validación de Primera Compra / Cupón de Bienvenida
+  haRealizadoPrimeraCompra(): boolean {
+    const c = this.currentCliente;
+    if (!c || !c.email) return false;
+    const emailKey = `puntoycoma_primera_compra_${c.email.toLowerCase().trim()}`;
+    const legacyKey = `cupon_bienvenida_usado_${c.email.toLowerCase().trim()}`;
+    return localStorage.getItem(emailKey) === 'true' || localStorage.getItem(legacyKey) === 'true';
+  }
+
+  marcarPrimeraCompraRealizada(): void {
+    const c = this.currentCliente;
+    if (!c || !c.email) return;
+    const emailKey = `puntoycoma_primera_compra_${c.email.toLowerCase().trim()}`;
+    const legacyKey = `cupon_bienvenida_usado_${c.email.toLowerCase().trim()}`;
+    localStorage.setItem(emailKey, 'true');
+    localStorage.setItem(legacyKey, 'true');
   }
 
   // Métodos de Gestión de Datos Personales y Direcciones
@@ -445,28 +470,38 @@ export class ClienteAuthService {
 
   obtenerDirecciones(): DireccionCliente[] {
     const c = this.currentCliente;
-    if (!c) return [];
-    if (!c.direcciones || !Array.isArray(c.direcciones)) {
-      c.direcciones = [];
+    if (!c || !c.email) return [];
+    const storageKey = `puntoycoma_direcciones_${c.email.toLowerCase().trim()}`;
+    let list: DireccionCliente[] = [];
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        list = JSON.parse(raw);
+      }
+    } catch (e) {
+      console.error('Error parseando direcciones de storage:', e);
     }
-    return c.direcciones;
+    // Filtrar estrictamente cualquier mock "Larco" residual
+    list = Array.isArray(list) ? list.filter(d => !d.direccion?.toLowerCase().includes('larco')) : [];
+    c.direcciones = list;
+    return list;
   }
 
   guardarDireccion(dir: Omit<DireccionCliente, 'id'> & { id?: string }): void {
     const c = this.currentCliente;
-    if (!c) return;
-    if (!c.direcciones) c.direcciones = [];
+    if (!c || !c.email) return;
+    let dirs = this.obtenerDirecciones();
 
-    const esPrincipal = dir.esPrincipal || c.direcciones.length === 0;
+    const esPrincipal = dir.esPrincipal || dirs.length === 0;
 
     if (esPrincipal) {
-      c.direcciones.forEach(d => d.esPrincipal = false);
+      dirs.forEach(d => d.esPrincipal = false);
     }
 
     if (dir.id) {
-      const idx = c.direcciones.findIndex(d => d.id === dir.id);
+      const idx = dirs.findIndex(d => d.id === dir.id);
       if (idx !== -1) {
-        c.direcciones[idx] = { ...dir, id: dir.id, esPrincipal };
+        dirs[idx] = { ...dir, id: dir.id, esPrincipal };
       }
     } else {
       const nueva: DireccionCliente = {
@@ -474,29 +509,52 @@ export class ClienteAuthService {
         id: 'dir-' + Date.now(),
         esPrincipal
       };
-      c.direcciones.push(nueva);
+      dirs.push(nueva);
     }
 
+    const storageKey = `puntoycoma_direcciones_${c.email.toLowerCase().trim()}`;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(dirs));
+    } catch (e) {
+      console.error('Error guardando direcciones en storage:', e);
+    }
+    c.direcciones = dirs;
     this.establecerSesion({ ...c });
   }
 
   eliminarDireccion(id: string): void {
     const c = this.currentCliente;
-    if (!c || !c.direcciones) return;
-    const eraPrincipal = c.direcciones.find(d => d.id === id)?.esPrincipal;
-    c.direcciones = c.direcciones.filter(d => d.id !== id);
-    if (eraPrincipal && c.direcciones.length > 0) {
-      c.direcciones[0].esPrincipal = true;
+    if (!c || !c.email) return;
+    let dirs = this.obtenerDirecciones();
+    const eraPrincipal = dirs.find(d => d.id === id)?.esPrincipal;
+    dirs = dirs.filter(d => d.id !== id);
+    if (eraPrincipal && dirs.length > 0) {
+      dirs[0].esPrincipal = true;
     }
+    const storageKey = `puntoycoma_direcciones_${c.email.toLowerCase().trim()}`;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(dirs));
+    } catch (e) {
+      console.error('Error guardando direcciones en storage:', e);
+    }
+    c.direcciones = dirs;
     this.establecerSesion({ ...c });
   }
 
   establecerDireccionPrincipal(id: string): void {
     const c = this.currentCliente;
-    if (!c || !c.direcciones) return;
-    c.direcciones.forEach(d => {
+    if (!c || !c.email) return;
+    let dirs = this.obtenerDirecciones();
+    dirs.forEach(d => {
       d.esPrincipal = (d.id === id);
     });
+    const storageKey = `puntoycoma_direcciones_${c.email.toLowerCase().trim()}`;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(dirs));
+    } catch (e) {
+      console.error('Error guardando direcciones en storage:', e);
+    }
+    c.direcciones = dirs;
     this.establecerSesion({ ...c });
   }
 

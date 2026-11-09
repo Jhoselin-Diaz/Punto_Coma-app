@@ -322,7 +322,15 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
       next: (cupones) => {
         this.cargandoCupones = false;
         if (Array.isArray(cupones) && cupones.length > 0) {
-          this.cuponesDisponibles = cupones.filter(c => c.activo && c.visibleWeb !== false);
+          const yaRealizoPrimeraCompra = (this.misPedidos && this.misPedidos.length > 0) || this.clienteAuthService.haRealizadoPrimeraCompra();
+          this.cuponesDisponibles = cupones.filter(c => {
+            if (!c.activo || c.visibleWeb === false) return false;
+            const esBienvenida = c.tipoAplicacion === 'BIENVENIDA' || (c.codigo || '').toUpperCase().includes('BIENVENID');
+            if (esBienvenida && yaRealizoPrimeraCompra) {
+              return false;
+            }
+            return true;
+          });
         } else {
           this.cuponesDisponibles = [];
         }
@@ -375,6 +383,12 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
 
   usarCuponEnCarrito(cupon: Cupon): void {
     if (!cupon || !cupon.codigo) return;
+    const esBienvenida = cupon.tipoAplicacion === 'BIENVENIDA' || (cupon.codigo || '').toUpperCase().includes('BIENVENID');
+    const yaRealizoPrimeraCompra = (this.misPedidos && this.misPedidos.length > 0) || this.clienteAuthService.haRealizadoPrimeraCompra();
+    if (esBienvenida && yaRealizoPrimeraCompra) {
+      this.mostrarToast('Este cupón de bienvenida solo es válido para tu primera compra.');
+      return;
+    }
     this.cartService.applyDynamicCoupon(cupon);
     this.cerrarModalPerfil();
     this.mostrarToast(`¡Cupón ${cupon.codigo} aplicado! Redirigiendo a tu carrito...`);
@@ -486,21 +500,6 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
 
   cargarDirecciones(): void {
     this.direcciones = this.clienteAuthService.obtenerDirecciones();
-    // Si no tiene direcciones y es un usuario con datos, inicializar con una por defecto si aplica
-    if (this.direcciones.length === 0) {
-      const c = this.clienteAuthService.currentCliente;
-      if (c) {
-        this.clienteAuthService.guardarDireccion({
-          departamento: 'Lima',
-          provincia: 'Lima',
-          distrito: 'Miraflores',
-          direccion: 'Av. Larco 456',
-          detalleOpcional: 'Dpto. 302',
-          esPrincipal: true
-        });
-        this.direcciones = this.clienteAuthService.obtenerDirecciones();
-      }
-    }
   }
 
   abrirFormNuevaDireccion(): void {

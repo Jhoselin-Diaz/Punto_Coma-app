@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminLayoutComponent } from '../admin-layout/admin-layout.component';
 import { CartService } from '../../service/cart.service';
-import { AdminPedidoService } from '../../service/admin-pedido.service';
+import { AdminPedidoService, obtenerTimestampReal } from '../../service/admin-pedido.service';
 import { ModalAlertaService } from '../../service/modal-alerta.service';
 
 interface PedidoAdmin {
@@ -30,6 +30,9 @@ interface PedidoAdmin {
   voucherUrl?: string;
   dbId?: number;
   fechaPago?: string;
+  fechaOriginal?: string;
+  numeroOrden?: string;
+  totalNumerico?: number;
 }
 
 interface LineaNuevoPedido {
@@ -483,9 +486,10 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
   filtroFechaHasta = '';               // 'YYYY-MM-DD'
   mostrarFiltroFecha = false;          // toggle panel de fechas
   mostrarFiltroEstado = false;         // toggle panel de estados
+  ordenFecha: 'recientes' | 'antiguos' = 'recientes';
 
   get pedidosFiltrados(): PedidoAdmin[] {
-    return this.pedidos.filter(p => {
+    const filtrados = this.pedidos.filter(p => {
       // 1. Filtro texto libre
       if (this.filtroTexto.trim()) {
         const q = this.filtroTexto.toLowerCase();
@@ -520,6 +524,22 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
       }
       return true;
     });
+
+    filtrados.sort((a, b) => {
+      const tsA = obtenerTimestampReal(a);
+      const tsB = obtenerTimestampReal(b);
+      if (tsA !== tsB && !isNaN(tsA) && !isNaN(tsB) && (tsA > 0 || tsB > 0)) {
+        return this.ordenFecha === 'antiguos' ? (tsA - tsB) : (tsB - tsA);
+      }
+      const numIdA = Number(a.dbId || String(a.id).replace(/\D/g, '')) || 0;
+      const numIdB = Number(b.dbId || String(b.id).replace(/\D/g, '')) || 0;
+      if (numIdA !== numIdB) {
+        return this.ordenFecha === 'antiguos' ? (numIdA - numIdB) : (numIdB - numIdA);
+      }
+      return this.ordenFecha === 'antiguos' ? (a.id || '').localeCompare(b.id || '') : (b.id || '').localeCompare(a.id || '');
+    });
+
+    return filtrados;
   }
 
   private parseFechaPedido(fechaStr: string): Date | null {

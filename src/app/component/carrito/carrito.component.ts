@@ -509,8 +509,11 @@ export class CarritoComponent implements OnInit, OnDestroy {
           dirTexto = `${dirPrincipal.direccion}${det}, ${dirPrincipal.distrito}, ${dirPrincipal.departamento}`;
         }
 
+        const email = cliente?.email || '';
+        const emailMsg = email ? `📧 Cuenta: ${email}\n` : '';
         textMsg = `✨ [PEDIDO DE CLIENTE REGISTRADO]\n` +
                   `👤 Cliente: ${nombreCompleto}\n` +
+                  emailMsg +
                   `📄 DNI: ${dni}\n` +
                   `📱 Teléfono: ${telefono}\n` +
                   `📍 Dirección de entrega registrada: ${dirTexto}\n\n` +
@@ -550,6 +553,7 @@ export class CarritoComponent implements OnInit, OnDestroy {
           this.tieneComprasPreviasValidadas = true;
         }
       }
+      this.clienteAuthService.marcarPrimeraCompraRealizada();
 
       // 4. Abrir navegación externa hacia WhatsApp
       const ventana = window.open(waUrl, '_blank');

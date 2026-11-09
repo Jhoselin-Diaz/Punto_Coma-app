@@ -377,7 +377,7 @@
   <!-- ======================================================== -->
   <!-- MODAL 2: SIDE-DRAWER DERECHO ESTILO FALABELLA (MI PERFIL) -->
   @if (clienteAuthService.modalPerfilOpen$ | async) {
-    <div class="drawer-backdrop-cliente" (click)="cerrarModalPerfil()">
+    <div class="drawer-backdrop-cliente">
       <div class="profile-drawer" (click)="$event.stopPropagation()">
         <!-- ENCABEZADO DEL DRAWER -->
         <div class="drawer-header">
