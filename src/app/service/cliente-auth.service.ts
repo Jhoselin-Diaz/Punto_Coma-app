@@ -65,6 +65,7 @@ export class ClienteAuthService {
   public modalAuthOpen$ = new BehaviorSubject<boolean>(false);
   public modalAuthTab$ = new BehaviorSubject<'login' | 'register'>('login');
   public modalPerfilOpen$ = new BehaviorSubject<boolean>(false);
+  public modalPerfilSeccion$ = new BehaviorSubject<'compras' | 'datos' | 'direcciones' | 'cupones'>('compras');
   public modalFavoritosOpen$ = new BehaviorSubject<boolean>(false);
   public modalAvisoLoginOpen$ = new BehaviorSubject<boolean>(false);
 
@@ -503,11 +504,12 @@ export class ClienteAuthService {
     this.modalAuthOpen$.next(false);
   }
 
-  abrirModalPerfil(): void {
+  abrirModalPerfil(seccion: 'compras' | 'datos' | 'direcciones' | 'cupones' = 'compras'): void {
     if (!this.isLoggedIn) {
       this.abrirModalAuth('login');
       return;
     }
+    this.modalPerfilSeccion$.next(seccion);
     this.cerrarModalAuth();
     this.cerrarModalFavoritos();
     this.cerrarAvisoLogin();

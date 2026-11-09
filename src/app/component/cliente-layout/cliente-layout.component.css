@@ -1947,3 +1947,177 @@
   border: 1px solid #bfdbfe;
   margin-bottom: 12px;
 }
+
+/* ======================================================== */
+/* SECCIÓN CUPONES EN EL DRAWER LATERAL (ESTILO FALABELLA)  */
+/* ======================================================== */
+.profile-coupons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.drawer-coupon-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #ffffff;
+  border: 1.5px dashed #fbd5b5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 8px rgba(43, 27, 22, 0.03);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.drawer-coupon-card:hover {
+  border-color: #df6c1b;
+  box-shadow: 0 4px 14px rgba(223, 108, 27, 0.12);
+  transform: translateY(-1px);
+}
+
+.drawer-coupon-badge {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+
+.drawer-coupon-pct {
+  font-size: 17px;
+  font-weight: 900;
+  color: #c2410c;
+  line-height: 1;
+}
+
+.drawer-coupon-off {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #9a3412;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.drawer-coupon-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-coupon-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.drawer-coupon-code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: 0.5px;
+}
+
+.drawer-coupon-pill {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 12px;
+  line-height: 1.2;
+}
+
+.drawer-coupon-desc {
+  font-size: 12px;
+  color: #4b5563;
+  margin: 3px 0 2px;
+  line-height: 1.35;
+}
+
+.drawer-coupon-min {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 600;
+  display: block;
+}
+
+.drawer-coupon-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 100px;
+}
+
+.btn-coupon-copy {
+  background: #f9fafb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.btn-coupon-copy:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.btn-coupon-copy.copied {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.btn-coupon-use {
+  background: var(--orange, #df6c1b);
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.btn-coupon-use:hover {
+  background: var(--primary-hover, #c2410c);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(223, 108, 27, 0.25);
+}
+
+@media (max-width: 480px) {
+  .drawer-coupon-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .drawer-coupon-badge {
+    flex-direction: row;
+    gap: 6px;
+    padding: 6px 10px;
+  }
+  .drawer-coupon-actions {
+    flex-direction: row;
+  }
+  .btn-coupon-copy,
+  .btn-coupon-use {
+    flex: 1;
+  }
+}

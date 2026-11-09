@@ -1,12 +1,12 @@
 <app-cliente-layout>
-  <main class="cart-page" [class.has-coupons-sidebar]="cuponesVisibles.length > 0">
+  <main class="cart-page">
     <header class="cart-header">
       <h1>Tu carrito</h1>
       <span class="product-count">{{ itemsCarrito.length }} {{ itemsCarrito.length === 1 ? 'producto' : 'productos' }}</span>
     </header>
 
     @if (itemsCarrito.length > 0) {
-      <div class="cart-content" [class.with-sidebar]="cuponesVisibles.length > 0">
+      <div class="cart-content">
         <!-- Left Column: Items List -->
         <div class="cart-items-section">
           @for (item of itemsCarrito; track item.id) {
@@ -136,6 +136,11 @@
               </div>
             }
 
+            <div class="profile-coupons-hint" (click)="abrirCuponesPerfil()" role="button" tabindex="0" title="Ver cupones en tu perfil">
+              <span class="hint-icon">💡</span>
+              <span class="hint-text">¿Buscas descuentos? <strong>Revisa tus cupones disponibles en tu perfil &rarr;</strong></span>
+            </div>
+
             
             @if (cartService.coupon && cartService.discount > 0) {
               <div class="coupon-voucher-card">
@@ -218,46 +223,6 @@
             </ul>
           </div>
         </div>
-
-        <!-- Panel Lateral de Cupones Disponibles en Tienda -->
-        @if (cuponesVisibles && cuponesVisibles.length > 0) {
-          <aside class="cart-coupons-sidebar">
-            <div class="available-coupons-card">
-              <div class="coupons-sidebar-header">
-                <h3>🎟️ Cupones disponibles</h3>
-                <span class="coupons-count-badge">{{ cuponesVisibles.length }}</span>
-              </div>
-              <p class="coupons-sidebar-subtitle">Aplica un cupón para obtener descuentos en tu pedido.</p>
-
-              <div class="coupons-tickets-list">
-                @for (c of cuponesVisibles; track c.id) {
-                  <div class="coupon-ticket-card" [class.is-applied]="cartService.coupon === c.codigo">
-                    <div class="ticket-left">
-                      <span class="ticket-pct">{{ c.porcentajeDescuento }}%</span>
-                      <span class="ticket-off">OFF</span>
-                      <div class="ticket-notch notch-top"></div>
-                      <div class="ticket-notch notch-bottom"></div>
-                    </div>
-                    <div class="ticket-divider"></div>
-                    <div class="ticket-right">
-                      <div class="ticket-details">
-                        <strong class="ticket-code">{{ c.codigo }}</strong>
-                        <span class="ticket-condition">{{ obtenerCondicionResumida(c) }}</span>
-                      </div>
-                      <button 
-                        type="button" 
-                        class="ticket-apply-btn" 
-                        [class.applied]="cartService.coupon === c.codigo"
-                        (click)="aplicarCuponDesdePanel(c)">
-                        {{ cartService.coupon === c.codigo ? '✓ Aplicado' : 'Aplicar' }}
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-          </aside>
-        }
       </div>
     } @else {
       <div class="empty-cart-state">

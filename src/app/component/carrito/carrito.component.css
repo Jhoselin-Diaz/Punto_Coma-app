@@ -48,17 +48,12 @@
   font-weight: 400;
 }
 
-/* Base two-column layout */
+/* Clean balanced two-column layout */
 .cart-content {
   display: grid;
-  grid-template-columns: 1fr 310px;
-  gap: 20px;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
   align-items: start;
-}
-
-/* Three-column layout on desktop ONLY when sidebar is present */
-.cart-content.with-sidebar {
-  grid-template-columns: 1fr 310px 280px;
 }
 
 /* Left Column: Items */
@@ -339,6 +334,45 @@
   transform: scale(0.98);
 }
 
+
+/* Enlace sutil al perfil de cupones */
+.profile-coupons-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff8f1;
+  border: 1px dashed #fbd5b5;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  color: #7b4b28;
+}
+
+.profile-coupons-hint:hover {
+  background: #ffedd5;
+  border-color: #df6c1b;
+  transform: translateY(-1px);
+}
+
+.profile-coupons-hint .hint-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.profile-coupons-hint .hint-text {
+  line-height: 1.35;
+}
+
+.profile-coupons-hint strong {
+  color: #c2410c;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .coupon-message {
   min-height: 22px;
   margin-bottom: 14px;
@@ -468,22 +502,10 @@
 }
 
 /* Responsive design */
-@media (max-width: 1080px) {
-  .cart-content.with-sidebar {
-    grid-template-columns: 1fr 320px;
-  }
-  
-  .cart-coupons-sidebar {
-    grid-column: 1 / -1;
-    margin-top: 10px;
-    position: static !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .cart-content,
-  .cart-content.with-sidebar {
+@media (max-width: 900px) {
+  .cart-content {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
   
   .cart-summary-section {

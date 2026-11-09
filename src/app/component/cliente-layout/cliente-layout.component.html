@@ -422,6 +422,15 @@
             <span class="nav-text">Direcciones</span>
             <span class="nav-badge" *ngIf="direcciones.length > 0">{{ direcciones.length }}</span>
           </button>
+          <button 
+            type="button" 
+            class="drawer-nav-item" 
+            [class.active]="perfilSeccionActiva === 'cupones'"
+            (click)="cambiarSeccionPerfil('cupones')">
+            <span class="nav-icon">🎟️</span>
+            <span class="nav-text">Cupones</span>
+            <span class="nav-badge" *ngIf="cuponesDisponibles.length > 0">{{ cuponesDisponibles.length }}</span>
+          </button>
         </nav>
 
         <!-- CUERPO DEL DRAWER CON SCROLL -->
@@ -729,6 +738,68 @@
               }
             </div>
           }
+          <!-- ========================================== -->
+          <!-- PESTAÑA 4: CUPONES DISPONIBLES             -->
+          <!-- ========================================== -->
+          @if (perfilSeccionActiva === 'cupones') {
+            <div class="drawer-section">
+              <div class="section-header-compact">
+                <h4>Mis Cupones y Descuentos</h4>
+                <span class="section-count-badge" *ngIf="cuponesDisponibles.length > 0">{{ cuponesDisponibles.length }} vigentes</span>
+              </div>
+              <p class="section-helper-text">Usa o copia estos cupones para aplicarlos al momento de tu compra.</p>
+
+              @if (cargandoCupones) {
+                <div class="drawer-loading-box">
+                  <span class="spinner-small"></span>
+                  <span>Cargando cupones disponibles...</span>
+                </div>
+              } @else if (cuponesDisponibles.length > 0) {
+                <div class="profile-coupons-list">
+                  @for (cupon of cuponesDisponibles; track cupon.id || cupon.codigo) {
+                    <div class="drawer-coupon-card">
+                      <div class="drawer-coupon-badge">
+                        <span class="drawer-coupon-pct">{{ cupon.porcentajeDescuento }}%</span>
+                        <span class="drawer-coupon-off">OFF</span>
+                      </div>
+                      <div class="drawer-coupon-info">
+                        <div class="drawer-coupon-top">
+                          <strong class="drawer-coupon-code">{{ cupon.codigo }}</strong>
+                          <span class="drawer-coupon-pill" *ngIf="cupon.tipoAplicacion === 'BIENVENIDA'">1ra compra</span>
+                        </div>
+                        <p class="drawer-coupon-desc">{{ obtenerDescripcionCupon(cupon) }}</p>
+                        <span class="drawer-coupon-min" *ngIf="cupon.montoMinimo && cupon.montoMinimo > 0">
+                          Min. S/ {{ cupon.montoMinimo.toFixed(2) }}
+                        </span>
+                      </div>
+                      <div class="drawer-coupon-actions">
+                        <button 
+                          type="button" 
+                          class="btn-coupon-copy" 
+                          [class.copied]="copiadoCodigo === cupon.codigo"
+                          (click)="copiarCodigoCupon(cupon.codigo)">
+                          {{ copiadoCodigo === cupon.codigo ? '¡Copiado! ✓' : 'Copiar código' }}
+                        </button>
+                        <button 
+                          type="button" 
+                          class="btn-coupon-use" 
+                          (click)="usarCuponEnCarrito(cupon)">
+                          Usar cupón &rarr;
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="drawer-empty-state">
+                  <span class="empty-icon-large">🎟️</span>
+                  <h4>No tienes cupones vigentes por el momento</h4>
+                  <p>Mantente atento a nuestras promociones especiales y campañas exclusivas.</p>
+                </div>
+              }
+            </div>
+          }
+
         </div>
 
         <!-- PIE DEL DRAWER -->

@@ -7,6 +7,7 @@ import { ConfiguracionService } from '../../service/configuracion.service';
 import { CartService } from '../../service/cart.service';
 import { ProductosService } from '../../service/productos.service';
 import { ClienteAuthService, DireccionCliente } from '../../service/cliente-auth.service';
+import { AdminCarritoService, Cupon } from '../../service/admin-carrito.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -50,7 +51,12 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
   avisoGoogle = '';
 
   // NAVEGACIÓN Y SECCIONES DEL DRAWER (FALABELLA STYLE)
-  perfilSeccionActiva: 'compras' | 'datos' | 'direcciones' = 'compras';
+  perfilSeccionActiva: 'compras' | 'datos' | 'direcciones' | 'cupones' = 'compras';
+
+  // SECCIÓN: CUPONES DISPONIBLES
+  cuponesDisponibles: Cupon[] = [];
+  cargandoCupones = false;
+  copiadoCodigo: string | null = null;
 
   // FORMULARIO: DATOS PERSONALES
   datosNombre = '';
@@ -89,6 +95,7 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     public configService: ConfiguracionService,
     private cartService: CartService,
     private productosService: ProductosService,
+    private adminCarritoService: AdminCarritoService,
     public clienteAuthService: ClienteAuthService,
     private router: Router,
     private route: ActivatedRoute,
@@ -146,9 +153,20 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
       this.clienteAuthService.modalPerfilOpen$.subscribe(open => {
         if (open) {
           this.cargarMisPedidos();
+          this.cargarCupones();
         }
       })
     );
+
+    this.sub.add(
+      this.clienteAuthService.modalPerfilSeccion$.subscribe(seccion => {
+        if (seccion) {
+          this.cambiarSeccionPerfil(seccion);
+        }
+      })
+    );
+
+    this.cargarCupones();
   }
 
   // Acciones de Usuario y Modales de Cliente
@@ -194,7 +212,7 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  abrirPerfil(seccion: 'compras' | 'datos' | 'direcciones' = 'compras'): void {
+  abrirPerfil(seccion: 'compras' | 'datos' | 'direcciones' | 'cupones' = 'compras'): void {
     this.perfilSeccionActiva = seccion;
     this.perfilMensajeExito = false;
     this.datosMensajeExito = false;
@@ -204,11 +222,12 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     this.cargarFormularioDatosPersonales();
     this.cargarDirecciones();
     this.cargarMisPedidos();
+    this.cargarCupones();
 
-    this.clienteAuthService.abrirModalPerfil();
+    this.clienteAuthService.abrirModalPerfil(seccion);
   }
 
-  cambiarSeccionPerfil(seccion: 'compras' | 'datos' | 'direcciones'): void {
+  cambiarSeccionPerfil(seccion: 'compras' | 'datos' | 'direcciones' | 'cupones'): void {
     this.perfilSeccionActiva = seccion;
     this.perfilMensajeExito = false;
     this.datosMensajeExito = false;
@@ -221,7 +240,75 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
       this.cargarFormularioDatosPersonales();
     } else if (seccion === 'direcciones') {
       this.cargarDirecciones();
+    } else if (seccion === 'cupones') {
+      this.cargarCupones();
     }
+  }
+
+  
+  cargarCupones(): void {
+    this.cargandoCupones = true;
+    this.adminCarritoService.listarCupones().subscribe({
+      next: (cupones) => {
+        this.cargandoCupones = false;
+        if (Array.isArray(cupones) && cupones.length > 0) {
+          this.cuponesDisponibles = cupones.filter(c => c.activo && c.visibleWeb !== false);
+        } else {
+          this.cuponesDisponibles = [];
+        }
+      },
+      error: (err) => {
+        this.cargandoCupones = false;
+        console.warn('Error al cargar cupones en el perfil:', err);
+      }
+    });
+  }
+
+  obtenerDescripcionCupon(cupon: Cupon): string {
+    const tipo = (cupon.tipoAplicacion || '').toUpperCase().trim();
+    switch (tipo) {
+      case 'BIENVENIDA':
+        return 'Válido para tu 1ra compra al registrarte o iniciar sesión';
+      case 'CATEGORIA':
+        return `Válido en la categoría ${cupon.categoriaAplicable || 'seleccionada'}`;
+      case 'OFERTA':
+      case 'OFERTAS':
+        return 'Válido únicamente en productos con oferta especial';
+      case 'LIQUIDACION':
+        return 'Válido en productos de liquidación seleccionados';
+      case 'GENERAL':
+      default:
+        return 'Válido para compras en toda la tienda online';
+    }
+  }
+
+  copiarCodigoCupon(codigo: string): void {
+    if (!codigo) return;
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(codigo).then(() => {
+        this.copiadoCodigo = codigo;
+        this.mostrarToast(`¡Código ${codigo} copiado al portapapeles!`);
+        setTimeout(() => {
+          if (this.copiadoCodigo === codigo) {
+            this.copiadoCodigo = null;
+          }
+        }, 3000);
+      }).catch(() => {
+        this.copiadoCodigo = codigo;
+        setTimeout(() => this.copiadoCodigo = null, 3000);
+      });
+    } else {
+      this.copiadoCodigo = codigo;
+      setTimeout(() => this.copiadoCodigo = null, 3000);
+    }
+  }
+
+  usarCuponEnCarrito(cupon: Cupon): void {
+    if (!cupon || !cupon.codigo) return;
+    this.cartService.applyDynamicCoupon(cupon);
+    this.cerrarModalPerfil();
+    this.mostrarToast(`¡Cupón ${cupon.codigo} aplicado! Redirigiendo a tu carrito...`);
+    this.router.navigate(['/carrito']);
   }
 
   cerrarModalPerfil(): void {

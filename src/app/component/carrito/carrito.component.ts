@@ -196,6 +196,10 @@ export class CarritoComponent implements OnInit, OnDestroy {
     return condicion;
   }
 
+  abrirCuponesPerfil() {
+    this.clienteAuthService.abrirModalPerfil('cupones');
+  }
+
   abrirRegistroDesdeCarrito() {
     this.clienteAuthService.abrirModalAuth('register');
   }
