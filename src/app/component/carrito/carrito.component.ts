@@ -489,11 +489,43 @@ export class CarritoComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const textMsg = `Hola! Me gustaría confirmar mi pedido:\n` + 
-                      this.itemsCarrito.map(i => `- ${i.nombre} (Cantidad: ${i.cantidad})`).join('\n') +
-                      `\nSubtotal: S/ ${this.cartService.subtotal.toFixed(2)}` +
-                      `\nDescuento: S/ ${this.cartService.discount.toFixed(2)}` +
-                      `\nTotal: S/ ${this.cartService.total.toFixed(2)}`;
+      let textMsg = '';
+      if (this.clienteAuthService.isLoggedIn) {
+        const cliente = this.clienteAuthService.currentCliente;
+        const nombre = cliente?.nombre || this.clienteAuthService.nombreParaMostrar || 'Cliente';
+        const apellido = cliente?.apellidoPaterno || cliente?.apellidos || '';
+        const nombreCompleto = `${nombre} ${apellido}`.trim();
+        const dni = cliente?.numeroDocumento || 'No especificado';
+        const telefono = cliente?.telefono || 'No especificado';
+
+        const direcciones = this.clienteAuthService.obtenerDirecciones();
+        const dirPrincipal = (direcciones && direcciones.length > 0)
+          ? (direcciones.find(d => d.esPrincipal) || direcciones[0])
+          : null;
+
+        let dirTexto = 'No registrada';
+        if (dirPrincipal) {
+          const det = dirPrincipal.detalleOpcional ? ` (${dirPrincipal.detalleOpcional})` : '';
+          dirTexto = `${dirPrincipal.direccion}${det}, ${dirPrincipal.distrito}, ${dirPrincipal.departamento}`;
+        }
+
+        textMsg = `✨ [PEDIDO DE CLIENTE REGISTRADO]\n` +
+                  `👤 Cliente: ${nombreCompleto}\n` +
+                  `📄 DNI: ${dni}\n` +
+                  `📱 Teléfono: ${telefono}\n` +
+                  `📍 Dirección de entrega registrada: ${dirTexto}\n\n` +
+                  `Hola! Me gustaría confirmar mi pedido:\n` + 
+                  this.itemsCarrito.map(i => `- ${i.nombre} (Cantidad: ${i.cantidad})`).join('\n') +
+                  `\nSubtotal: S/ ${this.cartService.subtotal.toFixed(2)}` +
+                  `\nDescuento: S/ ${this.cartService.discount.toFixed(2)}` +
+                  `\nTotal: S/ ${this.cartService.total.toFixed(2)}`;
+      } else {
+        textMsg = `Hola! Me gustaría confirmar mi pedido:\n` + 
+                  this.itemsCarrito.map(i => `- ${i.nombre} (Cantidad: ${i.cantidad})`).join('\n') +
+                  `\nSubtotal: S/ ${this.cartService.subtotal.toFixed(2)}` +
+                  `\nDescuento: S/ ${this.cartService.discount.toFixed(2)}` +
+                  `\nTotal: S/ ${this.cartService.total.toFixed(2)}`;
+      }
 
       let waUrl = '';
       if (rawUrl.includes('wa.me') || rawUrl.includes('whatsapp.com')) {
