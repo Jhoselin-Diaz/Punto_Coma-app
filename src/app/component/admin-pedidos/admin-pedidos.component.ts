@@ -511,15 +511,17 @@ export class AdminPedidosComponent implements OnInit, OnDestroy {
       }
       // 3. Filtro fecha
       if (this.filtroFechaDesde || this.filtroFechaHasta) {
-        const fechaPedido = this.parseFechaPedido(p.fecha);
-        if (!fechaPedido) return true;
-        if (this.filtroFechaDesde) {
-          const desde = new Date(this.filtroFechaDesde + 'T00:00:00');
-          if (fechaPedido < desde) return false;
-        }
-        if (this.filtroFechaHasta) {
-          const hasta = new Date(this.filtroFechaHasta + 'T23:59:59');
-          if (fechaPedido > hasta) return false;
+        const ts = obtenerTimestampReal(p);
+        if (ts > 0) {
+          const d = new Date(ts);
+          if (this.filtroFechaDesde) {
+            const desde = new Date(this.filtroFechaDesde + 'T00:00:00');
+            if (d < desde) return false;
+          }
+          if (this.filtroFechaHasta) {
+            const hasta = new Date(this.filtroFechaHasta + 'T23:59:59');
+            if (d > hasta) return false;
+          }
         }
       }
       return true;
