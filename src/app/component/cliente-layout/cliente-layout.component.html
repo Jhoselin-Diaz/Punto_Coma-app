@@ -1,3 +1,14 @@
+<!-- TOAST FLOTANTE DE NOTIFICACIÓN (SUPERIOR DERECHA) -->
+@if (toastVisible) {
+  <div class="toast-cliente-flotante" role="alert">
+    <div class="toast-content">
+      <span class="toast-check-icon">✓</span>
+      <span class="toast-text">{{ toastMensaje }}</span>
+    </div>
+    <button type="button" class="toast-close-btn" (click)="cerrarToast()" aria-label="Cerrar notificación">✕</button>
+  </div>
+}
+
 <div class="store-page">
   <header class="topbar">
     <a class="brand" routerLink="/inicio" [attr.aria-label]="configService.negocio.nombreTienda || 'Punto y Coma'">
@@ -176,7 +187,7 @@
   <!-- MODAL 1: AUTENTICACIÓN (LOGIN / REGISTRO)  -->
   <!-- ========================================== -->
   @if (clienteAuthService.modalAuthOpen$ | async) {
-    <div class="modal-backdrop-cliente" (click)="cerrarModalAuth()">
+    <div class="modal-backdrop-cliente">
       <div class="modal-card-cliente auth-modal-card" (click)="$event.stopPropagation()">
         <button type="button" class="btn-close-cliente" (click)="cerrarModalAuth()" aria-label="Cerrar modal">×</button>
 
@@ -246,6 +257,14 @@
                 <span>o también</span>
               </div>
 
+              @if (avisoGoogle) {
+                <div class="alert-auth-info">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                  </svg>
+                  <span>{{ avisoGoogle }}</span>
+                </div>
+              }
               <button type="button" class="btn-google-cliente" (click)="ejecutarLoginGoogle()">
                 <svg viewBox="0 0 24 24" width="18" height="18">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -355,115 +374,366 @@
     </div>
   }
 
-  <!-- ========================================== -->
-  <!-- MODAL 2: MI PERFIL (CLIENTE AUTENTICADO)  -->
-  <!-- ========================================== -->
+  <!-- ======================================================== -->
+  <!-- MODAL 2: SIDE-DRAWER DERECHO ESTILO FALABELLA (MI PERFIL) -->
+  <!-- ======================================================== -->
   @if (clienteAuthService.modalPerfilOpen$ | async) {
-    <div class="modal-backdrop-cliente" (click)="cerrarModalPerfil()">
-      <div class="modal-card-cliente perfil-modal-card" (click)="$event.stopPropagation()">
-        <div class="perfil-modal-header">
-          <div class="header-user-info">
-            <div class="perfil-avatar-circle">
+    <div class="drawer-backdrop-cliente" (click)="cerrarModalPerfil()">
+      <div class="profile-drawer" (click)="$event.stopPropagation()">
+        <!-- ENCABEZADO DEL DRAWER -->
+        <div class="drawer-header">
+          <div class="drawer-user-info">
+            <div class="drawer-avatar">
               {{ clienteAuthService.nombreParaMostrar.charAt(0).toUpperCase() }}
             </div>
-            <div>
-              <h3>Mi Perfil</h3>
-              <p class="user-greeting">Hola, <strong>{{ clienteAuthService.nombreParaMostrar }}</strong></p>
+            <div class="drawer-greeting">
+              <span class="greeting-subtitle">Mi Cuenta</span>
+              <h3>¡Hola, {{ clienteAuthService.nombreParaMostrar }}!</h3>
             </div>
           </div>
-          <button type="button" class="btn-close-cliente" (click)="cerrarModalPerfil()" aria-label="Cerrar modal">×</button>
+          <button type="button" class="btn-close-drawer" (click)="cerrarModalPerfil()" aria-label="Cerrar menú lateral">✕</button>
         </div>
 
-        <div class="perfil-modal-body">
-          <!-- SECCIÓN: DATOS DE USUARIO -->
-          <div class="perfil-section">
-            <h4 class="section-title">Datos Personales</h4>
+        <!-- MENÚ DE NAVEGACIÓN DEL PERFIL (ESTILO FALABELLA) -->
+        <nav class="drawer-nav">
+          <button 
+            type="button" 
+            class="drawer-nav-item" 
+            [class.active]="perfilSeccionActiva === 'compras'"
+            (click)="cambiarSeccionPerfil('compras')">
+            <span class="nav-icon">📦</span>
+            <span class="nav-text">Mis compras</span>
+            <span class="nav-badge" *ngIf="misPedidos.length > 0">{{ misPedidos.length }}</span>
+          </button>
+          <button 
+            type="button" 
+            class="drawer-nav-item" 
+            [class.active]="perfilSeccionActiva === 'datos'"
+            (click)="cambiarSeccionPerfil('datos')">
+            <span class="nav-icon">👤</span>
+            <span class="nav-text">Datos personales</span>
+          </button>
+          <button 
+            type="button" 
+            class="drawer-nav-item" 
+            [class.active]="perfilSeccionActiva === 'direcciones'"
+            (click)="cambiarSeccionPerfil('direcciones')">
+            <span class="nav-icon">📍</span>
+            <span class="nav-text">Direcciones</span>
+            <span class="nav-badge" *ngIf="direcciones.length > 0">{{ direcciones.length }}</span>
+          </button>
+        </nav>
 
-            @if (perfilMensajeExito) {
-              <div class="alert-perfil-success">
-                ✓ ¡Nombre de pila actualizado con éxito!
+        <!-- CUERPO DEL DRAWER CON SCROLL -->
+        <div class="drawer-body">
+          <!-- ========================================== -->
+          <!-- PESTAÑA 1: MIS COMPRAS (AISLAMIENTO TOTAL) -->
+          <!-- ========================================== -->
+          @if (perfilSeccionActiva === 'compras') {
+            <div class="drawer-section">
+              <div class="section-header-compact">
+                <h4>Historial de Compras</h4>
+                <small class="text-muted">Pedidos validados y en tránsito asociados a tu cuenta</small>
               </div>
-            }
 
-            <div class="form-group-cliente">
-              <label for="perfil-nombre-pila">
-                Nombre de pila
-                <small class="label-hint">(Cómo se mostrará tu nombre en la tienda)</small>
-              </label>
-              <div class="input-action-inline">
-                <input 
-                  type="text" 
-                  id="perfil-nombre-pila" 
-                  [(ngModel)]="nombrePilaEdit" 
-                  placeholder="Ej: Juancho, Anita..." />
-                <button type="button" class="btn-save-pila" (click)="guardarNombrePila()">Guardar</button>
-              </div>
-            </div>
-
-            <div class="form-group-cliente">
-              <label for="perfil-email">
-                Correo Electrónico
-                <span class="badge-readonly">Solo lectura</span>
-              </label>
-              <input 
-                type="email" 
-                id="perfil-email" 
-                [value]="clienteAuthService.currentCliente?.email" 
-                readonly 
-                class="input-readonly" />
-            </div>
-          </div>
-
-          <!-- SECCIÓN: MIS PEDIDOS (SOLO VALIDADOS / CONCRETADOS / ENTREGADOS) -->
-          <div class="perfil-section">
-            <div class="pedidos-section-header">
-              <h4 class="section-title">Mis Pedidos</h4>
-              <span class="pedidos-filter-note">Mostrando pedidos validados y entregados</span>
-            </div>
-
-            @if (cargandoPedidos) {
-              <div class="pedidos-loading">
-                <div class="spinner-small"></div>
-                <span>Cargando tus pedidos...</span>
-              </div>
-            } @else if (misPedidos.length > 0) {
-              <div class="pedidos-cliente-list">
-                @for (pedido of misPedidos; track pedido.id) {
-                  <div class="pedido-cliente-card">
-                    <div class="pedido-card-left">
-                      <div class="pedido-orden">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                        </svg>
-                        <strong>{{ pedido.numeroOrden }}</strong>
+              @if (cargandoPedidos) {
+                <div class="drawer-loading">
+                  <div class="spinner-small"></div>
+                  <span>Cargando tus compras...</span>
+                </div>
+              } @else if (misPedidos.length > 0) {
+                <div class="pedidos-drawer-list">
+                  @for (pedido of misPedidos; track pedido.id) {
+                    <div class="pedido-drawer-card">
+                      <div class="pedido-card-top">
+                        <span class="pedido-orden-pill font-mono">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                          </svg>
+                          {{ pedido.numeroOrden }}
+                        </span>
+                        <span class="badge-drawer-status" [ngClass]="(pedido.estado || '').toLowerCase().includes('camino') ? 'status-camino' : 'status-validado'">
+                          {{ pedido.estado }}
+                        </span>
                       </div>
-                      <span class="pedido-fecha">{{ pedido.fecha }}</span>
+                      <div class="pedido-card-bottom">
+                        <span class="pedido-fecha-text">📅 {{ pedido.fecha }}</span>
+                        <strong class="pedido-total-text">S/ {{ pedido.total?.toFixed ? pedido.total.toFixed(2) : pedido.total }}</strong>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <!-- VISTA VACÍA AMIGABLE CON BOTÓN AL CATÁLOGO -->
+                <div class="drawer-empty-state">
+                  <span class="empty-icon-large">🛍️</span>
+                  <h4>Aún no tienes compras realizadas</h4>
+                  <p>Tus pedidos aparecerán aquí una vez que realices una compra desde tu cuenta.</p>
+                  <button type="button" class="btn-drawer-action" (click)="irACatalogo()">Ver Catálogo</button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- ========================================== -->
+          <!-- PESTAÑA 2: DATOS PERSONALES                -->
+          <!-- ========================================== -->
+          @if (perfilSeccionActiva === 'datos') {
+            <div class="drawer-section">
+              <div class="section-header-compact">
+                <h4>Información de la Cuenta</h4>
+                <small class="text-muted">Mantén actualizados tus datos para la emisión de comprobantes y despachos.</small>
+              </div>
+
+              @if (datosMensajeExito) {
+                <div class="alert-perfil-success">
+                  ✓ ¡Tus datos personales han sido actualizados con éxito!
+                </div>
+              }
+
+              @if (datosError) {
+                <div class="alert-auth-error">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
+                  <span>{{ datosError }}</span>
+                </div>
+              }
+
+              <form (ngSubmit)="guardarDatosPersonales()" class="drawer-form">
+                <!-- NOMBRE -->
+                <div class="form-group-cliente">
+                  <label for="datos-nombre">Nombre (*)</label>
+                  <input 
+                    type="text" 
+                    id="datos-nombre" 
+                    [(ngModel)]="datosNombre" 
+                    name="datosNombre" 
+                    placeholder="Tu nombre" 
+                    required />
+                </div>
+
+                <!-- APELLIDOS EN DOS COLUMNAS -->
+                <div class="form-grid-2-cols">
+                  <div class="form-group-cliente">
+                    <label for="datos-ape-pat">Apellido Paterno (*)</label>
+                    <input 
+                      type="text" 
+                      id="datos-ape-pat" 
+                      [(ngModel)]="datosApellidoPaterno" 
+                      name="datosApellidoPaterno" 
+                      placeholder="Apellido paterno" 
+                      required />
+                  </div>
+                  <div class="form-group-cliente">
+                    <label for="datos-ape-mat">Apellido Materno</label>
+                    <input 
+                      type="text" 
+                      id="datos-ape-mat" 
+                      [(ngModel)]="datosApellidoMaterno" 
+                      name="datosApellidoMaterno" 
+                      placeholder="Apellido materno" />
+                  </div>
+                </div>
+
+                <!-- TIPO Y N° DE DOCUMENTO -->
+                <div class="form-grid-2-cols">
+                  <div class="form-group-cliente">
+                    <label for="datos-tipo-doc">Tipo de Documento (*)</label>
+                    <select id="datos-tipo-doc" [(ngModel)]="datosTipoDocumento" name="datosTipoDocumento" class="select-cliente">
+                      <option value="DNI">DNI</option>
+                      <option value="Carné de Extranjería">Carné de Extranjería</option>
+                      <option value="Pasaporte">Pasaporte</option>
+                    </select>
+                  </div>
+                  <div class="form-group-cliente">
+                    <label for="datos-num-doc">N° de Documento (*)</label>
+                    <input 
+                      type="text" 
+                      id="datos-num-doc" 
+                      [(ngModel)]="datosNumeroDocumento" 
+                      name="datosNumeroDocumento" 
+                      placeholder="Ej. 72345678" 
+                      maxlength="15" 
+                      required />
+                  </div>
+                </div>
+
+                <!-- CELULAR CON PREFIJO +51 -->
+                <div class="form-group-cliente">
+                  <label for="datos-tel">Celular (*)</label>
+                  <div class="input-with-prefix">
+                    <span class="phone-prefix">+51</span>
+                    <input 
+                      type="tel" 
+                      id="datos-tel" 
+                      [(ngModel)]="datosTelefono" 
+                      name="datosTelefono" 
+                      placeholder="987654321" 
+                      maxlength="9" 
+                      required />
+                  </div>
+                  <small class="field-hint">Número de 9 dígitos para coordinaciones y rastreo.</small>
+                </div>
+
+                <!-- CORREO ELECTRÓNICO (SOLO LECTURA) -->
+                <div class="form-group-cliente">
+                  <label for="datos-email">
+                    Correo Electrónico
+                    <span class="badge-readonly-info">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                      </svg>
+                      Correo no editable
+                    </span>
+                  </label>
+                  <input 
+                    type="email" 
+                    id="datos-email" 
+                    [value]="datosEmail" 
+                    readonly 
+                    class="input-readonly" />
+                </div>
+
+                <button type="submit" class="btn-drawer-primary">Guardar Datos</button>
+              </form>
+            </div>
+          }
+
+          <!-- ========================================== -->
+          <!-- PESTAÑA 3: DIRECCIONES DE DESPACHO         -->
+          <!-- ========================================== -->
+          @if (perfilSeccionActiva === 'direcciones') {
+            <div class="drawer-section">
+              <div class="section-header-compact-flex">
+                <div>
+                  <h4>Direcciones de Entrega</h4>
+                  <small class="text-muted">Gestiona tus domicilios habituales para compras rápidas.</small>
+                </div>
+                <button 
+                  *ngIf="!mostrandoFormDireccion" 
+                  type="button" 
+                  class="btn-add-address" 
+                  (click)="abrirFormNuevaDireccion()">
+                  + Agregar dirección
+                </button>
+              </div>
+
+              <!-- FORMULARIO DE ALTA / EDICIÓN DE DIRECCIÓN -->
+              @if (mostrandoFormDireccion) {
+                <div class="address-form-box">
+                  <div class="box-title">
+                    <h5>Nueva Dirección de Despacho</h5>
+                  </div>
+
+                  @if (dirError) {
+                    <div class="alert-auth-error">
+                      <span>{{ dirError }}</span>
+                    </div>
+                  }
+
+                  <form (ngSubmit)="guardarDireccion()" class="drawer-form">
+                    <div class="form-grid-2-cols">
+                      <div class="form-group-cliente">
+                        <label for="dir-depto">Departamento (*)</label>
+                        <select id="dir-depto" [(ngModel)]="dirDepartamento" name="dirDepartamento" class="select-cliente">
+                          <option *ngFor="let dep of departamentosPeru" [value]="dep">{{ dep }}</option>
+                        </select>
+                      </div>
+                      <div class="form-group-cliente">
+                        <label for="dir-prov">Provincia (*)</label>
+                        <input type="text" id="dir-prov" [(ngModel)]="dirProvincia" name="dirProvincia" placeholder="Ej. Lima" required />
+                      </div>
                     </div>
 
-                    <div class="pedido-card-right">
-                      <strong class="pedido-total">S/ {{ pedido.total?.toFixed ? pedido.total.toFixed(2) : pedido.total }}</strong>
-                      <span class="badge-pedido-status badge-status-validado">
-                        {{ pedido.estado }}
-                      </span>
+                    <div class="form-group-cliente">
+                      <label for="dir-dist">Distrito (*)</label>
+                      <input type="text" id="dir-dist" [(ngModel)]="dirDistrito" name="dirDistrito" placeholder="Ej. Miraflores, San Isidro..." required />
                     </div>
+
+                    <div class="form-group-cliente">
+                      <label for="dir-calle">Dirección (*)</label>
+                      <input 
+                        type="text" 
+                        id="dir-calle" 
+                        [(ngModel)]="dirDireccion" 
+                        name="dirDireccion" 
+                        placeholder="Ingresa calle y número / Mz / Lote / Urb" 
+                        required />
+                    </div>
+
+                    <div class="form-group-cliente">
+                      <label for="dir-det">Depto, casa, piso, interior (opcional)</label>
+                      <input 
+                        type="text" 
+                        id="dir-det" 
+                        [(ngModel)]="dirDetalleOpcional" 
+                        name="dirDetalleOpcional" 
+                        placeholder="Ej. Dpto. 402, Torre B, Piso 4" />
+                    </div>
+
+                    <label class="checkbox-cliente">
+                      <input type="checkbox" [(ngModel)]="dirEsPrincipal" name="dirEsPrincipal" />
+                      <span>Guardar como dirección principal</span>
+                    </label>
+
+                    <div class="form-actions-row">
+                      <button type="submit" class="btn-drawer-primary">Guardar Dirección</button>
+                      <button type="button" class="btn-drawer-secondary" (click)="cancelarFormDireccion()">Cancelar</button>
+                    </div>
+                  </form>
+                </div>
+              }
+
+              <!-- LISTADO DE DIRECCIONES GUARDADAS -->
+              @if (!mostrandoFormDireccion) {
+                @if (direcciones.length > 0) {
+                  <div class="addresses-list">
+                    @for (dir of direcciones; track dir.id) {
+                      <div class="address-card" [class.is-primary]="dir.esPrincipal">
+                        <div class="address-card-header">
+                          <span class="badge-address-primary" *ngIf="dir.esPrincipal">Principal</span>
+                          <span class="address-ubigeo font-mono">{{ dir.distrito }}, {{ dir.provincia }}</span>
+                        </div>
+                        <div class="address-card-body">
+                          <p class="address-street">📍 {{ dir.direccion }}</p>
+                          <p class="address-sub" *ngIf="dir.detalleOpcional">{{ dir.detalleOpcional }}</p>
+                          <p class="address-depto text-muted">{{ dir.departamento }} - Perú</p>
+                        </div>
+                        <div class="address-card-actions">
+                          <button 
+                            *ngIf="!dir.esPrincipal" 
+                            type="button" 
+                            class="btn-text-action text-primary" 
+                            (click)="establecerDireccionPrincipal(dir.id)">
+                            Establecer como principal
+                          </button>
+                          <button 
+                            type="button" 
+                            class="btn-text-action text-danger" 
+                            (click)="eliminarDireccion(dir.id)">
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="drawer-empty-state">
+                    <span class="empty-icon-large">📍</span>
+                    <h4>No tienes direcciones guardadas</h4>
+                    <p>Agrega tu dirección para facilitar tus pedidos y agilizar el despacho.</p>
+                    <button type="button" class="btn-drawer-action" (click)="abrirFormNuevaDireccion()">+ Agregar Dirección</button>
                   </div>
                 }
-              </div>
-            } @else {
-              <div class="pedidos-empty-state">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6">
-                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <path d="M16 10a4 4 0 0 1-8 0"></path>
-                </svg>
-                <p>No tienes pedidos concretados o validados registrados actualmente.</p>
-              </div>
-            }
-          </div>
+              }
+            </div>
+          }
         </div>
 
-        <div class="perfil-modal-footer">
-          <button type="button" class="btn-logout-cliente" (click)="cerrarSesion()">
+        <!-- PIE DEL DRAWER -->
+        <div class="drawer-footer">
+          <button type="button" class="btn-logout-drawer" (click)="cerrarSesion()">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
               <polyline points="16 17 21 12 16 7"></polyline>

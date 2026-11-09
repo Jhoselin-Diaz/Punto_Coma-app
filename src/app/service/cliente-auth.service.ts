@@ -3,15 +3,30 @@ import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { AdminPedidoService } from './admin-pedido.service';
 
+export interface DireccionCliente {
+  id: string;
+  departamento: string;
+  provincia: string;
+  distrito: string;
+  direccion: string;
+  detalleOpcional?: string;
+  esPrincipal: boolean;
+}
+
 export interface Cliente {
   id?: number | string;
   nombre: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
   apellidos?: string;
   nombrePila?: string;
+  tipoDocumento?: string;
+  numeroDocumento?: string;
   email: string;
   telefono?: string;
   avatarUrl?: string;
   token?: string;
+  direcciones?: DireccionCliente[];
 }
 
 export interface ProductoFavorito {
@@ -221,34 +236,11 @@ export class ClienteAuthService {
     }
   }
 
-  loginConGoogle(): void {
-    // Autenticación simulada con Google
-    const googleUser: Cliente = {
-      id: 9999,
-      nombre: 'Cliente Google',
-      apellidos: 'Verificado',
-      nombrePila: 'Google User',
-      email: 'cliente.google@gmail.com',
-      avatarUrl: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-      token: 'google-oauth-' + Date.now()
+  loginConGoogle(): { success: boolean; message: string } {
+    return {
+      success: false,
+      message: 'El inicio de sesión con Google estará disponible próximamente.'
     };
-
-    // Si ya existía un nombre de pila editado previamente para este correo, conservarlo
-    try {
-      const usersRaw = localStorage.getItem(this.USERS_KEY);
-      const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
-      const existente = users.find(u => u.email === googleUser.email);
-      if (existente && existente.nombrePila) {
-        googleUser.nombrePila = existente.nombrePila;
-      } else if (!existente) {
-        users.push({ ...googleUser, password: 'google_oauth_pass' });
-        localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
-      }
-    } catch (e) {
-      console.warn('Error al verificar usuario de Google en storage:', e);
-    }
-
-    this.establecerSesion(googleUser);
   }
 
   private establecerSesion(cliente: Cliente): void {
@@ -349,35 +341,37 @@ export class ClienteAuthService {
     this.guardarFavoritos();
   }
 
-  // Gestión de Pedidos Validados del Cliente
+  // Gestión de Pedidos Validados del Cliente (Aislamiento Estricto)
   obtenerPedidosValidadosCliente(): Observable<any[]> {
-    return this.adminPedidoService.getPedidos().pipe(
+    const c = this.currentCliente;
+    if (!c || !c.email) {
+      return of([]);
+    }
+
+    const emailCliente = (c.email || '').toLowerCase().trim();
+    const clienteId = c.id;
+
+    return this.adminPedidoService.getMisPedidos(emailCliente, clienteId).pipe(
       map(pedidos => {
-        if (!Array.isArray(pedidos)) return [];
+        if (!Array.isArray(pedidos) || pedidos.length === 0) return [];
 
-        const c = this.currentCliente;
-        const emailCliente = (c?.email || '').toLowerCase().trim();
-        const nombreCliente = (c?.nombre || '').toLowerCase().trim();
-
-        // Estados admitidos: ÚNICAMENTE validado / concretado / entregado (excluir pendientes o cancelados)
-        const estadosPermitidos = ['validado', 'concretado', 'entregado', 'completado', 'aprobado'];
+        const estadosPermitidos = ['validado', 'concretado', 'entregado', 'completado', 'aprobado', 'en camino', 'en_camino'];
 
         return pedidos
           .filter(p => {
-            const estado = (p.estado || '').toLowerCase().trim();
-            const esValido = estadosPermitidos.some(ep => estado.includes(ep));
-            if (!esValido) return false;
-
-            // Coincidencia con cliente si existen datos
+            // AISLAMIENTO ESTRICTO: Solo pedidos que correspondan expresamente a este usuario
             const pEmail = (p.usuario?.correo || p.usuario?.email || p.email || '').toLowerCase().trim();
-            const pNombre = (p.nombreCompleto || p.usuario?.nombre || p.cliente || '').toLowerCase().trim();
+            const pUsuarioId = p.usuario?.id || p.usuarioId || p.dbId;
 
-            if (emailCliente && pEmail && pEmail === emailCliente) return true;
-            if (nombreCliente && pNombre && (pNombre.includes(nombreCliente) || nombreCliente.includes(pNombre))) return true;
+            const coincideEmail = emailCliente && pEmail && pEmail === emailCliente;
+            const coincideId = clienteId && pUsuarioId && String(pUsuarioId) === String(clienteId);
 
-            // Si los pedidos en la base de datos de prueba no tienen email registrado,
-            // mostrar los pedidos validados para que la sección sea demostrable y visualizable
-            return true;
+            if (pEmail && !coincideEmail && (!clienteId || !coincideId)) {
+              return false;
+            }
+
+            const estado = (p.estado || '').toLowerCase().trim();
+            return estadosPermitidos.some(ep => estado.includes(ep));
           })
           .map(p => ({
             id: p.id,
@@ -394,6 +388,106 @@ export class ClienteAuthService {
         return of([]);
       })
     );
+  }
+
+  // Métodos de Gestión de Datos Personales y Direcciones
+  actualizarDatosPersonales(datos: {
+    nombre: string;
+    apellidoPaterno: string;
+    apellidoMaterno?: string;
+    tipoDocumento: string;
+    numeroDocumento: string;
+    telefono: string;
+  }): boolean {
+    const c = this.currentCliente;
+    if (!c) return false;
+
+    c.nombre = (datos.nombre || '').trim();
+    c.apellidoPaterno = (datos.apellidoPaterno || '').trim();
+    c.apellidoMaterno = (datos.apellidoMaterno || '').trim();
+    c.apellidos = `${c.apellidoPaterno} ${c.apellidoMaterno}`.trim();
+    c.tipoDocumento = datos.tipoDocumento;
+    c.numeroDocumento = (datos.numeroDocumento || '').trim();
+    c.telefono = (datos.telefono || '').trim();
+
+    if (!c.nombrePila) {
+      c.nombrePila = c.nombre.split(' ')[0];
+    }
+
+    this.establecerSesion({ ...c });
+
+    try {
+      const usersRaw = localStorage.getItem(this.USERS_KEY);
+      if (usersRaw) {
+        const users: StoredUser[] = JSON.parse(usersRaw);
+        const idx = users.findIndex(u => u.email.toLowerCase() === c.email.toLowerCase());
+        if (idx !== -1) {
+          users[idx] = { ...users[idx], ...c };
+          localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+        }
+      }
+    } catch (e) {
+      console.error('Error guardando datos personales en storage:', e);
+    }
+
+    return true;
+  }
+
+  obtenerDirecciones(): DireccionCliente[] {
+    const c = this.currentCliente;
+    if (!c) return [];
+    if (!c.direcciones || !Array.isArray(c.direcciones)) {
+      c.direcciones = [];
+    }
+    return c.direcciones;
+  }
+
+  guardarDireccion(dir: Omit<DireccionCliente, 'id'> & { id?: string }): void {
+    const c = this.currentCliente;
+    if (!c) return;
+    if (!c.direcciones) c.direcciones = [];
+
+    const esPrincipal = dir.esPrincipal || c.direcciones.length === 0;
+
+    if (esPrincipal) {
+      c.direcciones.forEach(d => d.esPrincipal = false);
+    }
+
+    if (dir.id) {
+      const idx = c.direcciones.findIndex(d => d.id === dir.id);
+      if (idx !== -1) {
+        c.direcciones[idx] = { ...dir, id: dir.id, esPrincipal };
+      }
+    } else {
+      const nueva: DireccionCliente = {
+        ...dir,
+        id: 'dir-' + Date.now(),
+        esPrincipal
+      };
+      c.direcciones.push(nueva);
+    }
+
+    this.establecerSesion({ ...c });
+  }
+
+  eliminarDireccion(id: string): void {
+    const c = this.currentCliente;
+    if (!c || !c.direcciones) return;
+    const eraPrincipal = c.direcciones.find(d => d.id === id)?.esPrincipal;
+    c.direcciones = c.direcciones.filter(d => d.id !== id);
+    if (eraPrincipal && c.direcciones.length > 0) {
+      c.direcciones[0].esPrincipal = true;
+    }
+    this.establecerSesion({ ...c });
+  }
+
+  establecerDireccionPrincipal(id: string): void {
+    const c = this.currentCliente;
+    if (!c || !c.direcciones) return;
+    c.direcciones.forEach(d => {
+      d.esPrincipal = (d.id === id);
+    });
+    this.establecerSesion({ ...c });
   }
 
   // Modales

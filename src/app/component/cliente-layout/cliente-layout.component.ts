@@ -6,7 +6,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ConfiguracionService } from '../../service/configuracion.service';
 import { CartService } from '../../service/cart.service';
 import { ProductosService } from '../../service/productos.service';
-import { ClienteAuthService } from '../../service/cliente-auth.service';
+import { ClienteAuthService, DireccionCliente } from '../../service/cliente-auth.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -40,6 +40,48 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
   perfilMensajeExito = false;
   misPedidos: any[] = [];
   cargandoPedidos = false;
+
+  // TOAST FLOTANTE DE ÉXITO
+  toastVisible = false;
+  toastMensaje = '';
+  private toastTimer: any = null;
+
+  // AVISO GOOGLE
+  avisoGoogle = '';
+
+  // NAVEGACIÓN Y SECCIONES DEL DRAWER (FALABELLA STYLE)
+  perfilSeccionActiva: 'compras' | 'datos' | 'direcciones' = 'compras';
+
+  // FORMULARIO: DATOS PERSONALES
+  datosNombre = '';
+  datosApellidoPaterno = '';
+  datosApellidoMaterno = '';
+  datosTipoDocumento = 'DNI';
+  datosNumeroDocumento = '';
+  datosTelefono = '';
+  datosEmail = '';
+  datosError = '';
+  datosMensajeExito = false;
+
+  // FORMULARIO: DIRECCIONES DE DESPACHO
+  direcciones: DireccionCliente[] = [];
+  mostrandoFormDireccion = false;
+  direccionEditId: string | null = null;
+  dirDepartamento = 'Lima';
+  dirProvincia = 'Lima';
+  dirDistrito = '';
+  dirDireccion = '';
+  dirDetalleOpcional = '';
+  dirEsPrincipal = false;
+  dirError = '';
+  dirMensajeExito = false;
+
+  departamentosPeru: string[] = [
+    'Amazonas', 'Áncash', 'Apurímac', 'Arequipa', 'Ayacucho', 'Cajamarca',
+    'Callao', 'Cusco', 'Huancavelica', 'Huánuco', 'Ica', 'Junín', 'La Libertad',
+    'Lambayeque', 'Lima', 'Loreto', 'Madre de Dios', 'Moquegua', 'Pasco',
+    'Piura', 'Puno', 'San Martín', 'Tacna', 'Tumbes', 'Ucayali'
+  ];
 
   private sub = new Subscription();
 
@@ -134,19 +176,261 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     this.clienteAuthService.cerrarModalAuth();
   }
 
-  abrirPerfil(): void {
-    const c = this.clienteAuthService.currentCliente;
-    if (c) {
-      this.nombrePilaEdit = c.nombrePila || c.nombre || '';
+  mostrarToast(mensaje: string): void {
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
     }
+    this.toastMensaje = mensaje;
+    this.toastVisible = true;
+    this.toastTimer = setTimeout(() => {
+      this.toastVisible = false;
+    }, 3500);
+  }
+
+  cerrarToast(): void {
+    this.toastVisible = false;
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+    }
+  }
+
+  abrirPerfil(seccion: 'compras' | 'datos' | 'direcciones' = 'compras'): void {
+    this.perfilSeccionActiva = seccion;
     this.perfilMensajeExito = false;
-    this.clienteAuthService.abrirModalPerfil();
+    this.datosMensajeExito = false;
+    this.dirMensajeExito = false;
+    this.mostrandoFormDireccion = false;
+
+    this.cargarFormularioDatosPersonales();
+    this.cargarDirecciones();
     this.cargarMisPedidos();
+
+    this.clienteAuthService.abrirModalPerfil();
+  }
+
+  cambiarSeccionPerfil(seccion: 'compras' | 'datos' | 'direcciones'): void {
+    this.perfilSeccionActiva = seccion;
+    this.perfilMensajeExito = false;
+    this.datosMensajeExito = false;
+    this.dirMensajeExito = false;
+    this.mostrandoFormDireccion = false;
+
+    if (seccion === 'compras') {
+      this.cargarMisPedidos();
+    } else if (seccion === 'datos') {
+      this.cargarFormularioDatosPersonales();
+    } else if (seccion === 'direcciones') {
+      this.cargarDirecciones();
+    }
   }
 
   cerrarModalPerfil(): void {
     this.clienteAuthService.cerrarModalPerfil();
+    this.mostrandoFormDireccion = false;
   }
+
+  ejecutarLogin(): void {
+    this.loginError = '';
+    this.avisoGoogle = '';
+    const res = this.clienteAuthService.login(this.loginEmail, this.loginPassword);
+    if (res.success) {
+      const nombre = this.clienteAuthService.nombreParaMostrar;
+      this.loginEmail = '';
+      this.loginPassword = '';
+      this.cerrarModalAuth();
+      this.mostrarToast(`¡Bienvenido/a, ${nombre}! Has iniciado sesión con éxito.`);
+    } else {
+      this.loginError = res.message || 'Error al iniciar sesión.';
+    }
+  }
+
+  ejecutarRegistro(): void {
+    this.registerError = '';
+    this.avisoGoogle = '';
+    const res = this.clienteAuthService.registro(
+      this.registerNombre,
+      this.registerApellidos,
+      this.registerEmail,
+      this.registerPassword
+    );
+    if (res.success) {
+      const nombre = this.clienteAuthService.nombreParaMostrar;
+      this.registerNombre = '';
+      this.registerApellidos = '';
+      this.registerEmail = '';
+      this.registerPassword = '';
+      this.cerrarModalAuth();
+      this.mostrarToast(`¡Bienvenido/a, ${nombre}! Has iniciado sesión con éxito.`);
+    } else {
+      this.registerError = res.message || 'Error al registrar la cuenta.';
+    }
+  }
+
+  ejecutarLoginGoogle(): void {
+    const res = this.clienteAuthService.loginConGoogle();
+    this.avisoGoogle = res.message;
+    setTimeout(() => {
+      this.avisoGoogle = '';
+    }, 4500);
+  }
+
+  cargarFormularioDatosPersonales(): void {
+    const c = this.clienteAuthService.currentCliente;
+    if (c) {
+      this.datosNombre = c.nombre || '';
+      this.datosApellidoPaterno = c.apellidoPaterno || (c.apellidos ? c.apellidos.split(' ')[0] : '');
+      this.datosApellidoMaterno = c.apellidoMaterno || (c.apellidos && c.apellidos.split(' ').length > 1 ? c.apellidos.split(' ').slice(1).join(' ') : '');
+      this.datosTipoDocumento = c.tipoDocumento || 'DNI';
+      this.datosNumeroDocumento = c.numeroDocumento || '';
+      this.datosTelefono = (c.telefono || '').replace(/^\+?51/, '').trim();
+      this.datosEmail = c.email || '';
+    }
+    this.datosError = '';
+    this.datosMensajeExito = false;
+  }
+
+  guardarDatosPersonales(): void {
+    this.datosError = '';
+    if (!this.datosNombre.trim()) {
+      this.datosError = 'El nombre es obligatorio.';
+      return;
+    }
+    if (!this.datosApellidoPaterno.trim()) {
+      this.datosError = 'El apellido paterno es obligatorio.';
+      return;
+    }
+    if (!this.datosNumeroDocumento.trim()) {
+      this.datosError = 'El número de documento es obligatorio.';
+      return;
+    }
+    const cleanTel = this.datosTelefono.replace(/\D/g, '');
+    if (cleanTel.length !== 9) {
+      this.datosError = 'El número de celular debe contener 9 dígitos válidos.';
+      return;
+    }
+
+    const payload = {
+      nombre: this.datosNombre.trim(),
+      apellidoPaterno: this.datosApellidoPaterno.trim(),
+      apellidoMaterno: this.datosApellidoMaterno.trim(),
+      tipoDocumento: this.datosTipoDocumento,
+      numeroDocumento: this.datosNumeroDocumento.trim(),
+      telefono: '+51 ' + cleanTel
+    };
+
+    if (this.clienteAuthService.actualizarDatosPersonales(payload)) {
+      this.datosMensajeExito = true;
+      this.mostrarToast('Datos personales actualizados correctamente.');
+      setTimeout(() => {
+        this.datosMensajeExito = false;
+      }, 3000);
+    }
+  }
+
+  cargarDirecciones(): void {
+    this.direcciones = this.clienteAuthService.obtenerDirecciones();
+    // Si no tiene direcciones y es un usuario con datos, inicializar con una por defecto si aplica
+    if (this.direcciones.length === 0) {
+      const c = this.clienteAuthService.currentCliente;
+      if (c) {
+        this.clienteAuthService.guardarDireccion({
+          departamento: 'Lima',
+          provincia: 'Lima',
+          distrito: 'Miraflores',
+          direccion: 'Av. Larco 456',
+          detalleOpcional: 'Dpto. 302',
+          esPrincipal: true
+        });
+        this.direcciones = this.clienteAuthService.obtenerDirecciones();
+      }
+    }
+  }
+
+  abrirFormNuevaDireccion(): void {
+    this.direccionEditId = null;
+    this.dirDepartamento = 'Lima';
+    this.dirProvincia = 'Lima';
+    this.dirDistrito = '';
+    this.dirDireccion = '';
+    this.dirDetalleOpcional = '';
+    this.dirEsPrincipal = this.direcciones.length === 0;
+    this.dirError = '';
+    this.mostrandoFormDireccion = true;
+  }
+
+  cancelarFormDireccion(): void {
+    this.mostrandoFormDireccion = false;
+    this.direccionEditId = null;
+    this.dirError = '';
+  }
+
+  guardarDireccion(): void {
+    this.dirError = '';
+    if (!this.dirDireccion.trim()) {
+      this.dirError = 'La dirección (calle, número o lote) es obligatoria.';
+      return;
+    }
+    if (!this.dirDistrito.trim()) {
+      this.dirError = 'El distrito es obligatorio.';
+      return;
+    }
+    if (!this.dirDepartamento.trim()) {
+      this.dirError = 'El departamento es obligatorio.';
+      return;
+    }
+
+    this.clienteAuthService.guardarDireccion({
+      id: this.direccionEditId || undefined,
+      departamento: this.dirDepartamento.trim(),
+      provincia: (this.dirProvincia || this.dirDepartamento).trim(),
+      distrito: this.dirDistrito.trim(),
+      direccion: this.dirDireccion.trim(),
+      detalleOpcional: this.dirDetalleOpcional.trim(),
+      esPrincipal: this.dirEsPrincipal
+    });
+
+    this.cargarDirecciones();
+    this.mostrandoFormDireccion = false;
+    this.mostrarToast('Dirección guardada correctamente.');
+  }
+
+  eliminarDireccion(id: string): void {
+    this.clienteAuthService.eliminarDireccion(id);
+    this.cargarDirecciones();
+    this.mostrarToast('Dirección eliminada.');
+  }
+
+  establecerDireccionPrincipal(id: string): void {
+    this.clienteAuthService.establecerDireccionPrincipal(id);
+    this.cargarDirecciones();
+    this.mostrarToast('Dirección establecida como principal.');
+  }
+
+  irACatalogo(): void {
+    this.cerrarModalPerfil();
+    this.router.navigate(['/productos']);
+  }
+
+  cerrarSesion(): void {
+    this.clienteAuthService.logout();
+    this.misPedidos = [];
+    this.mostrarToast('Has cerrado sesión correctamente.');
+  }
+
+  cargarMisPedidos(): void {
+    this.cargandoPedidos = true;
+    this.clienteAuthService.obtenerPedidosValidadosCliente().subscribe({
+      next: (pedidos) => {
+        this.misPedidos = pedidos;
+        this.cargandoPedidos = false;
+      },
+      error: () => {
+        this.cargandoPedidos = false;
+        this.misPedidos = [];
+      }
+    });
+  }
+
 
   abrirFavoritos(): void {
     this.clienteAuthService.abrirModalFavoritos();
@@ -162,68 +446,6 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
 
   irAlRegistroDesdeAviso(): void {
     this.clienteAuthService.irAlRegistroDesdeAviso();
-  }
-
-  ejecutarLogin(): void {
-    this.loginError = '';
-    const res = this.clienteAuthService.login(this.loginEmail, this.loginPassword);
-    if (res.success) {
-      this.loginEmail = '';
-      this.loginPassword = '';
-    } else {
-      this.loginError = res.message || 'Error al iniciar sesión.';
-    }
-  }
-
-  ejecutarRegistro(): void {
-    this.registerError = '';
-    const res = this.clienteAuthService.registro(
-      this.registerNombre,
-      this.registerApellidos,
-      this.registerEmail,
-      this.registerPassword
-    );
-    if (res.success) {
-      this.registerNombre = '';
-      this.registerApellidos = '';
-      this.registerEmail = '';
-      this.registerPassword = '';
-    } else {
-      this.registerError = res.message || 'Error al registrar la cuenta.';
-    }
-  }
-
-  ejecutarLoginGoogle(): void {
-    this.clienteAuthService.loginConGoogle();
-    this.loginError = '';
-    this.registerError = '';
-  }
-
-  guardarNombrePila(): void {
-    if (this.clienteAuthService.actualizarNombrePila(this.nombrePilaEdit)) {
-      this.perfilMensajeExito = true;
-      setTimeout(() => {
-        this.perfilMensajeExito = false;
-      }, 3000);
-    }
-  }
-
-  cerrarSesion(): void {
-    this.clienteAuthService.logout();
-    this.misPedidos = [];
-  }
-
-  cargarMisPedidos(): void {
-    this.cargandoPedidos = true;
-    this.clienteAuthService.obtenerPedidosValidadosCliente().subscribe({
-      next: (pedidos) => {
-        this.misPedidos = pedidos;
-        this.cargandoPedidos = false;
-      },
-      error: () => {
-        this.cargandoPedidos = false;
-      }
-    });
   }
 
   eliminarDeFavoritos(id: number | string): void {

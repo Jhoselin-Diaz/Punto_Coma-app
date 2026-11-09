@@ -39,6 +39,14 @@ export class AdminPedidoService {
     );
   }
 
+  getMisPedidos(email?: string, usuarioId?: number | string): Observable<any[]> {
+    const cleanApi = environment.apiUrl.replace(/\/v1$/, '');
+    let params: any = {};
+    if (email) params.email = email;
+    if (usuarioId) params.usuarioId = usuarioId;
+    return this.http.get<any[]>(`${cleanApi}/pedidos/mis-pedidos`, { params });
+  }
+
   getPedidos(): Observable<any[]> {
     return this.http.get<any[]>(this.baseUrl);
   }
