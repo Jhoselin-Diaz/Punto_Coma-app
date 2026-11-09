@@ -136,8 +136,8 @@
       <button 
         type="button" 
         aria-label="Perfil" 
-        (click)="onIconoUsuarioClick()" 
-        class="btn-user-header"
+        (click)="onIconoUsuarioClick($event)" 
+        class="btn-user-header btn-avatar user-profile-btn"
         [class.user-logged]="clienteAuthService.isLoggedIn"
         [title]="clienteAuthService.isLoggedIn ? 'Mi Perfil (' + clienteAuthService.nombreParaMostrar + ')' : 'Iniciar sesión / Registrarse'"
         style="position: relative;">
@@ -424,7 +424,7 @@
           <button 
             type="button" 
             class="falabella-nav-btn" 
-            (click)="abrirAyuda()">
+            (click)="irAAyuda()">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
               <circle cx="12" cy="12" r="10"></circle>
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>

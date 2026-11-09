@@ -50,6 +50,10 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
   // AVISO GOOGLE
   avisoGoogle = '';
 
+  // ESTADO Y CONTROL DEL DRAWER DE PERFIL
+  drawerPerfilAbierto = false;
+  modalPerfilAbierto = false;
+
   // NAVEGACIÓN Y SECCIONES DEL DRAWER (FALABELLA STYLE)
   drawerTabPrincipal: 'compras' | 'perfil' = 'compras';
   perfilSubSeccion: 'menu' | 'datos' | 'direcciones' | 'cupones' = 'menu';
@@ -157,6 +161,8 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
 
     this.sub.add(
       this.clienteAuthService.modalPerfilOpen$.subscribe(open => {
+        this.drawerPerfilAbierto = !!open;
+        this.modalPerfilAbierto = !!open;
         if (open) {
           this.cargarMisPedidos();
           this.cargarCupones();
@@ -176,7 +182,11 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
   }
 
   // Acciones de Usuario y Modales de Cliente
-  onIconoUsuarioClick(): void {
+  onIconoUsuarioClick(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     if (this.clienteAuthService.isLoggedIn) {
       this.abrirPerfil();
     } else {
@@ -218,7 +228,7 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  abrirPerfil(seccion: 'compras' | 'datos' | 'direcciones' | 'cupones' = 'compras'): void {
+  private activarSeccionInterna(seccion: 'compras' | 'datos' | 'direcciones' | 'cupones'): void {
     this.perfilSeccionActiva = seccion;
     this.perfilMensajeExito = false;
     this.datosMensajeExito = false;
@@ -238,15 +248,28 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
       if (seccion === 'direcciones') this.cargarDirecciones();
       if (seccion === 'cupones') this.cargarCupones();
     }
+  }
 
-    this.cargarFormularioDatosPersonales();
-    this.cargarDirecciones();
-    this.cargarCupones();
+  abrirPerfil(seccion: 'compras' | 'datos' | 'direcciones' | 'cupones' = 'compras'): void {
+    this.activarSeccionInterna(seccion);
     this.clienteAuthService.abrirModalPerfil(seccion);
   }
 
   cambiarSeccionPerfil(seccion: 'compras' | 'datos' | 'direcciones' | 'cupones'): void {
-    this.abrirPerfil(seccion);
+    this.activarSeccionInterna(seccion);
+  }
+
+  cerrarDrawer(): void {
+    this.cerrarModalPerfil();
+  }
+
+  irAAyuda(): void {
+    this.cerrarDrawer();
+    this.router.navigate(['/contacto']);
+  }
+
+  abrirAyuda(): void {
+    this.irAAyuda();
   }
 
   seleccionarTabPrincipal(tab: 'compras' | 'perfil'): void {
@@ -293,12 +316,6 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  abrirAyuda(): void {
-    this.cerrarModalPerfil();
-    this.router.navigate(['/contacto']);
-  }
-
-  
   cargarCupones(): void {
     this.cargandoCupones = true;
     this.adminCarritoService.listarCupones().subscribe({
@@ -816,14 +833,23 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     return `https://drive.google.com/thumbnail?id=${cleanId}&sz=w1000`;
   }
 
+  private imageSafeUrlCache = new Map<string, SafeUrl>();
+
   obtenerImagenUrl(url: string): SafeUrl {
     if (!url) return '';
+    const cached = this.imageSafeUrlCache.get(url);
+    if (cached) return cached;
+
+    let res: SafeUrl;
     if (!url.includes('drive.google.com') && !url.includes('docs.google.com') && !url.includes('googleusercontent.com')) {
-      return this.sanitizer.bypassSecurityTrustUrl(url);
+      res = this.sanitizer.bypassSecurityTrustUrl(url);
+    } else {
+      const fileId = this.extraerGoogleDriveId(url);
+      const previewUrl = this.obtenerGoogleDrivePreviewUrl(fileId);
+      res = this.sanitizer.bypassSecurityTrustUrl(previewUrl);
     }
-    const fileId = this.extraerGoogleDriveId(url);
-    const previewUrl = this.obtenerGoogleDrivePreviewUrl(fileId);
-    return this.sanitizer.bypassSecurityTrustUrl(previewUrl);
+    this.imageSafeUrlCache.set(url, res);
+    return res;
   }
 
   aplicarColorPrincipal(color?: string) {
@@ -842,5 +868,9 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.sub.unsubscribe();
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+    }
+    this.imageSafeUrlCache.clear();
   }
 }

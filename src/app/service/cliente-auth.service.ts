@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { AdminPedidoService } from './admin-pedido.service';
 
@@ -65,13 +65,22 @@ export class ClienteAuthService {
   public modalAuthOpen$ = new BehaviorSubject<boolean>(false);
   public modalAuthTab$ = new BehaviorSubject<'login' | 'register'>('login');
   public modalPerfilOpen$ = new BehaviorSubject<boolean>(false);
-  public modalPerfilSeccion$ = new BehaviorSubject<'compras' | 'datos' | 'direcciones' | 'cupones'>('compras');
+  public drawerPerfil$ = new BehaviorSubject<boolean>(false);
+  public modalPerfilSeccion$ = new Subject<'compras' | 'datos' | 'direcciones' | 'cupones'>();
   public modalFavoritosOpen$ = new BehaviorSubject<boolean>(false);
   public modalAvisoLoginOpen$ = new BehaviorSubject<boolean>(false);
 
   constructor(private adminPedidoService: AdminPedidoService) {
     this.inicializarUsuariosSeed();
     this.cargarSesion();
+  }
+
+  get drawerPerfilAbierto(): boolean {
+    return this.modalPerfilOpen$.value;
+  }
+
+  get modalPerfilAbierto(): boolean {
+    return this.modalPerfilOpen$.value;
   }
 
   get isLoggedIn(): boolean {
@@ -509,15 +518,17 @@ export class ClienteAuthService {
       this.abrirModalAuth('login');
       return;
     }
-    this.modalPerfilSeccion$.next(seccion);
     this.cerrarModalAuth();
     this.cerrarModalFavoritos();
     this.cerrarAvisoLogin();
+    this.modalPerfilSeccion$.next(seccion);
     this.modalPerfilOpen$.next(true);
+    this.drawerPerfil$.next(true);
   }
 
   cerrarModalPerfil(): void {
     this.modalPerfilOpen$.next(false);
+    this.drawerPerfil$.next(false);
   }
 
   abrirModalFavoritos(): void {

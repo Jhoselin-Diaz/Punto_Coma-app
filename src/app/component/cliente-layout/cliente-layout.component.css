@@ -1350,10 +1350,14 @@
   inset: 0;
   background: rgba(20, 14, 10, 0.5);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 1200;
   display: flex;
   justify-content: flex-end;
   animation: fadeInDrawerBackdrop 0.25s ease;
+  will-change: opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 @keyframes fadeInDrawerBackdrop {
@@ -1375,6 +1379,9 @@
   display: flex;
   flex-direction: column;
   animation: slideInDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 @keyframes slideInDrawer {
