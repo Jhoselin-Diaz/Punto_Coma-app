@@ -376,7 +376,6 @@
 
   <!-- ======================================================== -->
   <!-- MODAL 2: SIDE-DRAWER DERECHO ESTILO FALABELLA (MI PERFIL) -->
-  <!-- ======================================================== -->
   @if (clienteAuthService.modalPerfilOpen$ | async) {
     <div class="drawer-backdrop-cliente" (click)="cerrarModalPerfil()">
       <div class="profile-drawer" (click)="$event.stopPropagation()">
@@ -394,51 +393,64 @@
           <button type="button" class="btn-close-drawer" (click)="cerrarModalPerfil()" aria-label="Cerrar menú lateral">✕</button>
         </div>
 
-        <!-- MENÚ DE NAVEGACIÓN DEL PERFIL (ESTILO FALABELLA) -->
-        <nav class="drawer-nav">
+        <!-- BARRA SUPERIOR DE 3 ACCESOS ESTILO FALABELLA -->
+        <nav class="falabella-top-nav">
           <button 
             type="button" 
-            class="drawer-nav-item" 
-            [class.active]="perfilSeccionActiva === 'compras'"
-            (click)="cambiarSeccionPerfil('compras')">
-            <span class="nav-icon">📦</span>
-            <span class="nav-text">Mis compras</span>
+            class="falabella-nav-btn" 
+            [class.active]="drawerTabPrincipal === 'compras'"
+            (click)="seleccionarTabPrincipal('compras')">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M16.5 9.4 7.55 4.24a1.78 1.78 0 0 0-1.8 0L2.5 6.1a1.8 1.8 0 0 0-.9 1.55v8.7a1.8 1.8 0 0 0 .9 1.55l8.15 4.7a1.78 1.78 0 0 0 1.8 0l8.15-4.7a1.8 1.8 0 0 0 .9-1.55v-8.7a1.8 1.8 0 0 0-.9-1.55z"></path>
+              <polyline points="3.29 7 12 12 20.71 7"></polyline>
+              <line x1="12" y1="22" x2="12" y2="12"></line>
+            </svg>
+            <span>Mis compras</span>
             <span class="nav-badge" *ngIf="misPedidos.length > 0">{{ misPedidos.length }}</span>
           </button>
+
           <button 
             type="button" 
-            class="drawer-nav-item" 
-            [class.active]="perfilSeccionActiva === 'datos'"
-            (click)="cambiarSeccionPerfil('datos')">
-            <span class="nav-icon">👤</span>
-            <span class="nav-text">Datos personales</span>
+            class="falabella-nav-btn" 
+            [class.active]="drawerTabPrincipal === 'perfil'"
+            (click)="seleccionarTabPrincipal('perfil')">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Mi perfil</span>
           </button>
+
           <button 
             type="button" 
-            class="drawer-nav-item" 
-            [class.active]="perfilSeccionActiva === 'direcciones'"
-            (click)="cambiarSeccionPerfil('direcciones')">
-            <span class="nav-icon">📍</span>
-            <span class="nav-text">Direcciones</span>
-            <span class="nav-badge" *ngIf="direcciones.length > 0">{{ direcciones.length }}</span>
-          </button>
-          <button 
-            type="button" 
-            class="drawer-nav-item" 
-            [class.active]="perfilSeccionActiva === 'cupones'"
-            (click)="cambiarSeccionPerfil('cupones')">
-            <span class="nav-icon">🎟️</span>
-            <span class="nav-text">Cupones</span>
-            <span class="nav-badge" *ngIf="cuponesDisponibles.length > 0">{{ cuponesDisponibles.length }}</span>
+            class="falabella-nav-btn" 
+            (click)="abrirAyuda()">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span>Ayuda</span>
           </button>
         </nav>
+
+        <!-- BARRA DE RETORNO / SUBVISTA -->
+        <div class="subview-header-bar" *ngIf="drawerTabPrincipal === 'perfil' && perfilSubSeccion !== 'menu'">
+          <button type="button" class="btn-subview-back" (click)="volverAMenuPerfil()">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>{{ obtenerTituloSubSeccion() }}</span>
+          </button>
+        </div>
 
         <!-- CUERPO DEL DRAWER CON SCROLL -->
         <div class="drawer-body">
           <!-- ========================================== -->
-          <!-- PESTAÑA 1: MIS COMPRAS (AISLAMIENTO TOTAL) -->
+          <!-- PESTAÑA PRINCIPAL 1: MIS COMPRAS           -->
           <!-- ========================================== -->
-          @if (perfilSeccionActiva === 'compras') {
+          @if (drawerTabPrincipal === 'compras') {
             <div class="drawer-section">
               <div class="section-header-compact">
                 <h4>Historial de Compras</h4>
@@ -466,16 +478,29 @@
                         </span>
                       </div>
                       <div class="pedido-card-bottom">
-                        <span class="pedido-fecha-text">📅 {{ pedido.fecha }}</span>
+                        <span class="pedido-fecha-text">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" class="inline-svg">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                          </svg>
+                          {{ pedido.fecha }}
+                        </span>
                         <strong class="pedido-total-text">S/ {{ pedido.total?.toFixed ? pedido.total.toFixed(2) : pedido.total }}</strong>
                       </div>
                     </div>
                   }
                 </div>
               } @else {
-                <!-- VISTA VACÍA AMIGABLE CON BOTÓN AL CATÁLOGO -->
                 <div class="drawer-empty-state">
-                  <span class="empty-icon-large">🛍️</span>
+                  <div class="empty-icon-svg-wrap">
+                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#94a3b8" stroke-width="1.6">
+                      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                      <line x1="3" y1="6" x2="21" y2="6"></line>
+                      <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                  </div>
                   <h4>Aún no tienes compras realizadas</h4>
                   <p>Tus pedidos aparecerán aquí una vez que realices una compra desde tu cuenta.</p>
                   <button type="button" class="btn-drawer-action" (click)="irACatalogo()">Ver Catálogo</button>
@@ -485,243 +510,403 @@
           }
 
           <!-- ========================================== -->
-          <!-- PESTAÑA 2: DATOS PERSONALES                -->
+          <!-- PESTAÑA PRINCIPAL 2: MI PERFIL             -->
           <!-- ========================================== -->
-          @if (perfilSeccionActiva === 'datos') {
-            <div class="drawer-section">
-              <div class="section-header-compact">
-                <h4>Información de la Cuenta</h4>
-                <small class="text-muted">Mantén actualizados tus datos para la emisión de comprobantes y despachos.</small>
+          @if (drawerTabPrincipal === 'perfil') {
+            <!-- SUBVISTA: MENÚ PRINCIPAL ESTRUCTURADO (FALABELLA) -->
+            @if (perfilSubSeccion === 'menu') {
+              <div class="falabella-profile-menu">
+                <!-- GRUPO: INFORMACIÓN PERSONAL -->
+                <div class="menu-group-card">
+                  <span class="group-title">Información personal</span>
+
+                  <button type="button" class="menu-row-item" (click)="abrirSubSeccionPerfil('datos')">
+                    <div class="row-left">
+                      <div class="row-icon-wrap">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      </div>
+                      <div class="row-text">
+                        <strong class="row-label">Datos personales</strong>
+                        <span class="row-desc">Nombre, documento, celular y correo</span>
+                      </div>
+                    </div>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+
+                  <div class="row-divider"></div>
+
+                  <button type="button" class="menu-row-item" (click)="abrirSubSeccionPerfil('direcciones')">
+                    <div class="row-left">
+                      <div class="row-icon-wrap">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      </div>
+                      <div class="row-text">
+                        <strong class="row-label">Direcciones</strong>
+                        <span class="row-desc">{{ direcciones.length }} {{ direcciones.length === 1 ? 'dirección guardada' : 'direcciones guardadas' }}</span>
+                      </div>
+                    </div>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- GRUPO: PROMOCIONES -->
+                <div class="menu-group-card">
+                  <span class="group-title">Promociones</span>
+
+                  <button type="button" class="menu-row-item" (click)="abrirSubSeccionPerfil('cupones')">
+                    <div class="row-left">
+                      <div class="row-icon-wrap">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                        </svg>
+                      </div>
+                      <div class="row-text">
+                        <strong class="row-label">Cupones</strong>
+                        <span class="row-desc">{{ cuponesDisponibles.length }} {{ cuponesDisponibles.length === 1 ? 'cupón disponible' : 'cupones disponibles' }}</span>
+                      </div>
+                    </div>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- PIE / SESIÓN -->
+                <div class="menu-group-card">
+                  <button type="button" class="menu-row-item logout-row" (click)="cerrarSesion()">
+                    <div class="row-left">
+                      <div class="row-icon-wrap icon-logout-wrap">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                          <polyline points="16 17 21 12 16 7"></polyline>
+                          <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                      </div>
+                      <div class="row-text">
+                        <strong class="row-label text-danger">Cerrar sesión</strong>
+                      </div>
+                    </div>
+                  </button>
+                </div>
               </div>
+            }
 
-              @if (datosMensajeExito) {
-                <div class="alert-perfil-success">
-                  ✓ ¡Tus datos personales han sido actualizados con éxito!
-                </div>
-              }
-
-              @if (datosError) {
-                <div class="alert-auth-error">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                  </svg>
-                  <span>{{ datosError }}</span>
-                </div>
-              }
-
-              <form (ngSubmit)="guardarDatosPersonales()" class="drawer-form">
-                <!-- NOMBRE -->
-                <div class="form-group-cliente">
-                  <label for="datos-nombre">Nombre (*)</label>
-                  <input 
-                    type="text" 
-                    id="datos-nombre" 
-                    [(ngModel)]="datosNombre" 
-                    name="datosNombre" 
-                    placeholder="Tu nombre" 
-                    required />
+            <!-- SUBVISTA: DATOS PERSONALES -->
+            @if (perfilSubSeccion === 'datos') {
+              <div class="drawer-section">
+                <div class="section-header-compact">
+                  <h4>Información de la Cuenta</h4>
+                  <small class="text-muted">Mantén actualizados tus datos para la emisión de comprobantes y despachos.</small>
                 </div>
 
-                <!-- APELLIDOS EN DOS COLUMNAS -->
-                <div class="form-grid-2-cols">
+                @if (datosMensajeExito) {
+                  <div class="alert-perfil-success">
+                    ✓ ¡Tus datos personales han sido actualizados con éxito!
+                  </div>
+                }
+
+                @if (datosError) {
+                  <div class="alert-auth-error">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                    </svg>
+                    <span>{{ datosError }}</span>
+                  </div>
+                }
+
+                <form (ngSubmit)="guardarDatosPersonales()" class="drawer-form">
                   <div class="form-group-cliente">
-                    <label for="datos-ape-pat">Apellido Paterno (*)</label>
+                    <label for="datos-nombre">Nombre (*)</label>
                     <input 
                       type="text" 
-                      id="datos-ape-pat" 
-                      [(ngModel)]="datosApellidoPaterno" 
-                      name="datosApellidoPaterno" 
-                      placeholder="Apellido paterno" 
+                      id="datos-nombre" 
+                      [(ngModel)]="datosNombre" 
+                      name="datosNombre" 
+                      placeholder="Tu nombre de pila" 
                       required />
                   </div>
-                  <div class="form-group-cliente">
-                    <label for="datos-ape-mat">Apellido Materno</label>
-                    <input 
-                      type="text" 
-                      id="datos-ape-mat" 
-                      [(ngModel)]="datosApellidoMaterno" 
-                      name="datosApellidoMaterno" 
-                      placeholder="Apellido materno" />
-                  </div>
-                </div>
 
-                <!-- TIPO Y N° DE DOCUMENTO -->
-                <div class="form-grid-2-cols">
-                  <div class="form-group-cliente">
-                    <label for="datos-tipo-doc">Tipo de Documento (*)</label>
-                    <select id="datos-tipo-doc" [(ngModel)]="datosTipoDocumento" name="datosTipoDocumento" class="select-cliente">
-                      <option value="DNI">DNI</option>
-                      <option value="Carné de Extranjería">Carné de Extranjería</option>
-                      <option value="Pasaporte">Pasaporte</option>
-                    </select>
+                  <div class="form-grid-2-cols">
+                    <div class="form-group-cliente">
+                      <label for="datos-ape-pat">Apellido Paterno (*)</label>
+                      <input 
+                        type="text" 
+                        id="datos-ape-pat" 
+                        [(ngModel)]="datosApellidoPaterno" 
+                        name="datosApellidoPaterno" 
+                        placeholder="Apellido paterno" 
+                        required />
+                    </div>
+                    <div class="form-group-cliente">
+                      <label for="datos-ape-mat">Apellido Materno</label>
+                      <input 
+                        type="text" 
+                        id="datos-ape-mat" 
+                        [(ngModel)]="datosApellidoMaterno" 
+                        name="datosApellidoMaterno" 
+                        placeholder="Apellido materno" />
+                    </div>
                   </div>
-                  <div class="form-group-cliente">
-                    <label for="datos-num-doc">N° de Documento (*)</label>
-                    <input 
-                      type="text" 
-                      id="datos-num-doc" 
-                      [(ngModel)]="datosNumeroDocumento" 
-                      name="datosNumeroDocumento" 
-                      placeholder="Ej. 72345678" 
-                      maxlength="15" 
-                      required />
-                  </div>
-                </div>
 
-                <!-- CELULAR CON PREFIJO +51 -->
-                <div class="form-group-cliente">
-                  <label for="datos-tel">Celular (*)</label>
-                  <div class="input-with-prefix">
-                    <span class="phone-prefix">+51</span>
+                  <div class="form-grid-2-cols">
+                    <div class="form-group-cliente">
+                      <label for="datos-tipo-doc">Tipo de Documento</label>
+                      <select id="datos-tipo-doc" [(ngModel)]="datosTipoDocumento" name="datosTipoDocumento" class="select-cliente">
+                        <option value="DNI">DNI</option>
+                        <option value="CE">Carné Extranjería</option>
+                        <option value="PASAPORTE">Pasaporte</option>
+                        <option value="RUC">RUC</option>
+                      </select>
+                    </div>
+                    <div class="form-group-cliente">
+                      <label for="datos-num-doc">Número de Documento</label>
+                      <input 
+                        type="text" 
+                        id="datos-num-doc" 
+                        [(ngModel)]="datosNumeroDocumento" 
+                        name="datosNumeroDocumento" 
+                        placeholder="Ej. 72345678" />
+                    </div>
+                  </div>
+
+                  <div class="form-group-cliente">
+                    <label for="datos-tel">Teléfono / WhatsApp (*)</label>
                     <input 
                       type="tel" 
                       id="datos-tel" 
                       [(ngModel)]="datosTelefono" 
                       name="datosTelefono" 
-                      placeholder="987654321" 
-                      maxlength="9" 
+                      placeholder="Ej. 987654321" 
                       required />
                   </div>
-                  <small class="field-hint">Número de 9 dígitos para coordinaciones y rastreo.</small>
-                </div>
 
-                <!-- CORREO ELECTRÓNICO (SOLO LECTURA) -->
-                <div class="form-group-cliente">
-                  <label for="datos-email">
-                    Correo Electrónico
-                    <span class="badge-readonly-info">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                      </svg>
-                      Correo no editable
-                    </span>
-                  </label>
-                  <input 
-                    type="email" 
-                    id="datos-email" 
-                    [value]="datosEmail" 
-                    readonly 
-                    class="input-readonly" />
-                </div>
-
-                <button type="submit" class="btn-drawer-primary">Guardar Datos</button>
-              </form>
-            </div>
-          }
-
-          <!-- ========================================== -->
-          <!-- PESTAÑA 3: DIRECCIONES DE DESPACHO         -->
-          <!-- ========================================== -->
-          @if (perfilSeccionActiva === 'direcciones') {
-            <div class="drawer-section">
-              <div class="section-header-compact-flex">
-                <div>
-                  <h4>Direcciones de Entrega</h4>
-                  <small class="text-muted">Gestiona tus domicilios habituales para compras rápidas.</small>
-                </div>
-                <button 
-                  *ngIf="!mostrandoFormDireccion" 
-                  type="button" 
-                  class="btn-add-address" 
-                  (click)="abrirFormNuevaDireccion()">
-                  + Agregar dirección
-                </button>
-              </div>
-
-              <!-- FORMULARIO DE ALTA / EDICIÓN DE DIRECCIÓN -->
-              @if (mostrandoFormDireccion) {
-                <div class="address-form-box">
-                  <div class="box-title">
-                    <h5>Nueva Dirección de Despacho</h5>
+                  <div class="form-group-cliente">
+                    <label for="datos-email">Correo Electrónico (Solo lectura)</label>
+                    <input 
+                      type="email" 
+                      id="datos-email" 
+                      [value]="datosEmail" 
+                      name="datosEmail" 
+                      readonly 
+                      class="input-readonly" />
                   </div>
 
-                  @if (dirError) {
-                    <div class="alert-auth-error">
-                      <span>{{ dirError }}</span>
+                  <button type="submit" class="btn-drawer-primary">Guardar Datos Personales</button>
+                </form>
+              </div>
+            }
+
+            <!-- SUBVISTA: DIRECCIONES -->
+            @if (perfilSubSeccion === 'direcciones') {
+              <div class="drawer-section">
+                <div class="section-header-compact-flex">
+                  <div>
+                    <h4>Direcciones de Entrega</h4>
+                    <small class="text-muted">Gestiona tus domicilios habituales para compras rápidas.</small>
+                  </div>
+                  <button 
+                    *ngIf="!mostrandoFormDireccion" 
+                    type="button" 
+                    class="btn-add-address" 
+                    (click)="abrirFormNuevaDireccion()">
+                    + Agregar dirección
+                  </button>
+                </div>
+
+                <!-- FORMULARIO DE ALTA / EDICIÓN DE DIRECCIÓN -->
+                @if (mostrandoFormDireccion) {
+                  <div class="address-form-box">
+                    <div class="box-title">
+                      <h5>{{ modoEdicionDireccion ? 'Editar Dirección de Despacho' : 'Nueva Dirección de Despacho' }}</h5>
+                    </div>
+
+                    @if (dirError) {
+                      <div class="alert-auth-error">
+                        <span>{{ dirError }}</span>
+                      </div>
+                    }
+
+                    <form (ngSubmit)="guardarDireccion()" class="drawer-form">
+                      <div class="form-grid-2-cols">
+                        <div class="form-group-cliente">
+                          <label for="dir-depto">Departamento (*)</label>
+                          <select id="dir-depto" [(ngModel)]="dirDepartamento" name="dirDepartamento" class="select-cliente">
+                            <option *ngFor="let dep of departamentosPeru" [value]="dep">{{ dep }}</option>
+                          </select>
+                        </div>
+                        <div class="form-group-cliente">
+                          <label for="dir-prov">Provincia (*)</label>
+                          <input type="text" id="dir-prov" [(ngModel)]="dirProvincia" name="dirProvincia" placeholder="Ej. Lima" required />
+                        </div>
+                      </div>
+
+                      <div class="form-group-cliente">
+                        <label for="dir-dist">Distrito (*)</label>
+                        <input type="text" id="dir-dist" [(ngModel)]="dirDistrito" name="dirDistrito" placeholder="Ej. Miraflores, San Isidro..." required />
+                      </div>
+
+                      <div class="form-group-cliente">
+                        <label for="dir-calle">Dirección (*)</label>
+                        <input 
+                          type="text" 
+                          id="dir-calle" 
+                          [(ngModel)]="dirDireccion" 
+                          name="dirDireccion" 
+                          placeholder="Ingresa calle y número / Mz / Lote / Urb" 
+                          required />
+                      </div>
+
+                      <div class="form-group-cliente">
+                        <label for="dir-det">Depto, casa, piso, interior (opcional)</label>
+                        <input 
+                          type="text" 
+                          id="dir-det" 
+                          [(ngModel)]="dirDetalleOpcional" 
+                          name="dirDetalleOpcional" 
+                          placeholder="Ej. Dpto. 402, Torre B, Piso 4" />
+                      </div>
+
+                      <label class="checkbox-cliente">
+                        <input type="checkbox" [(ngModel)]="dirEsPrincipal" name="dirEsPrincipal" />
+                        <span>Guardar como dirección principal</span>
+                      </label>
+
+                      <div class="form-actions-row">
+                        <button type="submit" class="btn-drawer-primary">
+                          {{ modoEdicionDireccion ? 'Actualizar Dirección' : 'Guardar Dirección' }}
+                        </button>
+                        <button type="button" class="btn-drawer-secondary" (click)="cancelarFormDireccion()">Cancelar</button>
+                      </div>
+                    </form>
+                  </div>
+                }
+
+                <!-- LISTADO DE DIRECCIONES GUARDADAS -->
+                @if (!mostrandoFormDireccion) {
+                  @if (direcciones.length > 0) {
+                    <div class="addresses-list">
+                      @for (dir of direcciones; track dir.id) {
+                        <div class="address-card" [class.is-primary]="dir.esPrincipal">
+                          <div class="address-card-header">
+                            <span class="badge-address-primary" *ngIf="dir.esPrincipal">Principal</span>
+                            <span class="address-ubigeo font-mono">{{ dir.distrito }}, {{ dir.provincia }}</span>
+                          </div>
+                          <div class="address-card-body" (click)="iniciarEdicionDireccion(dir)" style="cursor: pointer;" title="Clic para editar esta dirección">
+                            <p class="address-street">
+                              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" class="inline-svg">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                              </svg>
+                              {{ dir.direccion }}
+                            </p>
+                            <p class="address-sub" *ngIf="dir.detalleOpcional">{{ dir.detalleOpcional }}</p>
+                            <p class="address-depto text-muted">{{ dir.departamento }} - Perú</p>
+                          </div>
+                          <div class="address-card-actions">
+                            <button 
+                              type="button" 
+                              class="btn-text-action text-primary" 
+                              (click)="iniciarEdicionDireccion(dir)">
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" class="inline-svg">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                              </svg>
+                              Editar
+                            </button>
+                            <button 
+                              *ngIf="!dir.esPrincipal" 
+                              type="button" 
+                              class="btn-text-action text-secondary" 
+                              (click)="establecerDireccionPrincipal(dir.id)">
+                              Establecer como principal
+                            </button>
+                            <button 
+                              type="button" 
+                              class="btn-text-action text-danger" 
+                              (click)="eliminarDireccion(dir.id)">
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" class="inline-svg">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="drawer-empty-state">
+                      <div class="empty-icon-svg-wrap">
+                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#94a3b8" stroke-width="1.6">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                          <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                      </div>
+                      <h4>No tienes direcciones guardadas</h4>
+                      <p>Agrega tu dirección para facilitar tus pedidos y agilizar el despacho.</p>
+                      <button type="button" class="btn-drawer-action" (click)="abrirFormNuevaDireccion()">+ Agregar Dirección</button>
                     </div>
                   }
+                }
+              </div>
+            }
 
-                  <form (ngSubmit)="guardarDireccion()" class="drawer-form">
-                    <div class="form-grid-2-cols">
-                      <div class="form-group-cliente">
-                        <label for="dir-depto">Departamento (*)</label>
-                        <select id="dir-depto" [(ngModel)]="dirDepartamento" name="dirDepartamento" class="select-cliente">
-                          <option *ngFor="let dep of departamentosPeru" [value]="dep">{{ dep }}</option>
-                        </select>
-                      </div>
-                      <div class="form-group-cliente">
-                        <label for="dir-prov">Provincia (*)</label>
-                        <input type="text" id="dir-prov" [(ngModel)]="dirProvincia" name="dirProvincia" placeholder="Ej. Lima" required />
-                      </div>
-                    </div>
-
-                    <div class="form-group-cliente">
-                      <label for="dir-dist">Distrito (*)</label>
-                      <input type="text" id="dir-dist" [(ngModel)]="dirDistrito" name="dirDistrito" placeholder="Ej. Miraflores, San Isidro..." required />
-                    </div>
-
-                    <div class="form-group-cliente">
-                      <label for="dir-calle">Dirección (*)</label>
-                      <input 
-                        type="text" 
-                        id="dir-calle" 
-                        [(ngModel)]="dirDireccion" 
-                        name="dirDireccion" 
-                        placeholder="Ingresa calle y número / Mz / Lote / Urb" 
-                        required />
-                    </div>
-
-                    <div class="form-group-cliente">
-                      <label for="dir-det">Depto, casa, piso, interior (opcional)</label>
-                      <input 
-                        type="text" 
-                        id="dir-det" 
-                        [(ngModel)]="dirDetalleOpcional" 
-                        name="dirDetalleOpcional" 
-                        placeholder="Ej. Dpto. 402, Torre B, Piso 4" />
-                    </div>
-
-                    <label class="checkbox-cliente">
-                      <input type="checkbox" [(ngModel)]="dirEsPrincipal" name="dirEsPrincipal" />
-                      <span>Guardar como dirección principal</span>
-                    </label>
-
-                    <div class="form-actions-row">
-                      <button type="submit" class="btn-drawer-primary">Guardar Dirección</button>
-                      <button type="button" class="btn-drawer-secondary" (click)="cancelarFormDireccion()">Cancelar</button>
-                    </div>
-                  </form>
+            <!-- SUBVISTA: CUPONES DISPONIBLES -->
+            @if (perfilSubSeccion === 'cupones') {
+              <div class="drawer-section">
+                <div class="section-header-compact">
+                  <h4>Mis Cupones y Descuentos</h4>
+                  <span class="section-count-badge" *ngIf="cuponesDisponibles.length > 0">{{ cuponesDisponibles.length }} vigentes</span>
                 </div>
-              }
+                <p class="section-helper-text">Usa o copia estos cupones para aplicarlos al momento de tu compra.</p>
 
-              <!-- LISTADO DE DIRECCIONES GUARDADAS -->
-              @if (!mostrandoFormDireccion) {
-                @if (direcciones.length > 0) {
-                  <div class="addresses-list">
-                    @for (dir of direcciones; track dir.id) {
-                      <div class="address-card" [class.is-primary]="dir.esPrincipal">
-                        <div class="address-card-header">
-                          <span class="badge-address-primary" *ngIf="dir.esPrincipal">Principal</span>
-                          <span class="address-ubigeo font-mono">{{ dir.distrito }}, {{ dir.provincia }}</span>
+                @if (cargandoCupones) {
+                  <div class="drawer-loading-box">
+                    <span class="spinner-small"></span>
+                    <span>Cargando cupones disponibles...</span>
+                  </div>
+                } @else if (cuponesDisponibles.length > 0) {
+                  <div class="profile-coupons-list">
+                    @for (cupon of cuponesDisponibles; track cupon.id || cupon.codigo) {
+                      <div class="drawer-coupon-card">
+                        <div class="drawer-coupon-badge">
+                          <span class="drawer-coupon-pct">{{ cupon.porcentajeDescuento }}%</span>
+                          <span class="drawer-coupon-off">OFF</span>
                         </div>
-                        <div class="address-card-body">
-                          <p class="address-street">📍 {{ dir.direccion }}</p>
-                          <p class="address-sub" *ngIf="dir.detalleOpcional">{{ dir.detalleOpcional }}</p>
-                          <p class="address-depto text-muted">{{ dir.departamento }} - Perú</p>
+                        <div class="drawer-coupon-info">
+                          <div class="drawer-coupon-top">
+                            <strong class="drawer-coupon-code">{{ cupon.codigo }}</strong>
+                            <span class="drawer-coupon-pill" *ngIf="cupon.tipoAplicacion === 'BIENVENIDA'">1ra compra</span>
+                          </div>
+                          <p class="drawer-coupon-desc">{{ obtenerDescripcionCupon(cupon) }}</p>
+                          <span class="drawer-coupon-min" *ngIf="cupon.montoMinimo && cupon.montoMinimo > 0">
+                            Min. S/ {{ cupon.montoMinimo.toFixed(2) }}
+                          </span>
                         </div>
-                        <div class="address-card-actions">
+                        <div class="drawer-coupon-actions">
                           <button 
-                            *ngIf="!dir.esPrincipal" 
                             type="button" 
-                            class="btn-text-action text-primary" 
-                            (click)="establecerDireccionPrincipal(dir.id)">
-                            Establecer como principal
+                            class="btn-coupon-copy" 
+                            [class.copied]="copiadoCodigo === cupon.codigo"
+                            (click)="copiarCodigoCupon(cupon.codigo)">
+                            {{ copiadoCodigo === cupon.codigo ? '¡Copiado! ✓' : 'Copiar código' }}
                           </button>
                           <button 
                             type="button" 
-                            class="btn-text-action text-danger" 
-                            (click)="eliminarDireccion(dir.id)">
-                            Eliminar
+                            class="btn-coupon-use" 
+                            (click)="usarCuponEnCarrito(cupon)">
+                            Usar cupón &rarr;
                           </button>
                         </div>
                       </div>
@@ -729,95 +914,24 @@
                   </div>
                 } @else {
                   <div class="drawer-empty-state">
-                    <span class="empty-icon-large">📍</span>
-                    <h4>No tienes direcciones guardadas</h4>
-                    <p>Agrega tu dirección para facilitar tus pedidos y agilizar el despacho.</p>
-                    <button type="button" class="btn-drawer-action" (click)="abrirFormNuevaDireccion()">+ Agregar Dirección</button>
+                    <div class="empty-icon-svg-wrap">
+                      <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#94a3b8" stroke-width="1.6">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                        <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                      </svg>
+                    </div>
+                    <h4>No tienes cupones vigentes por el momento</h4>
+                    <p>Mantente atento a nuestras promociones especiales y campañas exclusivas.</p>
                   </div>
                 }
-              }
-            </div>
-          }
-          <!-- ========================================== -->
-          <!-- PESTAÑA 4: CUPONES DISPONIBLES             -->
-          <!-- ========================================== -->
-          @if (perfilSeccionActiva === 'cupones') {
-            <div class="drawer-section">
-              <div class="section-header-compact">
-                <h4>Mis Cupones y Descuentos</h4>
-                <span class="section-count-badge" *ngIf="cuponesDisponibles.length > 0">{{ cuponesDisponibles.length }} vigentes</span>
               </div>
-              <p class="section-helper-text">Usa o copia estos cupones para aplicarlos al momento de tu compra.</p>
-
-              @if (cargandoCupones) {
-                <div class="drawer-loading-box">
-                  <span class="spinner-small"></span>
-                  <span>Cargando cupones disponibles...</span>
-                </div>
-              } @else if (cuponesDisponibles.length > 0) {
-                <div class="profile-coupons-list">
-                  @for (cupon of cuponesDisponibles; track cupon.id || cupon.codigo) {
-                    <div class="drawer-coupon-card">
-                      <div class="drawer-coupon-badge">
-                        <span class="drawer-coupon-pct">{{ cupon.porcentajeDescuento }}%</span>
-                        <span class="drawer-coupon-off">OFF</span>
-                      </div>
-                      <div class="drawer-coupon-info">
-                        <div class="drawer-coupon-top">
-                          <strong class="drawer-coupon-code">{{ cupon.codigo }}</strong>
-                          <span class="drawer-coupon-pill" *ngIf="cupon.tipoAplicacion === 'BIENVENIDA'">1ra compra</span>
-                        </div>
-                        <p class="drawer-coupon-desc">{{ obtenerDescripcionCupon(cupon) }}</p>
-                        <span class="drawer-coupon-min" *ngIf="cupon.montoMinimo && cupon.montoMinimo > 0">
-                          Min. S/ {{ cupon.montoMinimo.toFixed(2) }}
-                        </span>
-                      </div>
-                      <div class="drawer-coupon-actions">
-                        <button 
-                          type="button" 
-                          class="btn-coupon-copy" 
-                          [class.copied]="copiadoCodigo === cupon.codigo"
-                          (click)="copiarCodigoCupon(cupon.codigo)">
-                          {{ copiadoCodigo === cupon.codigo ? '¡Copiado! ✓' : 'Copiar código' }}
-                        </button>
-                        <button 
-                          type="button" 
-                          class="btn-coupon-use" 
-                          (click)="usarCuponEnCarrito(cupon)">
-                          Usar cupón &rarr;
-                        </button>
-                      </div>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <div class="drawer-empty-state">
-                  <span class="empty-icon-large">🎟️</span>
-                  <h4>No tienes cupones vigentes por el momento</h4>
-                  <p>Mantente atento a nuestras promociones especiales y campañas exclusivas.</p>
-                </div>
-              }
-            </div>
+            }
           }
-
-        </div>
-
-        <!-- PIE DEL DRAWER -->
-        <div class="drawer-footer">
-          <button type="button" class="btn-logout-drawer" (click)="cerrarSesion()">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            <span>Cerrar Sesión</span>
-          </button>
         </div>
       </div>
     </div>
   }
-
-  <!-- ========================================== -->
+<!-- ========================================== -->
   <!-- MODAL 3: AVISO INICIAR SESIÓN (FAVORITOS) -->
   <!-- ========================================== -->
   @if (clienteAuthService.modalAvisoLoginOpen$ | async) {

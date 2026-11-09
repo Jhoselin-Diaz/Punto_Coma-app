@@ -51,7 +51,13 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
   avisoGoogle = '';
 
   // NAVEGACIÓN Y SECCIONES DEL DRAWER (FALABELLA STYLE)
+  drawerTabPrincipal: 'compras' | 'perfil' = 'compras';
+  perfilSubSeccion: 'menu' | 'datos' | 'direcciones' | 'cupones' = 'menu';
   perfilSeccionActiva: 'compras' | 'datos' | 'direcciones' | 'cupones' = 'compras';
+
+  // EDICIÓN DE DIRECCIONES
+  modoEdicionDireccion = false;
+  idDireccionEditando: string | null = null;
 
   // SECCIÓN: CUPONES DISPONIBLES
   cuponesDisponibles: Cupon[] = [];
@@ -218,31 +224,78 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     this.datosMensajeExito = false;
     this.dirMensajeExito = false;
     this.mostrandoFormDireccion = false;
+    this.modoEdicionDireccion = false;
+    this.idDireccionEditando = null;
+
+    if (seccion === 'compras') {
+      this.drawerTabPrincipal = 'compras';
+      this.perfilSubSeccion = 'menu';
+      this.cargarMisPedidos();
+    } else {
+      this.drawerTabPrincipal = 'perfil';
+      this.perfilSubSeccion = seccion;
+      if (seccion === 'datos') this.cargarFormularioDatosPersonales();
+      if (seccion === 'direcciones') this.cargarDirecciones();
+      if (seccion === 'cupones') this.cargarCupones();
+    }
 
     this.cargarFormularioDatosPersonales();
     this.cargarDirecciones();
-    this.cargarMisPedidos();
     this.cargarCupones();
-
     this.clienteAuthService.abrirModalPerfil(seccion);
   }
 
   cambiarSeccionPerfil(seccion: 'compras' | 'datos' | 'direcciones' | 'cupones'): void {
-    this.perfilSeccionActiva = seccion;
-    this.perfilMensajeExito = false;
-    this.datosMensajeExito = false;
-    this.dirMensajeExito = false;
-    this.mostrandoFormDireccion = false;
+    this.abrirPerfil(seccion);
+  }
 
-    if (seccion === 'compras') {
+  seleccionarTabPrincipal(tab: 'compras' | 'perfil'): void {
+    this.drawerTabPrincipal = tab;
+    this.perfilSubSeccion = 'menu';
+    this.mostrandoFormDireccion = false;
+    this.modoEdicionDireccion = false;
+    this.idDireccionEditando = null;
+    if (tab === 'compras') {
+      this.perfilSeccionActiva = 'compras';
       this.cargarMisPedidos();
-    } else if (seccion === 'datos') {
+    } else {
       this.cargarFormularioDatosPersonales();
-    } else if (seccion === 'direcciones') {
       this.cargarDirecciones();
-    } else if (seccion === 'cupones') {
       this.cargarCupones();
     }
+  }
+
+  abrirSubSeccionPerfil(sub: 'datos' | 'direcciones' | 'cupones'): void {
+    this.drawerTabPrincipal = 'perfil';
+    this.perfilSubSeccion = sub;
+    this.perfilSeccionActiva = sub;
+    this.mostrandoFormDireccion = false;
+    this.modoEdicionDireccion = false;
+    this.idDireccionEditando = null;
+    if (sub === 'datos') this.cargarFormularioDatosPersonales();
+    if (sub === 'direcciones') this.cargarDirecciones();
+    if (sub === 'cupones') this.cargarCupones();
+  }
+
+  volverAMenuPerfil(): void {
+    this.perfilSubSeccion = 'menu';
+    this.mostrandoFormDireccion = false;
+    this.modoEdicionDireccion = false;
+    this.idDireccionEditando = null;
+  }
+
+  obtenerTituloSubSeccion(): string {
+    switch (this.perfilSubSeccion) {
+      case 'datos': return 'Datos personales';
+      case 'direcciones': return 'Direcciones';
+      case 'cupones': return 'Mis Cupones';
+      default: return 'Mi perfil';
+    }
+  }
+
+  abrirAyuda(): void {
+    this.cerrarModalPerfil();
+    this.router.navigate(['/contacto']);
   }
 
   
@@ -434,6 +487,8 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
   }
 
   abrirFormNuevaDireccion(): void {
+    this.modoEdicionDireccion = false;
+    this.idDireccionEditando = null;
     this.direccionEditId = null;
     this.dirDepartamento = 'Lima';
     this.dirProvincia = 'Lima';
@@ -445,8 +500,24 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     this.mostrandoFormDireccion = true;
   }
 
+  iniciarEdicionDireccion(dir: DireccionCliente): void {
+    this.modoEdicionDireccion = true;
+    this.idDireccionEditando = dir.id;
+    this.direccionEditId = dir.id;
+    this.dirDepartamento = dir.departamento || 'Lima';
+    this.dirProvincia = dir.provincia || 'Lima';
+    this.dirDistrito = dir.distrito || '';
+    this.dirDireccion = dir.direccion || '';
+    this.dirDetalleOpcional = dir.detalleOpcional || '';
+    this.dirEsPrincipal = !!dir.esPrincipal;
+    this.dirError = '';
+    this.mostrandoFormDireccion = true;
+  }
+
   cancelarFormDireccion(): void {
     this.mostrandoFormDireccion = false;
+    this.modoEdicionDireccion = false;
+    this.idDireccionEditando = null;
     this.direccionEditId = null;
     this.dirError = '';
   }
@@ -466,8 +537,10 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const editId = this.idDireccionEditando || this.direccionEditId;
+
     this.clienteAuthService.guardarDireccion({
-      id: this.direccionEditId || undefined,
+      id: editId || undefined,
       departamento: this.dirDepartamento.trim(),
       provincia: (this.dirProvincia || this.dirDepartamento).trim(),
       distrito: this.dirDistrito.trim(),
@@ -477,8 +550,12 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
     });
 
     this.cargarDirecciones();
+    const mensaje = editId ? 'Dirección actualizada correctamente.' : 'Dirección guardada correctamente.';
     this.mostrandoFormDireccion = false;
-    this.mostrarToast('Dirección guardada correctamente.');
+    this.modoEdicionDireccion = false;
+    this.idDireccionEditando = null;
+    this.direccionEditId = null;
+    this.mostrarToast(mensaje);
   }
 
   eliminarDireccion(id: string): void {
