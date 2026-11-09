@@ -61,6 +61,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   private generalPollingInterval: any = null;
   mostrarMenuOpciones = false;
   mostrarPanelEmojis = false;
+  mostrarDetallesIaMobile = false;
   listaEmojis: string[] = ['😊', '👍', '🙌', '🙏', '☕', '📦', '✅', '❌', '🛒', '🛍️', '🧾', '✨', '📝', '📍', '🚗', '📞'];
 
   editandoMensajeGenerado = false;
@@ -72,6 +73,19 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
   isFetchingChats = false;
   isFetchingMessages = false;
   enviandoMensaje = false;
+
+  volverAListaMobile(): void {
+    this.chatSeleccionado = null;
+    this.mostrarDetallesIaMobile = false;
+  }
+
+  toggleDetallesIaMobile(): void {
+    this.mostrarDetallesIaMobile = !this.mostrarDetallesIaMobile;
+  }
+
+  cerrarDetallesIaMobile(): void {
+    this.mostrarDetallesIaMobile = false;
+  }
 
   aiStatus = {
     pedidoIdentificado: false,
@@ -189,7 +203,11 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
               return;
             }
           }
-          this.seleccionarChat(this.chats[0]);
+          if (typeof window !== 'undefined' && window.innerWidth <= 992) {
+            this.chatSeleccionado = null;
+          } else {
+            this.seleccionarChat(this.chats[0]);
+          }
         } else {
           this.chatSeleccionado = null;
         }
@@ -283,6 +301,7 @@ export class AdminChatsComponent implements OnInit, OnDestroy {
 
   seleccionarChat(chat: Chat) {
     this.chatSeleccionado = chat;
+    this.mostrarDetallesIaMobile = false;
     chat.noLeidos = 0;
     this.adminChatService.marcarComoLeido(chat.id).subscribe({
       error: (e) => console.warn('Error al marcar chat como leído en servidor:', e)

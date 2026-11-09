@@ -16,6 +16,7 @@ import { takeUntil } from 'rxjs/operators';
 export class AdminLayoutComponent implements OnInit, OnDestroy {
   mostrarMenuCuenta: boolean = false;
   mostrarMenuNotificaciones: boolean = false;
+  sidebarMobileAbierto: boolean = false;
   notificacionesCount: number = 0;
   alertas: AlertaNotificacion[] = [];
   private destroy$ = new Subject<void>();
@@ -25,6 +26,14 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     public notifService: AdminNotificationService,
     private router: Router
   ) {}
+
+  toggleSidebarMobile(): void {
+    this.sidebarMobileAbierto = !this.sidebarMobileAbierto;
+  }
+
+  cerrarSidebarMobile(): void {
+    this.sidebarMobileAbierto = false;
+  }
 
   ngOnInit(): void {
     this.notifService.unreadCount$

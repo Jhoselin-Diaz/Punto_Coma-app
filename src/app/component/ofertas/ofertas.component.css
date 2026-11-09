@@ -273,6 +273,10 @@
   font-size: 15px;
   font-weight: 700;
   line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .product-info p {
@@ -437,9 +441,9 @@
   border-top: 2px dashed #ecc8ad;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1024px) {
   .products-page {
-    width: min(100% - 32px, 1328px);
+    width: min(100% - 24px, 1328px);
   }
 
   .ofertas-hero {
@@ -449,7 +453,7 @@
   }
   
   .ofertas-hero::before {
-    background: rgba(247,237,227,0.85); /* Mayor opacidad en movil */
+    background: rgba(247,237,227,0.85);
   }
 
   .hero-ribbon {
@@ -457,7 +461,8 @@
   }
 
   .products-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
   }
 
   .steps-banner {
@@ -469,23 +474,42 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .products-page {
     padding-top: 16px;
+    width: min(100% - 16px, 1328px);
   }
 
   .hero-content h1 {
-    font-size: 32px;
+    font-size: 26px;
   }
 
   .products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .buttons {
     grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .buttons a,
+  .buttons button {
+    min-height: 40px;
+    font-size: 12px;
   }
 
   .steps-banner,
   .step {
     grid-template-columns: 1fr;
     text-align: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .products-grid {
+    grid-template-columns: 1fr;
   }
 }
 

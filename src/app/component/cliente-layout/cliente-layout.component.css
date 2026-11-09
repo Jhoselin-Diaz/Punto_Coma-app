@@ -443,35 +443,147 @@
   background: var(--orange);
 }
 
-@media (max-width: 1050px) {
-  .topbar {
-    grid-template-columns: 1fr;
-    height: auto;
-    gap: 14px;
-    padding: 18px 24px;
-    position: static;
+@media (max-width: 1024px) {
+  .menu {
+    overflow-x: auto;
+    white-space: nowrap;
+    justify-content: flex-start;
+    padding: 0 16px;
+    gap: 16px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .menu {
-    position: static;
+  .menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu a {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    height: auto;
+    padding: 10px 14px 12px 14px;
+    gap: 8px 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #fff;
+  }
+
+  .brand {
+    order: 1;
+    font-size: 19px;
   }
 
   .actions {
-    justify-content: flex-start;
-    flex-wrap: wrap;
+    order: 2;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .whatsapp-mini strong {
+    display: none;
+  }
+
+  .whatsapp-mini {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .search-wrapper {
+    order: 3;
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  .search {
+    height: 38px;
+  }
+
+  .search-input-wrap input {
+    font-size: 16px;
+  }
+
+  .menu {
+    height: 38px;
+    position: sticky;
+    top: auto;
   }
 }
 
 @media (max-width: 640px) {
   .brand {
-    font-size: 24px;
+    font-size: 18px;
   }
 
-  .menu {
-    justify-content: flex-start;
-    gap: 22px;
-    padding: 0 18px;
-    overflow-x: auto;
+  .profile-drawer {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .falabella-top-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  .falabella-nav-btn {
+    padding: 8px 2px;
+    font-size: 11px;
+  }
+
+  .profile-drawer input,
+  .profile-drawer select,
+  .profile-drawer textarea {
+    font-size: 16px !important;
+  }
+
+  .falabella-drawer-body,
+  .drawer-body {
+    padding: 12px 14px;
+  }
+
+  .btn-submit-falabella,
+  .btn-action-primary,
+  .btn-falabella-guardar,
+  .btn-submit-cliente {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .modal-card-cliente,
+  .auth-modal-card {
+    width: 92vw;
+    max-width: 400px;
+    max-height: 90dvh;
+    border-radius: 14px;
+    margin: auto;
+    box-sizing: border-box;
+  }
+
+  .form-grid-2-cols {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }
 

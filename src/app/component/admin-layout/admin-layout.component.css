@@ -410,34 +410,104 @@
   color: #c62828;
 }
 
-@media (max-width: 900px) {
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-hamburger-admin {
+  display: none;
+}
+
+.btn-close-sidebar-mobile {
+  display: none;
+}
+
+.admin-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1400;
+}
+
+@media (max-width: 992px) {
   .admin-shell {
     grid-template-columns: 1fr;
   }
 
   .sidebar {
-    position: static;
-    height: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    max-width: 80vw;
+    height: 100dvh;
+    z-index: 1500;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    background: #ffffff;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    padding: 20px 14px;
   }
 
-  .sidebar h1 {
-    margin: 0 0 18px 14px;
+  .sidebar.mobile-open {
+    transform: translateX(0);
   }
 
-  .sidebar nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-right: 4px;
+  }
+
+  .btn-close-sidebar-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 50%;
+    color: #475569;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .btn-hamburger-admin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--ink);
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-right: 4px;
+  }
+
+  .btn-hamburger-admin:hover {
+    background: var(--soft);
+    color: var(--orange);
   }
 
   .topbar {
-    height: auto;
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 16px;
-    padding: 20px;
+    height: 56px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
   }
 
-  .top-actions {
-    flex-wrap: wrap;
+  .admin-main {
+    width: 100%;
+    min-width: 0;
   }
 }
 .topbar-notif-badge {
