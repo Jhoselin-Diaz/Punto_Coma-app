@@ -21,7 +21,7 @@ export class AdminConfiguracionComponent implements OnInit {
   };
 
   logoFile: File | null = null;
-  origenLogo: 'local' | 'drive' = 'local';
+  origenLogo: 'local' | 'drive' = 'drive';
   driveLogoUrl: string = '';
   guardandoApariencia = false;
   guardandoNegocio = false;
@@ -349,31 +349,7 @@ export class AdminConfiguracionComponent implements OnInit {
     this.guardandoApariencia = true;
 
     // Caso 1: Archivo local seleccionado
-    if (this.logoFile) {
-      this.configService.subirLogo(this.logoFile).subscribe({
-        next: (res) => {
-          this.logoFile = null;
-          const logoSubido = res?.logoUrl || this.configService.negocio.logo_url;
-          this.configService.guardarApariencia(this.visual.colorPrincipal, logoSubido).subscribe({
-            next: () => {
-              this.guardandoApariencia = false;
-              this.modalAlertaService.success('Personalización visual guardada correctamente.');
-            },
-            error: (err) => {
-              console.error('Error al guardar apariencia tras subir logo:', err);
-              this.guardandoApariencia = false;
-              this.modalAlertaService.success('Logo subido correctamente.');
-            }
-          });
-        },
-        error: (err) => {
-          console.error('Error al subir logo:', err);
-          this.guardandoApariencia = false;
-          this.modalAlertaService.error('Ocurrió un error al subir el logo al servidor.');
-        }
-      });
-      return;
-    }
+    
 
     // Caso 2: Origen Google Drive con URL escrita
     if (this.origenLogo === 'drive' && this.driveLogoUrl && this.driveLogoUrl.trim()) {

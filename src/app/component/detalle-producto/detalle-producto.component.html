@@ -13,7 +13,7 @@
 
       <section class="product-main">
         <div class="gallery">
-          <img class="main-image" [src]="obtenerImagenUrl(imagenPrincipal)" [alt]="producto.nombre" />
+          <img class="main-image" [src]="obtenerImagenUrl(imagenPrincipal)" (error)="onImgError($event)" [alt]="producto.nombre" />
           <div class="thumb-row">
             <button class="arrow" type="button" aria-label="Anterior">&lt;</button>
             @for (imagen of producto.galeria; track imagen) {
@@ -23,7 +23,7 @@
                 type="button"
                 (click)="seleccionarImagen(imagen)"
               >
-                <img [src]="obtenerImagenUrl(imagen)" [alt]="producto.nombre" />
+                <img [src]="obtenerImagenUrl(imagen)" (error)="onImgError($event)" [alt]="producto.nombre" />
               </button>
             }
             <button class="arrow" type="button" aria-label="Siguiente">&gt;</button>
@@ -416,7 +416,7 @@
           <button class="circle" type="button">&lt;</button>
           @for (item of relacionados; track item.id) {
             <article class="related-card" [routerLink]="['/productos', item.id]" style="cursor: pointer;">
-              <img [src]="obtenerImagenUrl(item.imagenPrincipal || item.imageUrl)" [alt]="item.nombre" />
+              <img [src]="obtenerImagenUrl(item.imagenPrincipal || item.imageUrl)" (error)="onImgError($event)" [alt]="item.nombre" />
               <div>
                 <button 
                   type="button" 

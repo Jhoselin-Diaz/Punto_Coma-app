@@ -835,20 +835,31 @@ export class ClienteLayoutComponent implements OnInit, OnDestroy {
   private imageSafeUrlCache = new Map<string, SafeUrl>();
 
   obtenerImagenUrl(url: string): SafeUrl {
-    if (!url) return '';
-    const cached = this.imageSafeUrlCache.get(url);
+    const trimmed = (url || '').trim();
+    if (!trimmed || trimmed.startsWith('blob:') || trimmed.includes('localhost:8080') || trimmed.includes('127.0.0.1')) {
+      return this.sanitizer.bypassSecurityTrustUrl('images/prod-jaspeada.png');
+    }
+    const cached = this.imageSafeUrlCache.get(trimmed);
     if (cached) return cached;
 
     let res: SafeUrl;
-    if (!url.includes('drive.google.com') && !url.includes('docs.google.com') && !url.includes('googleusercontent.com')) {
-      res = this.sanitizer.bypassSecurityTrustUrl(url);
+    if (!trimmed.includes('drive.google.com') && !trimmed.includes('docs.google.com') && !trimmed.includes('googleusercontent.com')) {
+      res = this.sanitizer.bypassSecurityTrustUrl(trimmed);
     } else {
-      const fileId = this.extraerGoogleDriveId(url);
+      const fileId = this.extraerGoogleDriveId(trimmed);
       const previewUrl = this.obtenerGoogleDrivePreviewUrl(fileId);
-      res = this.sanitizer.bypassSecurityTrustUrl(previewUrl);
+      res = this.sanitizer.bypassSecurityTrustUrl(previewUrl || 'images/prod-jaspeada.png');
     }
-    this.imageSafeUrlCache.set(url, res);
+    this.imageSafeUrlCache.set(trimmed, res);
     return res;
+  }
+
+  onImgError(event: any) {
+    const target = event?.target as HTMLImageElement;
+    if (target) {
+      target.onerror = null;
+      target.src = 'images/prod-jaspeada.png';
+    }
   }
 
   aplicarColorPrincipal(color?: string) {

@@ -72,7 +72,7 @@
                   (mouseenter)="selectedIndex = i"
                 >
                   <div class="suggestion-thumb">
-                    <img [src]="obtenerImagenUrl(item.imagenPrincipal || item.imageUrl)" [alt]="item.nombre" />
+                    <img [src]="obtenerImagenUrl(item.imagenPrincipal || item.imageUrl)" (error)="onImgError($event)" [alt]="item.nombre" />
                   </div>
                   <div class="suggestion-info">
                     <span class="suggestion-name">{{ item.nombre }}</span>
@@ -974,7 +974,7 @@
               @for (fav of (clienteAuthService.favoritos$ | async); track fav.id) {
                 <div class="favorito-item-card">
                   <div class="fav-thumb" (click)="irAProducto(fav.id)">
-                    <img [src]="obtenerImagenUrl(fav.imagenPrincipal || fav.imageUrl || '')" [alt]="fav.nombre" />
+                    <img [src]="obtenerImagenUrl(fav.imagenPrincipal || fav.imageUrl || '')" (error)="onImgError($event)" [alt]="fav.nombre" />
                   </div>
                   <div class="fav-info" (click)="irAProducto(fav.id)">
                     <h5 class="fav-name">{{ fav.nombre }}</h5>

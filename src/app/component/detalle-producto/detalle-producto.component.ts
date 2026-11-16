@@ -318,12 +318,23 @@ export class DetalleProductoComponent implements OnInit {
   }
 
   obtenerImagenUrl(url: string): SafeUrl {
-    if (!url) return '';
-    if (!url.includes('drive.google.com') && !url.includes('docs.google.com') && !url.includes('googleusercontent.com')) {
-      return this.sanitizer.bypassSecurityTrustUrl(url);
+    const trimmed = (url || '').trim();
+    if (!trimmed || trimmed.startsWith('blob:') || trimmed.includes('localhost:8080') || trimmed.includes('127.0.0.1')) {
+      return this.sanitizer.bypassSecurityTrustUrl('images/prod-jaspeada.png');
     }
-    const fileId = this.extraerGoogleDriveId(url);
+    if (!trimmed.includes('drive.google.com') && !trimmed.includes('docs.google.com') && !trimmed.includes('googleusercontent.com')) {
+      return this.sanitizer.bypassSecurityTrustUrl(trimmed);
+    }
+    const fileId = this.extraerGoogleDriveId(trimmed);
     const previewUrl = this.obtenerGoogleDrivePreviewUrl(fileId);
-    return this.sanitizer.bypassSecurityTrustUrl(previewUrl);
+    return this.sanitizer.bypassSecurityTrustUrl(previewUrl || 'images/prod-jaspeada.png');
+  }
+
+  onImgError(event: any) {
+    const target = event?.target as HTMLImageElement;
+    if (target) {
+      target.onerror = null;
+      target.src = 'images/prod-jaspeada.png';
+    }
   }
 }

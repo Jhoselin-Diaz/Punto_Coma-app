@@ -210,7 +210,8 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
 
   getProductoImagen(prod: any): string {
     if (!prod) return 'images/prod-jaspeada.png';
-    return prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || 'images/prod-jaspeada.png';
+    const raw = prod.imagenPrincipal || prod.imageUrl || prod.imagen_principal || '';
+    return this.obtenerUrlRenderizable(raw) || 'images/prod-jaspeada.png';
   }
 
   formatDateToYYYYMMDD(dateVal: any): string {
@@ -571,6 +572,21 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
     document.head.appendChild(gsiScript);
   }
 
+  limpiarCapasResidualesPicker() {
+    if (typeof document !== 'undefined') {
+      const residuales = document.querySelectorAll('.picker-dialog, .picker-dialog-bg');
+      residuales.forEach(el => el.remove());
+    }
+  }
+
+  abrirFallbackUrl(tipo: 'banner') {
+    this.limpiarCapasResidualesPicker();
+    const el = document.getElementById('bannerImg');
+    if (el) {
+      el.focus();
+    }
+  }
+
   abrirPicker(tipo: 'banner') {
     const tokenExpirado = this.tokenTimestamp && (Date.now() - this.tokenTimestamp > 3000 * 1000);
     if (tokenExpirado) {
@@ -581,26 +597,39 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
     if (!this.oauthToken) {
       try {
         const client = google.accounts.oauth2.initTokenClient({
-          client_id: this.clientId || 'YOUR_CLIENT_ID.apps.googleusercontent.com',
+          client_id: this.clientId || GOOGLE_CLIENT_ID,
           scope: 'https://www.googleapis.com/auth/drive.readonly',
           callback: (response: any) => {
-            if (response.error !== undefined) {
-              console.error('Error al inicializar Token Client:', response);
+            if (!response || response.error !== undefined) {
+              console.error('❌ Error o rechazo en Token Client:', response);
               this.oauthToken = '';
               this.tokenTimestamp = 0;
+              this.limpiarCapasResidualesPicker();
+              this.modalAlertaService.info('No se pudo autenticar con Google. Puedes ingresar el enlace de Drive directamente en el campo inferior.', 'Google Drive');
+              this.abrirFallbackUrl(tipo);
               return;
             }
             this.oauthToken = response.access_token;
             this.tokenTimestamp = Date.now();
             this.createPicker(tipo);
           },
+          error_callback: (err: any) => {
+            console.warn('⚠️ Google Identity Services error_callback activado:', err);
+            this.oauthToken = '';
+            this.tokenTimestamp = 0;
+            this.limpiarCapasResidualesPicker();
+            this.modalAlertaService.info('No se pudo abrir el selector de Google Drive o se canceló el permiso. Puedes pegar el enlace directo a continuación.', 'Google Drive');
+            this.abrirFallbackUrl(tipo);
+          }
         });
         client.requestAccessToken({ prompt: 'consent' });
       } catch (err) {
         console.warn('Google GSI Token Client initialization failed, using prompt fallback.', err);
         this.oauthToken = '';
         this.tokenTimestamp = 0;
-        this.fallbackUrlPrompt(tipo);
+        this.limpiarCapasResidualesPicker();
+        this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+        this.abrirFallbackUrl(tipo);
       }
     } else {
       this.createPicker(tipo);
@@ -612,6 +641,17 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
     const isGapiPickerAvailable = typeof window !== 'undefined' && (window as any).gapi && (window as any).gapi.picker;
 
     if (this.pickerApiLoaded && this.oauthToken && (isGooglePickerAvailable || isGapiPickerAvailable)) {
+      let pickerResuelto = false;
+
+      const pickerTimeout = setTimeout(() => {
+        if (!pickerResuelto) {
+          console.warn('⏱️ Timeout (8s) al cargar Google Picker iframe. Limpiando DOM residual y abriendo fallback.');
+          this.limpiarCapasResidualesPicker();
+          this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+          this.abrirFallbackUrl(tipo);
+        }
+      }, 8000);
+
       try {
         const pickerNamespace = isGooglePickerAvailable ? (window as any).google.picker : (window as any).gapi.picker;
         const view = new pickerNamespace.View(pickerNamespace.ViewId.DOCS);
@@ -619,42 +659,64 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
 
         const picker = new pickerNamespace.PickerBuilder()
           .enableFeature(pickerNamespace.Feature.NAV_HIDDEN)
-          .setDeveloperKey(this.developerKey || 'YOUR_DEVELOPER_KEY')
-          .setAppId(this.clientId ? this.clientId.split('-')[0] : 'YOUR_APP_ID')
+          .setDeveloperKey(this.developerKey || GOOGLE_DEVELOPER_KEY)
+          .setAppId(this.clientId ? this.clientId.split('-')[0] : '398851876989')
           .setOAuthToken(this.oauthToken)
           .addView(view)
           .setCallback((data: any) => {
-            console.log('--- DATA CRUDA DEL PICKER EN OFERTAS ---', data);
             if (data.action === pickerNamespace.Action.PICKED) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
               const doc = data.docs[0];
               const fileId = doc[pickerNamespace.Document.ID] || doc.id;
               const publicUrl = this.obtenerGoogleDrivePreviewUrl(fileId);
               this.handlePickerUrl(tipo, publicUrl);
+              this.limpiarCapasResidualesPicker();
+            } else if (data.action === pickerNamespace.Action.CANCEL) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
+              this.limpiarCapasResidualesPicker();
             } else if (data.action === 'error' || data.error) {
-              console.error('Error detectado en el callback de Google Picker:', data.error || data);
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
+              console.error('❌ Error detectado en el callback de Google Picker:', data.error || data);
               this.oauthToken = '';
               this.tokenTimestamp = 0;
+              this.limpiarCapasResidualesPicker();
+              this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+              this.abrirFallbackUrl(tipo);
             }
           })
           .build();
         picker.setVisible(true);
+
+        setTimeout(() => {
+          if (typeof document !== 'undefined') {
+            const iframe = document.querySelector('.picker-dialog iframe') as HTMLIFrameElement;
+            if (iframe) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
+            }
+          }
+        }, 2000);
       } catch (err) {
+        pickerResuelto = true;
+        clearTimeout(pickerTimeout);
         console.error('Excepción al crear Google Picker:', err);
         this.oauthToken = '';
         this.tokenTimestamp = 0;
-        this.fallbackUrlPrompt(tipo);
+        this.limpiarCapasResidualesPicker();
+        this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+        this.abrirFallbackUrl(tipo);
       }
     } else {
-      console.warn('Gapi/Google Picker API no cargada completamente, usando prompt.');
-      this.fallbackUrlPrompt(tipo);
+      this.modalAlertaService.info('Cargando servicios de Google. Puedes pegar el enlace directo a continuación.', 'Google Drive');
+      this.abrirFallbackUrl(tipo);
     }
   }
 
   fallbackUrlPrompt(tipo: 'banner') {
-    const val = prompt('Pegue la URL de la imagen:');
-    if (val) {
-      this.handlePickerUrl(tipo, val);
-    }
+    this.abrirFallbackUrl(tipo);
   }
 
   handlePickerUrl(tipo: 'banner', url: string) {
@@ -687,31 +749,44 @@ export class AdminOfertasComponent implements OnInit, OnDestroy {
   }
 
   obtenerUrlRenderizable(url: string): string {
-    if (!url) return '';
+    if (!url) return 'images/prod-jaspeada.png';
+    const trimmed = typeof url === 'string' ? url.trim() : '';
+    if (!trimmed || trimmed.startsWith('blob:') || trimmed.includes('localhost:8080') || trimmed.includes('127.0.0.1')) {
+      return 'images/prod-jaspeada.png';
+    }
 
-    if (url.includes('lh3.googleusercontent.com')) return url;
-    if (url.includes('supabase.co/storage') || url.includes('supabase.in/storage')) return url;
-    if (url.startsWith('blob:')) return url;
+    if (trimmed.includes('lh3.googleusercontent.com')) return trimmed;
+    if (trimmed.includes('supabase.co/storage') || trimmed.includes('supabase.in/storage')) return trimmed;
 
-    if (url.includes('docs.google.com/uc') || url.includes('drive.google.com/uc')) {
-      const match = url.match(/[?&]id=([^&]+)/);
+    if (trimmed.includes('docs.google.com/uc') || trimmed.includes('drive.google.com/uc')) {
+      const match = trimmed.match(/[?&]id=([^&]+)/);
       if (match && match[1]) {
         return `https://lh3.googleusercontent.com/d/${match[1]}`;
       }
     }
 
-    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
-      const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (trimmed.includes('drive.google.com') || trimmed.includes('docs.google.com')) {
+      const fileMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
       if (fileMatch && fileMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`;
       }
-      const dMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const dMatch = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
       if (dMatch && dMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${dMatch[1]}`;
       }
     }
 
-    return url;
+    return trimmed;
+  }
+
+  obtenerImagenUrl(url: string): string {
+    return this.obtenerUrlRenderizable(url);
+  }
+
+  onImgError(event: any) {
+    if (event && event.target) {
+      event.target.src = 'images/prod-jaspeada.png';
+    }
   }
 
   onBannerImgChange(value: string) {

@@ -590,4 +590,42 @@ export class CarritoComponent implements OnInit, OnDestroy {
     const phoneDigits = this.extraerNumeroWhatsapp(rawUrl);
     return `https://wa.me/${phoneDigits}`;
   }
+
+  extraerGoogleDriveId(input: string): string {
+    if (!input) return '';
+    const clean = input.trim();
+    const reg1 = /\/file\/d\/([a-zA-Z0-9_-]+)/;
+    const reg2 = /[?&]id=([a-zA-Z0-9_-]+)/;
+    const reg3 = /\/d\/([a-zA-Z0-9_-]+)/;
+    let match = clean.match(reg1);
+    if (match) return match[1];
+    match = clean.match(reg2);
+    if (match) return match[1];
+    match = clean.match(reg3);
+    if (match) return match[1];
+    if (/^[a-zA-Z0-9_-]{20,}$/.test(clean)) return clean;
+    return clean;
+  }
+
+  obtenerImagenUrl(url?: string): string {
+    if (!url) return 'images/prod-jaspeada.png';
+    const trimmed = (url || '').trim();
+    if (!trimmed || trimmed.startsWith('blob:') || trimmed.includes('localhost:8080') || trimmed.includes('127.0.0.1')) {
+      return 'images/prod-jaspeada.png';
+    }
+    if (trimmed.includes('lh3.googleusercontent.com')) return trimmed;
+    if (trimmed.includes('drive.google.com') || trimmed.includes('docs.google.com')) {
+      const id = this.extraerGoogleDriveId(trimmed);
+      return id ? `https://lh3.googleusercontent.com/d/${id}` : 'images/prod-jaspeada.png';
+    }
+    return trimmed;
+  }
+
+  onImgError(event: any) {
+    const target = event?.target as HTMLImageElement;
+    if (target) {
+      target.onerror = null;
+      target.src = 'images/prod-jaspeada.png';
+    }
+  }
 }

@@ -49,7 +49,7 @@
                 @if (esAgotado(prod)) {
                   <span class="stock-badge-agotado">SIN STOCK</span>
                 }
-                <img [src]="prod.imagenPrincipal || prod.imageUrl || 'images/prod-jaspeada.png'" [alt]="prod.nombre" loading="lazy" />
+                <img [src]="obtenerImagenUrl(prod.imagenPrincipal || prod.imageUrl)" (error)="onImgError($event)" [alt]="prod.nombre" loading="lazy" />
               </div>
               <div class="card-info">
                 <h3>{{ prod.nombre }}</h3>

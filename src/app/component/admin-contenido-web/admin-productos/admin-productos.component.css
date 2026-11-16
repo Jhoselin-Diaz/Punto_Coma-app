@@ -737,3 +737,20 @@
   color: var(--orange, #df6c1b) !important;
   transform: scale(1.02);
 }
+
+.btn-picker-choice-secondary {
+  background-color: var(--soft);
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-picker-choice-secondary:hover {
+  background-color: var(--orange);
+  color: white;
+}

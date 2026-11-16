@@ -177,11 +177,22 @@ export class ShopVideoComponent implements OnInit {
   }
 
   obtenerImagenUrl(url: string): string {
-    if (!url) return '';
-    if (!url.includes('drive.google.com') && !url.includes('docs.google.com') && !url.includes('googleusercontent.com')) {
-      return url;
+    const trimmed = (url || '').trim();
+    if (!trimmed || trimmed.startsWith('blob:') || trimmed.includes('localhost:8080') || trimmed.includes('127.0.0.1')) {
+      return 'images/prod-jaspeada.png';
     }
-    const fileId = this.extraerGoogleDriveId(url);
-    return this.obtenerGoogleDrivePreviewUrl(fileId);
+    if (!trimmed.includes('drive.google.com') && !trimmed.includes('docs.google.com') && !trimmed.includes('googleusercontent.com')) {
+      return trimmed;
+    }
+    const fileId = this.extraerGoogleDriveId(trimmed);
+    return this.obtenerGoogleDrivePreviewUrl(fileId) || 'images/prod-jaspeada.png';
+  }
+
+  onImgError(event: any) {
+    const target = event?.target as HTMLImageElement;
+    if (target) {
+      target.onerror = null;
+      target.src = 'images/prod-jaspeada.png';
+    }
   }
 }

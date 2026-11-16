@@ -44,7 +44,7 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
   editProductModalTab: ProductModalTab = 'general';
 
   // Google Picker & Upload
-  archivoImagen: File | null = null;
+  
   imagenTemporalUrl: SafeUrl | string = '';
   developerKey = GOOGLE_DEVELOPER_KEY;
   clientId = GOOGLE_CLIENT_ID;
@@ -533,7 +533,6 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
       control_humedad: false,
       lavado_mano: false
     };
-    this.archivoImagen = null;
     this.imagenTemporalUrl = '';
     this.miniaturasTemp = ['', '', ''];
     this.miniaturasUrls = ['', '', ''];
@@ -543,8 +542,6 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
 
   openEditProduct(prod: any, updateUrl = true) {
     this.editProductModalTab = 'general';
-    this.archivoImagen = null;
-
     // Parse Sugeridos
     let sugIds: number[] = [];
     const rawSugeridos = prod.sugeridosIds || prod.sugeridos_ids;
@@ -985,35 +982,17 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
       lavado_mano: this.newProduct.lavado_mano
     };
 
-    if (this.archivoImagen) {
-      const formData = new FormData();
-      formData.append('imagen', this.archivoImagen);
-      formData.append('producto', JSON.stringify(payload));
-
-      this.productosService.crearProducto(formData).subscribe({
-        next: (res) => {
-          this.modalAlertaService.success('¡Producto registrado con éxito!', '¡Producto registrado con éxito!');
-          this.showAddProductModal = false;
-          this.cargarProductos();
-        },
-        error: (err) => {
-          console.error('Error al guardar el producto (Multipart):', err);
-          this.modalAlertaService.error('Ocurrió un error al guardar el producto.', 'Error al guardar');
-        }
-      });
-    } else {
-      this.productosService.crearProducto(payload).subscribe({
-        next: (res) => {
-          this.modalAlertaService.success('¡Producto registrado con éxito!', '¡Producto registrado con éxito!');
-          this.showAddProductModal = false;
-          this.cargarProductos();
-        },
-        error: (err) => {
-          console.error('Error al guardar el producto (JSON):', err);
-          this.modalAlertaService.error('Ocurrió un error al guardar el producto.', 'Error al guardar');
-        }
-      });
-    }
+    this.productosService.crearProducto(payload).subscribe({
+      next: (res) => {
+        this.modalAlertaService.success('¡Producto registrado con éxito!', '¡Producto registrado con éxito!');
+        this.showAddProductModal = false;
+        this.cargarProductos();
+      },
+      error: (err) => {
+        console.error('Error al guardar el producto:', err);
+        this.modalAlertaService.error('Ocurrió un error al guardar el producto.', 'Error al guardar');
+      }
+    });
   }
 
   guardarCambiosProducto() {
@@ -1105,35 +1084,17 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
       lavado_mano: this.editingProduct.lavado_mano
     };
 
-    if (this.archivoImagen) {
-      const formData = new FormData();
-      formData.append('imagen', this.archivoImagen);
-      formData.append('producto', JSON.stringify(payload));
-
-      this.productosService.crearProducto(formData).subscribe({
-        next: (res) => {
-          this.modalAlertaService.success('¡Producto actualizado con éxito!', 'Actualización exitosa');
-          this.closeEditProductModal();
-          this.cargarProductos();
-        },
-        error: (err) => {
-          console.error('Error al actualizar el producto (Multipart):', err);
-          this.modalAlertaService.error('Ocurrió un error al actualizar el producto.', 'Error al actualizar');
-        }
-      });
-    } else {
-      this.productosService.crearProducto(payload).subscribe({
-        next: (res) => {
-          this.modalAlertaService.success('¡Producto actualizado con éxito!', 'Actualización exitosa');
-          this.closeEditProductModal();
-          this.cargarProductos();
-        },
-        error: (err) => {
-          console.error('Error al actualizar el producto (JSON):', err);
-          this.modalAlertaService.error('Ocurrió un error al actualizar el producto.', 'Error al actualizar');
-        }
-      });
-    }
+    this.productosService.crearProducto(payload).subscribe({
+      next: (res) => {
+        this.modalAlertaService.success('¡Producto actualizado con éxito!', 'Actualización exitosa');
+        this.closeEditProductModal();
+        this.cargarProductos();
+      },
+      error: (err) => {
+        console.error('Error al actualizar el producto (JSON):', err);
+        this.modalAlertaService.error('Ocurrió un error al actualizar el producto.', 'Error al actualizar');
+      }
+    });
   }
 
   guardarConfiguracionGlobal() {
@@ -1214,31 +1175,26 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
   }
 
   onFileSeleccionadoModal(event: any) {
-    if (event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
-      if (!this.validarArchivoImagen(file)) {
-        if (event.target) event.target.value = '';
-        return;
-      }
-
-      const tipo = this.tipoImagenObjetivo;
-      if (tipo === 'principal') {
-        this.handleImageFile(file);
-      } else {
-        const index = tipo === 'miniatura1' ? 0 : (tipo === 'miniatura2' ? 1 : 2);
-        this.procesarArchivoMiniatura(file, index);
-      }
-      this.cerrarModalOrigenImagen();
-      this.cdr.detectChanges();
-    }
-    if (event.target) {
-      event.target.value = '';
-    }
+    this.modalAlertaService.warning('La carga desde PC fue retirada. Usa Google Drive.', 'Opción deshabilitada');
+    if (event?.target) event.target.value = '';
+    this.cerrarModalOrigenImagen();
   }
 
   // Delegación para mantener compatibilidad si se invoca elegirOrigenMiniatura
   elegirOrigenMiniatura(tipo: 'miniatura1' | 'miniatura2' | 'miniatura3') {
     this.abrirModalOrigenImagen(tipo);
+  }
+
+  limpiarCapasResidualesPicker() {
+    if (typeof document !== 'undefined') {
+      const residuales = document.querySelectorAll('.picker-dialog, .picker-dialog-bg');
+      residuales.forEach(el => el.remove());
+    }
+  }
+
+  abrirFallbackUrl(tipo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3') {
+    this.limpiarCapasResidualesPicker();
+    this.abrirModalPegarUrl(tipo);
   }
 
   abrirPicker(tipo: 'principal' | 'miniatura1' | 'miniatura2' | 'miniatura3') {
@@ -1264,11 +1220,13 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
           client_id: this.clientId || GOOGLE_CLIENT_ID,
           scope: 'https://www.googleapis.com/auth/drive.readonly',
           callback: (response: any) => {
-            if (response.error !== undefined) {
+            if (!response || response.error !== undefined) {
               console.error('❌ Error al inicializar Token Client:', response);
               this.oauthToken = '';
               this.tokenTimestamp = 0;
-              this.modalAlertaService.error('No se pudo autenticar con Google. Puedes utilizar la opción "Pegar URL" o "Desde PC".', 'Error de Autenticación');
+              this.limpiarCapasResidualesPicker();
+              this.modalAlertaService.info('No se pudo autenticar con Google. Puedes utilizar la opción para pegar el enlace directo a continuación.', 'Google Drive');
+              this.abrirFallbackUrl(tipo);
               return;
             }
             this.oauthToken = response.access_token;
@@ -1276,13 +1234,23 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
             console.log('✅ Nuevo Token de GSI obtenido con éxito.');
             this.createPicker(tipo);
           },
+          error_callback: (err: any) => {
+            console.warn('⚠️ Google Identity Services error_callback activado:', err);
+            this.oauthToken = '';
+            this.tokenTimestamp = 0;
+            this.limpiarCapasResidualesPicker();
+            this.modalAlertaService.info('No se pudo abrir el selector de Google Drive o se canceló el permiso. Puedes pegar el enlace directo a continuación.', 'Google Drive');
+            this.abrirFallbackUrl(tipo);
+          }
         });
         client.requestAccessToken({ prompt: 'consent' });
       } catch (err) {
         console.warn('Google GSI Token Client initialization failed:', err);
         this.oauthToken = '';
         this.tokenTimestamp = 0;
-        this.modalAlertaService.warning('No se pudo iniciar sesión con Google Drive. Puedes usar "Pegar URL" o "Desde PC".', 'Google Drive');
+        this.limpiarCapasResidualesPicker();
+        this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+        this.abrirFallbackUrl(tipo);
       }
     } else {
       this.createPicker(tipo);
@@ -1294,6 +1262,18 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
     const isGapiPickerAvailable = typeof window !== 'undefined' && (window as any).gapi?.picker;
 
     if (this.pickerApiLoaded && this.oauthToken && (isGooglePickerAvailable || isGapiPickerAvailable)) {
+      let pickerResuelto = false;
+
+      // Timeout de seguridad de 8 segundos para evitar pantalla en blanco si el iframe de Picker falla
+      const pickerTimeout = setTimeout(() => {
+        if (!pickerResuelto) {
+          console.warn('⏱️ Timeout (8s) al cargar Google Picker iframe. Limpiando DOM residual y abriendo fallback.');
+          this.limpiarCapasResidualesPicker();
+          this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+          this.abrirFallbackUrl(tipo);
+        }
+      }, 8000);
+
       try {
         const pickerNamespace = isGooglePickerAvailable ? (window as any).google.picker : (window as any).gapi.picker;
         const view = new pickerNamespace.View(pickerNamespace.ViewId.DOCS);
@@ -1307,23 +1287,49 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
           .addView(view)
           .setCallback((data: any) => {
             if (data.action === pickerNamespace.Action.PICKED) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
               const doc = data.docs[0];
               const fileId = doc[pickerNamespace.Document.ID] || doc.id;
               const publicUrl = this.obtenerGoogleDrivePreviewUrl(fileId);
               this.handlePickerUrl(tipo, publicUrl);
+              this.limpiarCapasResidualesPicker();
+            } else if (data.action === pickerNamespace.Action.CANCEL) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
+              this.limpiarCapasResidualesPicker();
             } else if (data.action === 'error' || data.error) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
               console.error('❌ Error detectado en el callback de Google Picker:', data.error || data);
               this.oauthToken = '';
               this.tokenTimestamp = 0;
+              this.limpiarCapasResidualesPicker();
+              this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+              this.abrirFallbackUrl(tipo);
             }
           })
           .build();
         picker.setVisible(true);
+
+        setTimeout(() => {
+          if (typeof document !== 'undefined') {
+            const iframe = document.querySelector('.picker-dialog iframe') as HTMLIFrameElement;
+            if (iframe) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
+            }
+          }
+        }, 2000);
       } catch (err) {
+        pickerResuelto = true;
+        clearTimeout(pickerTimeout);
         console.error('❌ Excepción al crear Google Picker:', err);
         this.oauthToken = '';
         this.tokenTimestamp = 0;
-        this.modalAlertaService.warning('Ocurrió un problema al abrir el selector de Google Drive.', 'Google Drive');
+        this.limpiarCapasResidualesPicker();
+        this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+        this.abrirFallbackUrl(tipo);
       }
     } else {
       if (typeof window !== 'undefined' && (window as any).gapi) {
@@ -1332,7 +1338,8 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
           this.createPicker(tipo);
         });
       } else {
-        this.modalAlertaService.warning('La API de Google Picker aún se está cargando. Intenta de nuevo en unos segundos.', 'Google Drive');
+        this.modalAlertaService.info('La API de Google Picker aún se está cargando. Puedes pegar el enlace directo a continuación.', 'Google Drive');
+        this.abrirFallbackUrl(tipo);
       }
     }
   }
@@ -1505,10 +1512,7 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     this.isDraggingMain = false;
-    if (event.dataTransfer && event.dataTransfer.files.length > 0) {
-      const file = event.dataTransfer.files[0];
-      this.handleImageFile(file);
-    }
+    this.modalAlertaService.warning('La carga directa desde la PC fue retirada. Usa los botones de Google Drive.', 'Subida deshabilitada');
   }
 
   onDragOverMiniatura(event: DragEvent, index: number) {
@@ -1527,41 +1531,7 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     this.isDraggingThumb[index] = false;
-    if (event.dataTransfer && event.dataTransfer.files.length > 0) {
-      const file = event.dataTransfer.files[0];
-      this.procesarArchivoMiniatura(file, index);
-    }
-  }
-
-  procesarArchivoMiniatura(file: File, index: number) {
-    if (!this.validarArchivoImagen(file)) {
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    const safeUrl = this.sanitizer.bypassSecurityTrustUrl(objectUrl);
-    this.miniaturasTemp[index] = safeUrl;
-    this.miniaturasUrls[index] = objectUrl;
-    this.miniaturaError[index] = false;
-
-    if (this.showEditProductModal && this.editingProduct?.id) {
-      this.productosService.subirImagenProducto(this.editingProduct.id, file).subscribe({
-        next: (res: any) => {
-          const urlGuardada = res.imagenPrincipal || res.imageUrl || res.url;
-          if (urlGuardada) {
-            this.miniaturasUrls[index] = urlGuardada;
-            this.miniaturasTemp[index] = this.sanitizer.bypassSecurityTrustUrl(urlGuardada);
-            this.modalAlertaService.success('Miniatura subida y guardada exitosamente.', 'Miniatura actualizada');
-            this.cdr.detectChanges();
-          }
-        },
-        error: (err: any) => {
-          console.error('Error al subir miniatura:', err);
-          this.modalAlertaService.error('Error al subir la miniatura al servidor.', 'Error de subida');
-        }
-      });
-    }
-    this.cdr.detectChanges();
+    this.modalAlertaService.warning('La carga directa desde la PC fue retirada. Usa los botones de Google Drive.', 'Subida deshabilitada');
   }
 
   readonly DEFAULT_PLACEHOLDER = '/assets/img/placeholder-producto.png';
@@ -1579,60 +1549,8 @@ export class AdminProductosComponent implements OnInit, OnDestroy {
     }
   }
 
-  onFileSelected(event: any) {
-    if (event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
-      this.handleImageFile(file);
-    }
-    if (event.target) {
-      event.target.value = '';
-    }
-  }
-
-  handleImageFile(file: File) {
-    if (!this.validarArchivoImagen(file)) {
-      return;
-    }
-
-    this.archivoImagen = file;
-    const objectUrl = URL.createObjectURL(file);
-    this.imagenTemporalUrl = this.sanitizer.bypassSecurityTrustUrl(objectUrl);
-    if (this.showEditProductModal) {
-      this.editingProduct.imagenPrincipal = objectUrl;
-      (this.editingProduct as any).imagen_principal = objectUrl;
-
-      // Subida directa al backend de Spring Boot
-      if (this.editingProduct.id) {
-        this.productosService.subirImagenProducto(this.editingProduct.id, file).subscribe({
-          next: (res: any) => {
-            const urlGuardada = res.imagenPrincipal || res.imageUrl || res.url;
-            if (urlGuardada) {
-              this.editingProduct.imagenPrincipal = urlGuardada;
-              (this.editingProduct as any).imagen_principal = urlGuardada;
-              (this.editingProduct as any).imageUrl = urlGuardada;
-              this.imagenTemporalUrl = this.sanitizer.bypassSecurityTrustUrl(urlGuardada);
-
-              this.cargarProductos();
-              this.modalAlertaService.success('Imagen subida y guardada exitosamente en el servidor.', 'Imagen actualizada');
-              this.cdr.detectChanges();
-            }
-          },
-          error: (err: any) => {
-            console.error('Error al subir imagen al servidor:', err);
-            this.modalAlertaService.error('Error al subir la imagen al servidor.', 'Error de subida');
-          }
-        });
-      }
-    } else {
-      this.newProduct.imagenPrincipal = objectUrl;
-      (this.newProduct as any).imagenUrl = objectUrl;
-    }
-    this.cdr.detectChanges();
-  }
-
   removeImage(event: Event) {
     event.stopPropagation();
-    this.archivoImagen = null;
     this.imagenTemporalUrl = '';
     if (this.showEditProductModal) {
       this.editingProduct.imagenPrincipal = '';

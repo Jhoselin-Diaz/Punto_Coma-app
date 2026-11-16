@@ -273,63 +273,7 @@
           <div class="field-group">
             <label>Logo de la tienda</label>
 
-            <!-- Selector de origen: Local o Google Drive -->
-            <div class="logo-source-tabs">
-              <button 
-                type="button" 
-                class="logo-tab-btn" 
-                [class.active]="origenLogo === 'local'" 
-                (click)="cambiarOrigenLogo('local')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                Equipo local
-              </button>
-              <button 
-                type="button" 
-                class="logo-tab-btn" 
-                [class.active]="origenLogo === 'drive'" 
-                (click)="cambiarOrigenLogo('drive')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-                  <path d="M12 12v9" />
-                  <path d="m8 17 4 4 4-4" />
-                </svg>
-                Google Drive
-              </button>
-            </div>
-
-            <!-- Opción 1: Archivo local -->
-            @if (origenLogo === 'local') {
-              <input 
-                type="file" 
-                #logoInput 
-                (change)="onLogoSeleccionado($event)" 
-                accept="image/png,image/jpeg,image/webp" 
-                style="display: none;" />
-
-              <div class="upload-zone" (click)="logoInput.click()" style="cursor: pointer;">
-                @if (visual.logoPreview) {
-                  <div class="logo-preview-box">
-                    <img [src]="visual.logoPreview" alt="Logo de la tienda" class="logo-preview-img" />
-                  </div>
-                  <span>Haz clic para cambiar el archivo local</span>
-                } @else {
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                  <span>Selecciona o sube tu logo desde tu equipo</span>
-                }
-                <span class="upload-hint">PNG, JPG, WEBP — máx. 2MB</span>
-              </div>
-            }
-
-            <!-- Opción 2: Google Drive -->
-            @if (origenLogo === 'drive') {
+            <!-- Configuración de Logo mediante Google Drive -->
               <div class="drive-input-card">
                 <div class="drive-input-row">
                   <input 
@@ -359,7 +303,6 @@
                   </div>
                 }
               </div>
-            }
 
             <!-- Botón para quitar el logo y volver al corazón por defecto -->
             @if (visual.logoPreview) {

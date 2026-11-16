@@ -224,7 +224,7 @@
             <h3>Previsualización Tarjeta de Oferta (Cliente)</h3>
             <div class="client-offer-preview-card">
               <div class="offer-img-box">
-                <img [src]="getProductoImagen(productoSeleccionado)" alt="preview" />
+                <img [src]="getProductoImagen(productoSeleccionado)" (error)="onImgError($event)" alt="preview" />
                 <span class="discount-badge-bubble">
                   {{ newOffer.descuento }}% OFF
                 </span>
@@ -316,7 +316,7 @@
             <h3>Previsualización Tarjeta de Oferta (Cliente)</h3>
             <div class="client-offer-preview-card">
               <div class="offer-img-box">
-                <img [src]="getProductoImagen(productoSeleccionadoEdit)" alt="preview" />
+                <img [src]="getProductoImagen(productoSeleccionadoEdit)" (error)="onImgError($event)" alt="preview" />
                 <span class="discount-badge-bubble">
                   {{ editingOffer.descuento }}% OFF
                 </span>

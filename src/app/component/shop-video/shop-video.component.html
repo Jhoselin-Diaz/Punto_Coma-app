@@ -47,7 +47,7 @@
             @for (prod of video.productos; track prod.id) {
             <div class="mini-product-card">
               <div class="mini-image-wrap">
-                <img [src]="prod.imagen" [alt]="prod.nombre" />
+                <img [src]="obtenerImagenUrl(prod.imagen)" (error)="onImgError($event)" [alt]="prod.nombre" />
               </div>
               <div class="mini-info">
                 <h4>{{ prod.nombre }}</h4>

@@ -59,12 +59,9 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
   bannerImage = '';
   bannerPreviewStyle: any = '';
   bannerVisible = true;
-  imagenSeleccionada: File | null = null;
   isBannerLoading = false;
   isDraggingBanner = false;
   isDraggingCategory = false;
-  archivoCategoriaSeleccionada: File | null = null;
-
   // Campo de URL manual (alternativa al Google Drive Picker)
   driveUrlManual = '';
 
@@ -227,7 +224,6 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
   openAddCategory() {
     this.isEditingCategory = false;
     this.isDraggingCategory = false;
-    this.archivoCategoriaSeleccionada = null;
     this.categoriaEnEdicion = {
       nombreCategoria: '',
       tipo: 'MANUAL',
@@ -242,7 +238,6 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
   openEditCategory(cat: CategoriaDestacadaDTO, updateUrl = true) {
     this.isEditingCategory = true;
     this.isDraggingCategory = false;
-    this.archivoCategoriaSeleccionada = null;
     this.categoriaEnEdicion = {
       id: cat.id,
       nombreCategoria: cat.nombreCategoria,
@@ -266,7 +261,6 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
     this.showAddCategoryModal = false;
     this.isEditingCategory = false;
     this.isDraggingCategory = false;
-    this.archivoCategoriaSeleccionada = null;
     this.pendingEditCategoryId = null;
     const slug = INICIO_TAB_TO_SLUG[this.inicioTabActiva] || 'categorias-destacadas';
     this.router.navigate(['/admin/contenido-web/inicio'], {
@@ -392,7 +386,6 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
     this.bannerImage = directUrl;
     this.driveUrlManual = trimmed;
     this.bannerPreviewStyle = this.sanitizer.bypassSecurityTrustStyle(`url('${directUrl}')`);
-    this.imagenSeleccionada = null;
     this.emitirPreviewLocal();
     this.cdr.detectChanges();
   }
@@ -446,25 +439,54 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
     }
   }
 
+  limpiarCapasResidualesPicker() {
+    if (typeof document !== 'undefined') {
+      const residuales = document.querySelectorAll('.picker-dialog, .picker-dialog-bg');
+      residuales.forEach(el => el.remove());
+    }
+  }
+
+  abrirFallbackUrl(tipo: 'banner') {
+    this.limpiarCapasResidualesPicker();
+    const el = document.getElementById('bannerManualInput');
+    if (el) {
+      el.focus();
+    }
+  }
+
   abrirPicker(tipo: 'banner') {
     if (!this.oauthToken) {
       try {
         const client = google.accounts.oauth2.initTokenClient({
-          client_id: this.clientId || 'YOUR_CLIENT_ID.apps.googleusercontent.com',
+          client_id: this.clientId || GOOGLE_CLIENT_ID,
           scope: 'https://www.googleapis.com/auth/drive.readonly',
           callback: (response: any) => {
-            if (response.error !== undefined) {
-              console.error(response);
+            if (!response || response.error !== undefined) {
+              console.error('❌ Error o rechazo en Token Client:', response);
+              this.oauthToken = '';
+              this.limpiarCapasResidualesPicker();
+              this.modalAlertaService.info('No se pudo autenticar con Google. Puedes pegar el enlace de Drive directamente en el campo inferior.', 'Google Drive');
+              this.abrirFallbackUrl(tipo);
               return;
             }
             this.oauthToken = response.access_token;
             this.createPicker(tipo);
           },
+          error_callback: (err: any) => {
+            console.warn('⚠️ Google Identity Services error_callback activado:', err);
+            this.oauthToken = '';
+            this.limpiarCapasResidualesPicker();
+            this.modalAlertaService.info('No se pudo abrir el selector de Google Drive o se canceló el permiso. Puedes pegar el enlace directo a continuación.', 'Google Drive');
+            this.abrirFallbackUrl(tipo);
+          }
         });
         client.requestAccessToken({prompt: 'consent'});
       } catch (err) {
         console.warn('Google GSI Token Client initialization failed, using URL fallback.', err);
-        this.fallbackUrlPrompt(tipo);
+        this.oauthToken = '';
+        this.limpiarCapasResidualesPicker();
+        this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+        this.abrirFallbackUrl(tipo);
       }
     } else {
       this.createPicker(tipo);
@@ -476,49 +498,80 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
     const isGapiPickerAvailable = typeof window !== 'undefined' && (window as any).gapi && (window as any).gapi.picker;
 
     if (this.pickerApiLoaded && this.oauthToken && (isGooglePickerAvailable || isGapiPickerAvailable)) {
+      let pickerResuelto = false;
+
+      const pickerTimeout = setTimeout(() => {
+        if (!pickerResuelto) {
+          console.warn('⏱️ Timeout (8s) al cargar Google Picker iframe. Limpiando DOM residual y abriendo fallback.');
+          this.limpiarCapasResidualesPicker();
+          this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+          this.abrirFallbackUrl(tipo);
+        }
+      }, 8000);
+
       try {
         const pickerNamespace = isGooglePickerAvailable ? (window as any).google.picker : (window as any).gapi.picker;
-        console.log("Picker listo - Objeto de picker disponible en AdminInicio:", pickerNamespace);
-
         const view = new pickerNamespace.View(pickerNamespace.ViewId.DOCS);
         view.setMimeTypes('image/png,image/jpeg,image/jpg,image/webp,image/gif');
 
         const picker = new pickerNamespace.PickerBuilder()
           .enableFeature(pickerNamespace.Feature.NAV_HIDDEN)
-          .setDeveloperKey(this.developerKey || 'YOUR_DEVELOPER_KEY')
-          .setAppId(this.clientId ? this.clientId.split('-')[0] : 'YOUR_APP_ID')
+          .setDeveloperKey(this.developerKey || GOOGLE_DEVELOPER_KEY)
+          .setAppId(this.clientId ? this.clientId.split('-')[0] : '398851876989')
           .setOAuthToken(this.oauthToken)
           .addView(view)
           .setCallback((data: any) => {
-            console.log('Picker Event Completo en AdminInicio:', data);
-
             if (data[google.picker.Response.ACTION] === google.picker.Action.PICKED) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
               const doc = data[google.picker.Response.DOCUMENTS][0];
-              console.log('Documento seleccionado de Drive en AdminInicio:', doc);
-
-              // Usar lh3.googleusercontent.com directamente para evitar bloqueos CORS
-              // de docs.google.com/uc que no carga en background-image cross-origin
               const fileId = doc[google.picker.Document.ID] || doc.id;
               const directUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
-              console.log('URL lh3 construida en AdminInicio:', directUrl);
 
               this.ngZone.run(() => {
                 this.handlePickerUrl(tipo, directUrl);
               });
+              this.limpiarCapasResidualesPicker();
               this.cdr.detectChanges();
             } else if (data[google.picker.Response.ACTION] === google.picker.Action.CANCEL) {
-              console.log('El usuario canceló el Picker en AdminInicio');
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
+              this.limpiarCapasResidualesPicker();
+            } else if (data.action === 'error' || data.error) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
+              console.error('❌ Error detectado en callback de Picker:', data.error || data);
+              this.oauthToken = '';
+              this.limpiarCapasResidualesPicker();
+              this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+              this.abrirFallbackUrl(tipo);
             }
           })
           .build();
         picker.setVisible(true);
+
+        setTimeout(() => {
+          if (typeof document !== 'undefined') {
+            const iframe = document.querySelector('.picker-dialog iframe') as HTMLIFrameElement;
+            if (iframe) {
+              pickerResuelto = true;
+              clearTimeout(pickerTimeout);
+            }
+          }
+        }, 2000);
       } catch (err) {
+        pickerResuelto = true;
+        clearTimeout(pickerTimeout);
         console.error('Error al crear Google Picker en AdminInicio:', err);
-        this.fallbackUrlPrompt(tipo);
+        this.oauthToken = '';
+        this.limpiarCapasResidualesPicker();
+        this.modalAlertaService.info('No se pudo abrir el selector de Google Drive. Puedes pegar el enlace directo del archivo a continuación.', 'Google Drive');
+        this.abrirFallbackUrl(tipo);
       }
     } else {
       console.warn('Google Picker API no está cargada completamente o falta token. Usando fallback.');
-      this.fallbackUrlPrompt(tipo);
+      this.modalAlertaService.info('Cargando servicios de Google. Puedes pegar el enlace directo a continuación.', 'Google Drive');
+      this.abrirFallbackUrl(tipo);
     }
   }
 
@@ -559,41 +612,41 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
    *  - blob:http://...                        → sin cambios (ObjectURL local de PC)
    *  - cualquier otra URL                    → sin cambios
    */
-  obtenerUrlRenderizable(url: string): string {
-    if (!url) return '';
+  obtenerUrlRenderizable(url?: string): string {
+    if (!url) return 'images/prod-jaspeada.png';
+    const trimmed = (url || '').trim();
+    if (!trimmed || trimmed.startsWith('blob:') || trimmed.includes('localhost:8080') || trimmed.includes('127.0.0.1')) {
+      return 'images/prod-jaspeada.png';
+    }
 
     // 1. Ya está en formato lh3 — usar tal cual
-    if (url.includes('lh3.googleusercontent.com')) return url;
+    if (trimmed.includes('lh3.googleusercontent.com')) return trimmed;
 
     // 2. URL de Supabase (almacenamiento directo) — usar tal cual
-    if (url.includes('supabase.co/storage') || url.includes('supabase.in/storage')) return url;
+    if (trimmed.includes('supabase.co/storage') || trimmed.includes('supabase.in/storage')) return trimmed;
 
-    // 3. blob: ObjectURL de selección desde PC — usar tal cual
-    if (url.startsWith('blob:')) return url;
-
-    // 4. docs.google.com/uc?export=view&id=ID o drive.google.com/uc?id=ID
-    if (url.includes('docs.google.com/uc') || url.includes('drive.google.com/uc')) {
-      const match = url.match(/[?&]id=([^&]+)/);
+    // 3. docs.google.com/uc?export=view&id=ID o drive.google.com/uc?id=ID
+    if (trimmed.includes('docs.google.com/uc') || trimmed.includes('drive.google.com/uc')) {
+      const match = trimmed.match(/[?&]id=([^&]+)/);
       if (match && match[1]) {
         return `https://lh3.googleusercontent.com/d/${match[1]}`;
       }
     }
 
-    // 5. drive.google.com/file/d/ID/... o /open?id=ID
-    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
-      const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    // 4. drive.google.com/file/d/ID/... o /open?id=ID
+    if (trimmed.includes('drive.google.com') || trimmed.includes('docs.google.com')) {
+      const fileMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
       if (fileMatch && fileMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`;
       }
       // /d/ID directamente
-      const dMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const dMatch = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
       if (dMatch && dMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${dMatch[1]}`;
       }
     }
 
-    // 6. Cualquier otra URL — devolver sin modificar
-    return url;
+    return trimmed;
   }
 
   fallbackUrlPrompt(tipo: 'banner') {
@@ -611,8 +664,7 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
       if (tipo === 'banner') {
         this.bannerImage = url;
         this.bannerPreviewStyle = this.sanitizer.bypassSecurityTrustStyle(`url('${renderUrl}')`);
-        this.imagenSeleccionada = null;
-      }
+        }
       this.cdr.detectChanges();
     });
   }
@@ -664,83 +716,24 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     this.isDraggingBanner = false;
-    if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-      const file = event.dataTransfer.files[0];
-      this.procesarArchivoBanner(file);
+    alert('La carga directa desde la PC fue retirada. Usa los botones de Google Drive.');
+  }
+
+  onCategoriaUrlChange(url: string) {
+    if (url) {
+      this.categoriaEnEdicion.imagenUrl = this.obtenerUrlRenderizable(url);
     }
   }
 
-  onBannerFileSelected(event: any) {
-    if (event.target && event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
-      this.procesarArchivoBanner(file);
-      event.target.value = '';
+  onImgError(event: any) {
+    const target = event?.target as HTMLImageElement;
+    if (target) {
+      target.onerror = null;
+      target.src = 'images/prod-jaspeada.png';
     }
-  }
-
-  procesarArchivoBanner(file: File) {
-    if (!this.validarArchivoImagen(file)) {
-      return;
-    }
-
-    this.imagenSeleccionada = file;
-    const objectUrl = URL.createObjectURL(file);
-    this.bannerImage = objectUrl;
-    this.driveUrlManual = '';
-    this.ngZone.run(() => {
-      this.bannerPreviewStyle = this.sanitizer.bypassSecurityTrustStyle(`url('${objectUrl}')`);
-      this.cdr.detectChanges();
-    });
-  }
-
-  onDragOverCategory(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDraggingCategory = true;
-  }
-
-  onDragLeaveCategory(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDraggingCategory = false;
-  }
-
-  onDropCategory(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDraggingCategory = false;
-    if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-      const file = event.dataTransfer.files[0];
-      this.procesarArchivoCategoria(file);
-    }
-  }
-
-  onCategoryFileSelected(event: any) {
-    if (event.target && event.target.files && event.target.files.length > 0) {
-      const file = event.target.files[0];
-      this.procesarArchivoCategoria(file);
-      event.target.value = '';
-    }
-  }
-
-  procesarArchivoCategoria(file: File) {
-    if (!this.validarArchivoImagen(file)) {
-      return;
-    }
-
-    this.archivoCategoriaSeleccionada = file;
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      this.categoriaEnEdicion.imagenUrl = e.target.result;
-      this.cdr.detectChanges();
-    };
-    reader.readAsDataURL(file);
   }
 
   guardarCambios() {
-    // Parche 3: nunca persistir un blob: URL (ObjectURL local de selección de PC).
-    // Si bannerImage es blob: y no hay imagenSeleccionada, la imagen no se guarda
-    // (el backend no puede acceder a un blob del navegador del admin).
     const urlParaPersistir = (this.bannerImage || '').startsWith('blob:')
       ? ''
       : (this.bannerImage || '');
@@ -755,11 +748,7 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
       visible: this.bannerVisible
     };
 
-    const request$ = this.imagenSeleccionada
-      ? this.contentService.updateHomeBannerMultipart(bannerActualizado, this.imagenSeleccionada)
-      : this.contentService.updateHomeBannerJson(bannerActualizado);
-
-    request$.subscribe({
+    this.contentService.updateHomeBannerJson(bannerActualizado).subscribe({
       next: (res) => {
         alert('¡Banner guardado exitosamente en la base de datos de Supabase!');
         this.bannerId = res.id;
@@ -769,7 +758,6 @@ export class AdminInicioComponent implements OnInit, OnDestroy {
         this.bannerBtnLink = res.linkBoton;
         this.bannerImage = res.imagenUrl;
         this.bannerVisible = res.visible;
-        this.imagenSeleccionada = null;
         if (this.bannerImage) {
           const renderUrl = this.obtenerUrlRenderizable(this.bannerImage);
           this.bannerPreviewStyle = this.sanitizer.bypassSecurityTrustStyle(`url('${renderUrl}')`);

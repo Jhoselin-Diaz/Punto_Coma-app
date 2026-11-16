@@ -51,31 +51,48 @@ export class InicioComponent implements OnInit, OnDestroy {
    * Cubre 6 casos: lh3, Supabase, blob, docs/uc, file/d, y fallback.
    */
   obtenerUrlRenderizable(url: string): string {
-    if (!url) return '';
+    if (!url) return 'images/prod-jaspeada.png';
+    const trimmed = (url || '').trim();
+    if (!trimmed || trimmed.startsWith('blob:') || trimmed.includes('localhost:8080') || trimmed.includes('127.0.0.1')) {
+      return 'images/prod-jaspeada.png';
+    }
 
-    if (url.includes('lh3.googleusercontent.com')) return url;
-    if (url.includes('supabase.co/storage') || url.includes('supabase.in/storage')) return url;
-    if (url.startsWith('blob:')) return url;
+    if (trimmed.includes('lh3.googleusercontent.com')) return trimmed;
+    if (trimmed.includes('supabase.co/storage') || trimmed.includes('supabase.in/storage')) return trimmed;
 
-    if (url.includes('docs.google.com/uc') || url.includes('drive.google.com/uc')) {
-      const match = url.match(/[?&]id=([^&]+)/);
+    if (trimmed.includes('docs.google.com/uc') || trimmed.includes('drive.google.com/uc')) {
+      const match = trimmed.match(/[?&]id=([^&]+)/);
       if (match && match[1]) {
         return `https://lh3.googleusercontent.com/d/${match[1]}`;
       }
     }
 
-    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
-      const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (trimmed.includes('drive.google.com') || trimmed.includes('docs.google.com')) {
+      const fileMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
       if (fileMatch && fileMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`;
       }
-      const dMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const dMatch = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
       if (dMatch && dMatch[1]) {
         return `https://lh3.googleusercontent.com/d/${dMatch[1]}`;
       }
     }
 
-    return url;
+    return trimmed;
+  }
+
+  obtenerImagenUrl(url?: string): string {
+    if (!url) return 'images/prod-jaspeada.png';
+    const render = this.obtenerUrlRenderizable(url);
+    return render || 'images/prod-jaspeada.png';
+  }
+
+  onImgError(event: any) {
+    const target = event?.target as HTMLImageElement;
+    if (target) {
+      target.onerror = null;
+      target.src = 'images/prod-jaspeada.png';
+    }
   }
 
   private aplicarBanner(banner: HomeBanner) {

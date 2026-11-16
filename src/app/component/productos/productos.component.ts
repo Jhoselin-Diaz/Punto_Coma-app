@@ -139,7 +139,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
     return `https://lh3.googleusercontent.com/d/${id}`;
   }
 
-  readonly DEFAULT_PLACEHOLDER = '/assets/img/placeholder-producto.png';
+  readonly DEFAULT_PLACEHOLDER = 'images/prod-jaspeada.png';
 
   onImgError(event: Event, producto?: any) {
     const target = event.target as HTMLImageElement;
@@ -155,13 +155,16 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   obtenerImagenUrl(url: string): SafeUrl {
-    if (!url) return '';
-    if (!url.includes('drive.google.com') && !url.includes('docs.google.com') && !url.includes('googleusercontent.com')) {
-      return this.sanitizer.bypassSecurityTrustUrl(url);
+    const trimmed = (url || '').trim();
+    if (!trimmed || trimmed.startsWith('blob:') || trimmed.includes('localhost:8080') || trimmed.includes('127.0.0.1')) {
+      return this.sanitizer.bypassSecurityTrustUrl(this.DEFAULT_PLACEHOLDER);
     }
-    const fileId = this.extraerGoogleDriveId(url);
+    if (!trimmed.includes('drive.google.com') && !trimmed.includes('docs.google.com') && !trimmed.includes('googleusercontent.com')) {
+      return this.sanitizer.bypassSecurityTrustUrl(trimmed);
+    }
+    const fileId = this.extraerGoogleDriveId(trimmed);
     const previewUrl = this.obtenerGoogleDrivePreviewUrl(fileId);
-    return this.sanitizer.bypassSecurityTrustUrl(previewUrl);
+    return this.sanitizer.bypassSecurityTrustUrl(previewUrl || this.DEFAULT_PLACEHOLDER);
   }
 
   ngOnDestroy() {

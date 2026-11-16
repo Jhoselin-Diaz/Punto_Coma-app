@@ -176,7 +176,7 @@
                     [class.row-highlight-danger]="item.stock === 0">
                     <td>
                       <div class="tbl-prod-img-box">
-                        <img [src]="item.imagen" [alt]="item.nombre" />
+                        <img [src]="obtenerImagenUrl(item.imagen)" (error)="onImgError($event)" [alt]="item.nombre" />
                       </div>
                     </td>
                     <td>
@@ -489,7 +489,7 @@
             <h3>Producto Seleccionado</h3>
             <div class="client-offer-preview-card">
               <div class="offer-img-box">
-                <img [src]="editingStockItem.imagen" alt="editing" />
+                <img [src]="obtenerImagenUrl(editingStockItem.imagen)" (error)="onImgError($event)" alt="editing" />
                 <span class="discount-badge-bubble" [class.badge-agotado-bubble]="editingStockItem.stockActual === 0">
                   Stock: {{ editingStockItem.stockActual }} u.
                 </span>

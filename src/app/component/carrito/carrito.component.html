@@ -12,7 +12,7 @@
           @for (item of itemsCarrito; track item.id) {
             <div class="cart-item-card">
               <div class="item-img-container">
-                <img [src]="item.imagen" [alt]="item.nombre" />
+                <img [src]="obtenerImagenUrl(item.imagen)" (error)="onImgError($event)" [alt]="item.nombre" />
               </div>
               <div class="item-details">
                 <div class="item-header">
