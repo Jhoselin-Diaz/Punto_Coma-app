@@ -787,6 +787,10 @@
 }
 
 .btn-support-wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background-color: #25d366;
   color: #fff;
   text-decoration: none;
@@ -795,11 +799,12 @@
   padding: 9px 18px;
   border-radius: 8px;
   white-space: nowrap;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.15s;
 }
 
 .btn-support-wa:hover {
   background-color: #1eb956;
+  transform: translateY(-1px);
 }
 
 /* SPINNER */

@@ -1,4 +1,5 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +7,7 @@ import { ClienteLayoutComponent } from '../cliente-layout/cliente-layout.compone
 import { ClienteAuthService } from '../../service/cliente-auth.service';
 import { AdminPedidoService } from '../../service/admin-pedido.service';
 import { ConfiguracionService } from '../../service/configuracion.service';
+import { ContactoService } from '../../service/contacto.service';
 
 export interface PedidoRastreo {
   id: string;
@@ -33,7 +35,7 @@ export interface PedidoRastreo {
   templateUrl: './rastreo.component.html',
   styleUrl: './rastreo.component.css'
 })
-export class RastreoComponent implements OnInit {
+export class RastreoComponent implements OnInit, OnDestroy {
   telefonoBusqueda: string = '';
   cargando: boolean = false;
   busquedaRealizada: boolean = false;
@@ -57,10 +59,18 @@ export class RastreoComponent implements OnInit {
   codigoCopiado: 'orden' | 'codigoWeb' | 'clave' | 'guia' | null = null;
   private copiadoTimeout: any = null;
 
+  // Número de WhatsApp oficial para soporte y consultas (dinámico con Contenido Web -> Contactos)
+  numeroWhatsapp: string = '51969306604';
+  private subAuth?: Subscription;
+  private subConfig?: Subscription;
+  private subBlocks?: Subscription;
+  private subCierre?: Subscription;
+
   constructor(
     private authService: ClienteAuthService,
     private pedidoService: AdminPedidoService,
     public configService: ConfiguracionService,
+    private contactoService: ContactoService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -72,9 +82,68 @@ export class RastreoComponent implements OnInit {
     return this.configService.negocio.url_rastreo_olva || 'https://tracking.olvacourier.com/';
   }
 
+  formatearNumeroWhatsApp(raw: string): string {
+    if (!raw) return '51969306604';
+    let val = raw.trim();
+    if (val.includes('wa.me') || val.includes('whatsapp.com')) {
+      try {
+        const url = new URL(val.startsWith('http') ? val : 'https://' + val);
+        val = url.pathname.replace(/\//g, '');
+      } catch (e) {
+        val = val.split('?')[0];
+      }
+    }
+    const cleanNum = val.replace(/\D/g, '');
+    if (!cleanNum) return '51969306604';
+    if (cleanNum.length === 9) {
+      return '51' + cleanNum;
+    }
+    if (cleanNum.length === 11 && cleanNum.startsWith('51')) {
+      return cleanNum;
+    }
+    if (cleanNum.length > 9) {
+      return '51' + cleanNum.slice(-9);
+    }
+    return cleanNum;
+  }
+
+  obtenerLinkWhatsApp(mensaje?: string): string {
+    const msg = mensaje || 'Hola, quisiera consultar el estado de mi pedido';
+    return 'https://wa.me/' + this.numeroWhatsapp + '?text=' + encodeURIComponent(msg);
+  }
+
   ngOnInit(): void {
+    // 1. Obtener número de configuración general si existe
+    if (this.configService.negocio && this.configService.negocio.whatsapp) {
+      this.numeroWhatsapp = this.formatearNumeroWhatsApp(this.configService.negocio.whatsapp);
+    }
+    this.subConfig = this.configService.config$.subscribe(cfg => {
+      if (cfg && cfg.whatsapp) {
+        this.numeroWhatsapp = this.formatearNumeroWhatsApp(cfg.whatsapp);
+      }
+    });
+
+    // 2. Vincular reactivamente con Contenido Web -> Contactos
+    this.subBlocks = this.contactoService.blocks$.subscribe(blocks => {
+      if (blocks && blocks.length > 0) {
+        const waBlock = blocks.find(b => b.id === 'block-wa');
+        if (waBlock && waBlock.btnLink) {
+          this.numeroWhatsapp = this.formatearNumeroWhatsApp(waBlock.btnLink);
+        }
+      }
+    });
+
+    this.subCierre = this.contactoService.cierre$.subscribe(cierre => {
+      if (cierre && cierre.number) {
+        this.numeroWhatsapp = this.formatearNumeroWhatsApp(cierre.number);
+      }
+    });
+
+    this.contactoService.getBloques().subscribe({ error: () => {} });
+    this.contactoService.getCierre().subscribe({ error: () => {} });
+
     // Si el usuario está autenticado, autocompletar teléfono y buscar
-    this.authService.currentCliente$.subscribe(cliente => {
+    this.subAuth = this.authService.currentCliente$.subscribe(cliente => {
       if (cliente && cliente.telefono) {
         this.telefonoBusqueda = cliente.telefono.replace(/[^\d]/g, '');
         if (this.telefonoBusqueda.length >= 7) {
@@ -82,6 +151,14 @@ export class RastreoComponent implements OnInit {
         }
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.copiadoTimeout) clearTimeout(this.copiadoTimeout);
+    this.subAuth?.unsubscribe();
+    this.subConfig?.unsubscribe();
+    this.subBlocks?.unsubscribe();
+    this.subCierre?.unsubscribe();
   }
 
   consultarEnvios(): void {
